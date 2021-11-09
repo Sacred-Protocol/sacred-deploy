@@ -6,21 +6,21 @@ yarn
 yarn compile
 cd ..
 
-cd torn-token
+cd sacred-token
 yarn unlink || true
 yarn link
 yarn
 yarn compile
 cd ..
 
-cd tornado-governance
-yarn link torn-token
+cd sacred-governance
+yarn link sacred-token
 yarn
 yarn compile
 cd ..
 
-cd tornado-anonymity-mining
-yarn link torn-token
+cd sacred-anonymity-mining
+yarn link sacred-token
 yarn
 if [[ ! -f "build/circuits/TreeUpdateVerifier.sol" ]]; then
   yarn circuit
