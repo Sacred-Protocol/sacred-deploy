@@ -7,18 +7,18 @@
 ## Usage
 
 ```
-git clone --recursive https://github.com/tornadocash/tornado-deploy
-cd tornado-deploy
+git clone --recursive https://github.com/Sacred-Finance/sacred-deploy
+cd sacred-deploy
 cp .env.example .env
 yarn
 
 # optionally copy production snark circuits
-mkdir -p tornado-anonymity-mining/build && cp -R ~/Downloads/circuits ./tornado-anonymity-mining/build
+mkdir -p sacred-anonymity-mining/build && cp -R ~/Downloads/circuits ./sacred-anonymity-mining/build
 
 yarn build
 ```
 
-Note: build script will globally `yarn link` `torn-token` package
+Note: build script will globally `yarn link` `sacred-token` package
 
 Note: build script will not recompile snark circuit if compilation result already exists
 
@@ -26,7 +26,7 @@ The result of the build is `actions.json` file, that contains everything that is
 
 ## Reproducible build
 
-In order to generate exactly the same actions.json the code has to be compiled in `/private/tmp/tornado-deploy` dir because solidity compiler includes a hash of full path to files into contact bytecode as swarm hash. If you compile in other dir this swarm hash will be different. It doesn't affect contract execution but your `actions.json` will have a different hash from the initiation version.
+In order to generate exactly the same actions.json the code has to be compiled in `/private/tmp/sacred-deploy` dir because solidity compiler includes a hash of full path to files into contact bytecode as swarm hash. If you compile in other dir this swarm hash will be different. It doesn't affect contract execution but your `actions.json` will have a different hash from the initiation version.
 
 ## Verify addresses
 
