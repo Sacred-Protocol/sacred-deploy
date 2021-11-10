@@ -1,6 +1,7 @@
 [submodule "sacred-anonymity-mining"]
 	path = sacred-anonymity-mining
 	url = git@github.com:Sacred-Finance/sacred-anonymity-mining.git
+	branch = v2
 [submodule "sacred-token"]
 	path = sacred-token
 	url = git@github.com:Sacred-Finance/sacred-token.git
