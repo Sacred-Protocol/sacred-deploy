@@ -1,5 +1,5 @@
 require('dotenv').config()
-const config = require('../torn-token/config')
+const config = require('../sacred-token/config')
 const path = require('path')
 const { getCreate2Address } = require('@ethersproject/address')
 const { keccak256 } = require('@ethersproject/solidity')

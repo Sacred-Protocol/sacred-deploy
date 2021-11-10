@@ -2,14 +2,14 @@ require('dotenv').config()
 const fs = require('fs')
 const ethers = require('ethers')
 const { namehash, formatEther } = ethers.utils
-const config = require('../torn-token/config')
+const config = require('../sacred-token/config')
 const { deploy, getContractData } = require('./utils')
 
 const DEPLOYER = process.env.DEPLOYER
 const SALT = process.env.SALT
 const AIRDROP_CHUNK_SIZE = process.env.AIRDROP_CHUNK_SIZE
 
-const airdrop = getContractData('../torn-token/build/contracts/Airdrop.json')
+const airdrop = getContractData('../sacred-token/build/contracts/Airdrop.json')
 
 const actions = []
 

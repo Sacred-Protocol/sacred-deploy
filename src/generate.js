@@ -2,28 +2,28 @@ require('dotenv').config()
 const fs = require('fs')
 const ethers = require('ethers')
 const { namehash } = ethers.utils
-const config = require('../torn-token/config')
+const config = require('../sacred-token/config')
 const get = require('get-value')
 const { deploy, getContractData, zeroMerkleRoot } = require('./utils')
 
 const { DEPLOYER, SALT } = process.env
 
 const deployer = getContractData('../deployer/build/contracts/Deployer.json')
-const torn = getContractData('../torn-token/build/contracts/TORN.json')
-const vesting = getContractData('../torn-token/build/contracts/Vesting.json')
-const voucher = getContractData('../torn-token/build/contracts/Voucher.json')
-const governance = getContractData('../tornado-governance/build/contracts/Governance.json')
-const governanceProxy = getContractData('../tornado-governance/build/contracts/LoopbackProxy.json')
-const miner = getContractData('../tornado-anonymity-mining/build/contracts/Miner.json')
-const rewardSwap = getContractData('../tornado-anonymity-mining/build/contracts/RewardSwap.json')
-const tornadoTrees = getContractData('../tornado-anonymity-mining/build/contracts/TornadoTrees.json')
-const tornadoProxy = getContractData('../tornado-anonymity-mining/build/contracts/TornadoProxy.json')
-const poseidonHasher2 = getContractData('../tornado-anonymity-mining/build/contracts/Hasher2.json')
-const poseidonHasher3 = getContractData('../tornado-anonymity-mining/build/contracts/Hasher3.json')
-const rewardVerifier = getContractData('../tornado-anonymity-mining/build/contracts/RewardVerifier.json')
-const withdrawVerifier = getContractData('../tornado-anonymity-mining/build/contracts/WithdrawVerifier.json')
+const torn = getContractData('../sacred-token/build/contracts/TORN.json')
+const vesting = getContractData('../sacred-token/build/contracts/Vesting.json')
+const voucher = getContractData('../sacred-token/build/contracts/Voucher.json')
+const governance = getContractData('../sacred-governance/build/contracts/Governance.json')
+const governanceProxy = getContractData('../sacred-governance/build/contracts/LoopbackProxy.json')
+const miner = getContractData('../sacred-anonymity-mining/build/contracts/Miner.json')
+const rewardSwap = getContractData('../sacred-anonymity-mining/build/contracts/RewardSwap.json')
+const tornadoTrees = getContractData('../sacred-anonymity-mining/build/contracts/TornadoTrees.json')
+const tornadoProxy = getContractData('../sacred-anonymity-mining/build/contracts/TornadoProxy.json')
+const poseidonHasher2 = getContractData('../sacred-anonymity-mining/build/contracts/Hasher2.json')
+const poseidonHasher3 = getContractData('../sacred-anonymity-mining/build/contracts/Hasher3.json')
+const rewardVerifier = getContractData('../sacred-anonymity-mining/build/contracts/RewardVerifier.json')
+const withdrawVerifier = getContractData('../sacred-anonymity-mining/build/contracts/WithdrawVerifier.json')
 const treeUpdateVerifier = getContractData(
-  '../tornado-anonymity-mining/build/contracts/TreeUpdateVerifier.json',
+  '../sacred-anonymity-mining/build/contracts/TreeUpdateVerifier.json',
 )
 const airdrop = require('../airdrop.json')
 
