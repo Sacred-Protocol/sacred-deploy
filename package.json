@@ -20,13 +20,17 @@
   "author": "Roman Semenov <semenov.roma@gmail.com>",
   "license": "ISC",
   "dependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.1",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@ethersproject/address": "^5.0.4",
     "@ethersproject/solidity": "^5.0.4",
     "circomlib": "git+https://github.com/tornadocash/circomlib.git#3b492f9801573eebcfe1b6c584afe8a3beecf2b4",
     "dotenv": "^8.2.0",
-    "ethers": "^5.0.14",
     "fixed-merkle-tree": "^0.5.0",
-    "get-value": "^3.0.1"
+    "get-value": "^3.0.1",
+    "ethereum-waffle": "^3.2.2",
+    "ethers": "^5.0.26",
+    "hardhat": "^2.0.8"
   },
   "devDependencies": {
     "babel-eslint": "^10.1.0",

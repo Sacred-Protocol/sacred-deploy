@@ -10,6 +10,27 @@ const { poseidon } = require('circomlib')
 const DEPLOYER = process.env.DEPLOYER
 const SALT = process.env.SALT
 
+let addressTable = {}
+
+function initAddressTable(configData) {
+  let keys = Object.keys(configData)
+  for (var i = 0; i < keys.length; ++i) {
+    let data = configData[keys[i]]
+    if(data instanceof Object) {
+      if(data.address) {
+        addressTable[data.address] = ""
+      }
+      if(data.instance) {
+        addressTable[data.instance] = ""
+      }
+      initAddressTable(data)
+    }
+  }
+ 
+}
+
+initAddressTable(config)
+
 const poseidonHash = (items) => poseidon(items)
 const poseidonHash2 = (a, b) => poseidonHash([a, b])
 const merkleTree = new MerkleTree(20, [], { hashFunction: poseidonHash2 })
@@ -43,26 +64,34 @@ function deploy({
   description = '',
   dependsOn = [config.deployer.address],
 }) {
-  console.log('Generating deploy for', contract.name)
+  console.log('Generating deploy for', contract.contractName)
   let bytecode = contract.bytecode
   if (args) {
     const c = new ethers.ContractFactory(contract.abi, contract.bytecode)
     bytecode = c.getDeployTransaction(...args).data
   }
+  const expAddr = getAddress(bytecode)
+  addressTable[domain] = expAddr
   return {
     domain,
     amount,
-    contract: contract.name + '.sol',
+    contract: contract.contractName + '.sol',
     bytecode,
-    expectedAddress: getAddress(bytecode),
+    expectedAddress: expAddr,
     title,
     description,
     dependsOn,
   }
 }
 
+function ensToAddr(ens) {
+  return addressTable[ens]
+}
+
 module.exports = {
   deploy,
   getContractData,
   zeroMerkleRoot,
+  addressTable,
+  ensToAddr
 }

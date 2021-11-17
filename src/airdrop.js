@@ -9,7 +9,7 @@ const DEPLOYER = process.env.DEPLOYER
 const SALT = process.env.SALT
 const AIRDROP_CHUNK_SIZE = process.env.AIRDROP_CHUNK_SIZE
 
-const airdrop = getContractData('../sacred-token/build/contracts/Airdrop.json')
+const airdrop = getContractData('../sacred-token/artifacts/contracts/Airdrop.sol/Airdrop.json')
 
 const actions = []
 

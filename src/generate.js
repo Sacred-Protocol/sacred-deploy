@@ -4,27 +4,25 @@ const ethers = require('ethers')
 const { namehash } = ethers.utils
 const config = require('../sacred-token/config')
 const get = require('get-value')
-const { deploy, getContractData, zeroMerkleRoot } = require('./utils')
+const { deploy, getContractData, zeroMerkleRoot, ensToAddr } = require('./utils')
 
 const { DEPLOYER, SALT } = process.env
 
-const deployer = getContractData('../deployer/build/contracts/Deployer.json')
-const torn = getContractData('../sacred-token/build/contracts/TORN.json')
-const vesting = getContractData('../sacred-token/build/contracts/Vesting.json')
-const voucher = getContractData('../sacred-token/build/contracts/Voucher.json')
-const governance = getContractData('../sacred-governance/build/contracts/Governance.json')
-const governanceProxy = getContractData('../sacred-governance/build/contracts/LoopbackProxy.json')
-const miner = getContractData('../sacred-anonymity-mining/build/contracts/Miner.json')
-const rewardSwap = getContractData('../sacred-anonymity-mining/build/contracts/RewardSwap.json')
-const tornadoTrees = getContractData('../sacred-anonymity-mining/build/contracts/TornadoTrees.json')
-const tornadoProxy = getContractData('../sacred-anonymity-mining/build/contracts/TornadoProxy.json')
-const poseidonHasher2 = getContractData('../sacred-anonymity-mining/build/contracts/Hasher2.json')
-const poseidonHasher3 = getContractData('../sacred-anonymity-mining/build/contracts/Hasher3.json')
-const rewardVerifier = getContractData('../sacred-anonymity-mining/build/contracts/RewardVerifier.json')
-const withdrawVerifier = getContractData('../sacred-anonymity-mining/build/contracts/WithdrawVerifier.json')
-const treeUpdateVerifier = getContractData(
-  '../sacred-anonymity-mining/build/contracts/TreeUpdateVerifier.json',
-)
+const deployer = getContractData('../deployer/artifacts/contracts/Deployer.sol/Deployer.json')
+const torn = getContractData('../sacred-token/artifacts/contracts/TORN.sol/TORN.json')
+const vesting = getContractData('../sacred-token/artifacts/contracts/Vesting.sol/Vesting.json')
+const voucher = getContractData('../sacred-token/artifacts/contracts/Voucher.sol/Voucher.json')
+const governance = getContractData('../sacred-governance/artifacts/contracts/Governance.sol/Governance.json')
+const governanceProxy = getContractData('../sacred-governance/artifacts/contracts/LoopbackProxy.sol/LoopbackProxy.json')
+const miner = getContractData('../sacred-anonymity-mining/artifacts/contracts/Miner.sol/Miner.json')
+const rewardSwap = getContractData('../sacred-anonymity-mining/artifacts/contracts/RewardSwap.sol/RewardSwap.json')
+const tornadoTrees = getContractData('../sacred-anonymity-mining/artifacts/contracts/sacred-trees/contracts/TornadoTrees.sol/TornadoTrees.json')
+// const tornadoProxy = getContractData('../sacred-anonymity-mining/artifacts/contracts/TornadoProxy.json')
+// const poseidonHasher2 = getContractData('../sacred-anonymity-mining/artifacts/contracts/Hasher2.json')
+// const poseidonHasher3 = getContractData('../sacred-anonymity-mining/artifacts/contracts/Hasher3.json')
+const rewardVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/RewardVerifier.sol/RewardVerifier.json')
+const withdrawVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/WithdrawVerifier.sol/WithdrawVerifier.json')
+const treeUpdateVerifier = getContractData('../sacred-anonymity-mining/build/contracts/verifiers/TreeUpdateVerifier.json')
 const airdrop = require('../airdrop.json')
 
 const actions = []
@@ -41,22 +39,6 @@ actions.push(
   }),
 )
 
-// Deploy TORN
-const distribution = Object.values(config.torn.distribution).map(({ to, amount }) => ({
-  to: namehash(get(config, to).address),
-  amount,
-}))
-console.log(distribution)
-actions.push(
-  deploy({
-    domain: config.torn.address,
-    contract: torn,
-    args: [namehash(config.governance.address), config.torn.pausePeriod, distribution],
-    title: 'TORN token',
-    description: 'Tornado.cash governance token',
-  }),
-)
-
 // Deploy Governance implementation
 actions.push(
   deploy({
@@ -69,18 +51,29 @@ actions.push(
 
 // Deploy Governance proxy
 const governanceContract = new ethers.utils.Interface(governance.abi)
-const initData = governanceContract.encodeFunctionData('initialize', [namehash(config.torn.address)])
+const initData = governanceContract.encodeFunctionData('initialize', [ensToAddr(config.torn.address)])
 actions.push(
   deploy({
     domain: config.governance.address,
     contract: governanceProxy,
-    args: [namehash(config.governanceImpl.address), initData],
+    args: [ensToAddr(config.governanceImpl.address), initData],
     dependsOn: [config.deployer.address, config.governanceImpl.address],
     title: 'Governance Upgradable Proxy',
     description:
       'EIP-1167 Upgradable Proxy for Governance. It can only be upgraded through a proposal by TORN holders',
   }),
 )
+
+actions.push(
+  deploy({
+    domain: config.torn.address,
+    contract: torn,
+    args: [ensToAddr(config.governance.address), config.torn.pausePeriod, distribution],
+    title: 'TORN token',
+    description: 'Tornado.cash governance token',
+  }),
+)
+const tornActionIndex = actions.length - 1
 
 // Deploy Verifiers
 actions.push(
@@ -114,8 +107,8 @@ actions.push(
     domain: config.rewardSwap.address,
     contract: rewardSwap,
     args: [
-      namehash(config.torn.address),
-      namehash(config.miningV2.address),
+      ensToAddr(config.torn.address),
+      ensToAddr(config.miningV2.address),
       config.torn.distribution.miningV2.amount,
       config.miningV2.initialBalance,
       config.rewardSwap.poolWeight,
@@ -125,38 +118,40 @@ actions.push(
   }),
 )
 
-// Deploy PoseidonHasher2
-actions.push(
-  deploy({
-    domain: config.poseidonHasher2.address,
-    contract: poseidonHasher2,
-    title: 'Poseidon hasher 2',
-    description: 'Poseidon hash function for 2 arguments',
-  }),
-)
+const rewardSwapActionIndex = actions.length - 1
 
-// Deploy PoseidonHasher3
-actions.push(
-  deploy({
-    domain: config.poseidonHasher3.address,
-    contract: poseidonHasher3,
-    title: 'Poseidon hasher 3',
-    description: 'Poseidon hash function for 3 arguments',
-  }),
-)
+// // Deploy PoseidonHasher2
+// actions.push(
+//   deploy({
+//     domain: config.poseidonHasher2.address,
+//     contract: poseidonHasher2,
+//     title: 'Poseidon hasher 2',
+//     description: 'Poseidon hash function for 2 arguments',
+//   }),
+// )
 
-// Deploy TornadoProxy
-const instances = config.miningV2.rates.map((rate) => namehash(rate.instance))
-actions.push(
-  deploy({
-    domain: config.tornadoProxy.address,
-    contract: tornadoProxy,
-    args: [namehash(config.tornadoTrees.address), namehash(config.governance.address), instances],
-    title: 'TornadoCash Proxy',
-    description:
-      'Proxy contract for tornado.cash deposits and withdrawals that records block numbers for mining',
-  }),
-)
+// // Deploy PoseidonHasher3
+// actions.push(
+//   deploy({
+//     domain: config.poseidonHasher3.address,
+//     contract: poseidonHasher3,
+//     title: 'Poseidon hasher 3',
+//     description: 'Poseidon hash function for 3 arguments',
+//   }),
+// )
+
+// // Deploy TornadoProxy
+// const instances = config.miningV2.rates.map((rate) => ensToAddr(rate.instance))
+// actions.push(
+//   deploy({
+//     domain: config.tornadoProxy.address,
+//     contract: tornadoProxy,
+//     args: [ensToAddr(config.tornadoTrees.address), ensToAddr(config.governance.address), instances],
+//     title: 'TornadoCash Proxy',
+//     description:
+//       'Proxy contract for tornado.cash deposits and withdrawals that records block numbers for mining',
+//   }),
+// )
 
 // Deploy TornadoTrees
 actions.push(
@@ -164,9 +159,9 @@ actions.push(
     domain: config.tornadoTrees.address,
     contract: tornadoTrees,
     args: [
-      namehash(config.tornadoProxy.address),
-      namehash(config.poseidonHasher2.address),
-      namehash(config.poseidonHasher3.address),
+      ensToAddr(config.tornadoProxy.address),
+      ensToAddr(config.poseidonHasher2.address),
+      ensToAddr(config.poseidonHasher3.address),
       config.tornadoTrees.levels,
     ],
     title: 'TornadoTrees',
@@ -176,7 +171,7 @@ actions.push(
 
 // Deploy Miner
 const rates = config.miningV2.rates.map((rate) => ({
-  instance: namehash(rate.instance),
+  instance: ensToAddr(rate.instance),
   value: rate.value,
 }))
 
@@ -185,13 +180,13 @@ actions.push(
     domain: config.miningV2.address,
     contract: miner,
     args: [
-      namehash(config.rewardSwap.address),
-      namehash(config.governance.address),
-      namehash(config.tornadoTrees.address),
+      ensToAddr(config.rewardSwap.address),
+      ensToAddr(config.governance.address),
+      ensToAddr(config.tornadoTrees.address),
       [
-        namehash(config.rewardVerifier.address),
-        namehash(config.withdrawVerifier.address),
-        namehash(config.treeUpdateVerifier.address),
+        ensToAddr(config.rewardVerifier.address),
+        ensToAddr(config.withdrawVerifier.address),
+        ensToAddr(config.treeUpdateVerifier.address),
       ],
       zeroMerkleRoot,
       rates,
@@ -201,6 +196,13 @@ actions.push(
   }),
 )
 
+// Set args for RewardSwap Initialization
+actions[rewardSwapActionIndex].initArgs = [
+  config.torn.distribution.miningV2.amount,
+  config.miningV2.initialBalance,
+  config.rewardSwap.poolWeight
+]
+
 // Deploy Voucher
 const airdrops = airdrop.actions.map((a) => ({ to: a.expectedAddress, amount: a.amount }))
 actions.push(
@@ -208,8 +210,8 @@ actions.push(
     domain: config.voucher.address,
     contract: voucher,
     args: [
-      namehash(config.torn.address),
-      namehash(config.governance.address),
+      ensToAddr(config.torn.address),
+      ensToAddr(config.governance.address),
       config.voucher.duration * 2592000, // 60 * 60 * 24 * 30
       airdrops,
     ],
@@ -228,12 +230,22 @@ for (const [i, vest] of vestings.entries()) {
     deploy({
       domain: vest.address,
       contract: vesting,
-      args: [namehash(config.torn.address), vest.beneficiary, 0, vest.cliff, vest.duration],
+      args: [ensToAddr(config.torn.address), vest.beneficiary, 0, vest.cliff, vest.duration],
       title: `Vesting ${i + 1} / ${vestings.length}`,
       description: `Vesting contract for ${vest.address}`,
     }),
   )
 }
+
+// Set args for RewardSwap Initialization
+const distribution = Object.values(config.torn.distribution).map(({ to, amount }) => ({
+  to: ensToAddr(get(config, to).address),
+  amount,
+}))
+console.log(distribution)
+actions[tornActionIndex].initArgs = [
+  distribution
+]
 
 // Write output
 const result = {
