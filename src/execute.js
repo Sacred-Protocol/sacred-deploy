@@ -1,5 +1,4 @@
 require('dotenv').config()
-const ethers = require('ethers')
 const actions = require('../actions.json')
 const abi = require('../abi/deployer.abi.json')
 const erc20 = require('../abi/erc20.abi.json')
@@ -15,8 +14,18 @@ const explorer = `https://${prefix[process.env.NET_ID]}etherscan.io`
 
 async function main() {
   const privateKey = process.env.PRIVATE_KEY
-  const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL)
-  const wallet = new ethers.Wallet(privateKey, provider)
+  //const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL)
+  const provider = ethers.provider
+  const testing = ["hardhat", "localhost"].includes(hre.network.name);
+  let wallet
+  if (testing) {
+    const accounts = await ethers.getSigners();
+    wallet = accounts[0];
+  } else {
+    wallet = new ethers.Wallet(privateKey, provider)  
+  }
+
+  
   const deployer = new ethers.Contract(actions.deployer, abi, wallet)
   const deployerProxy = new ethers.Contract(actions.actions[0].expectedAddress, abi, wallet)
 
@@ -28,11 +37,18 @@ async function main() {
     }
     console.log(`Deploying ${action.contract} to ${action.domain} (${action.expectedAddress})`)
     const dep = action === actions.actions[0] ? deployer : deployerProxy
-    const tx = await dep.deploy(action.bytecode, actions.salt, { gasLimit: 7e6, gasPrice: 20000000000 })
+    const tx = await dep.deploy(action.bytecode, actions.salt)
     console.log(`TX hash ${explorer}/tx/${tx.hash}`)
     try {
       await tx.wait()
       console.log(`Deployed ${action.contract} to ${explorer}/address/${action.expectedAddress}\n`)
+      if(action.initArgs) {
+        const deployedContract = new ethers.Contract(action.expectedAddress,
+          abi,
+          wallet,
+        )
+        await deployedContract.initialize(...action.initArgs)
+      }
     } catch (e) {
       console.error(`Failed to deploy ${action.contract}, sending debug tx`)
       const tx = await wallet.sendTransaction({ gasLimit: 8e6, data: action.bytecode })

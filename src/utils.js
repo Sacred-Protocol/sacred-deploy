@@ -6,9 +6,9 @@ const { keccak256 } = require('@ethersproject/solidity')
 const ethers = require('ethers')
 const MerkleTree = require('fixed-merkle-tree')
 const { poseidon } = require('circomlib')
+const tokenConfig = require('../config')
 
-const DEPLOYER = process.env.DEPLOYER
-const SALT = process.env.SALT
+const { DEPLOYER, SALT, NET_ID } = process.env
 
 let addressTable = {}
 
@@ -30,6 +30,10 @@ function initAddressTable(configData) {
 }
 
 initAddressTable(config)
+addressTable['eth-01.tornadocash.eth'] = tokenConfig.deployments["netId" + NET_ID].eth.instanceAddress['0.1']
+addressTable['eth-1.tornadocash.eth'] = tokenConfig.deployments["netId" + NET_ID].eth.instanceAddress['1']
+addressTable['eth-10.tornadocash.eth'] = tokenConfig.deployments["netId" + NET_ID].eth.instanceAddress['10']
+addressTable['eth-100.tornadocash.eth'] = tokenConfig.deployments["netId" + NET_ID].eth.instanceAddress['100']
 
 const poseidonHash = (items) => poseidon(items)
 const poseidonHash2 = (a, b) => poseidonHash([a, b])
@@ -64,7 +68,7 @@ function deploy({
   description = '',
   dependsOn = [config.deployer.address],
 }) {
-  console.log('Generating deploy for', contract.contractName)
+  console.log('Generating deploy for', contract.name)
   let bytecode = contract.bytecode
   if (args) {
     const c = new ethers.ContractFactory(contract.abi, contract.bytecode)
@@ -75,7 +79,7 @@ function deploy({
   return {
     domain,
     amount,
-    contract: contract.contractName + '.sol',
+    contract: contract.name + '.sol',
     bytecode,
     expectedAddress: expAddr,
     title,

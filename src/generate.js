@@ -1,13 +1,14 @@
 require('dotenv').config()
 const fs = require('fs')
 const ethers = require('ethers')
-const { namehash } = ethers.utils
+const { formatEther } = ethers.utils
 const config = require('../sacred-token/config')
 const get = require('get-value')
 const { deploy, getContractData, zeroMerkleRoot, ensToAddr } = require('./utils')
 
-const { DEPLOYER, SALT } = process.env
+const { DEPLOYER, SALT, AIRDROP_CHUNK_SIZE } = process.env
 
+const airdrop = getContractData('../sacred-token/artifacts/contracts/Airdrop.sol/Airdrop.json')
 const deployer = getContractData('../deployer/artifacts/contracts/Deployer.sol/Deployer.json')
 const torn = getContractData('../sacred-token/artifacts/contracts/TORN.sol/TORN.json')
 const vesting = getContractData('../sacred-token/artifacts/contracts/Vesting.sol/Vesting.json')
@@ -16,14 +17,13 @@ const governance = getContractData('../sacred-governance/artifacts/contracts/Gov
 const governanceProxy = getContractData('../sacred-governance/artifacts/contracts/LoopbackProxy.sol/LoopbackProxy.json')
 const miner = getContractData('../sacred-anonymity-mining/artifacts/contracts/Miner.sol/Miner.json')
 const rewardSwap = getContractData('../sacred-anonymity-mining/artifacts/contracts/RewardSwap.sol/RewardSwap.json')
-const tornadoTrees = getContractData('../sacred-anonymity-mining/artifacts/contracts/sacred-trees/contracts/TornadoTrees.sol/TornadoTrees.json')
+const tornadoTrees = getContractData('../sacred-anonymity-mining/artifacts/sacred-trees/contracts/TornadoTrees.sol/TornadoTrees.json')
 // const tornadoProxy = getContractData('../sacred-anonymity-mining/artifacts/contracts/TornadoProxy.json')
 // const poseidonHasher2 = getContractData('../sacred-anonymity-mining/artifacts/contracts/Hasher2.json')
 // const poseidonHasher3 = getContractData('../sacred-anonymity-mining/artifacts/contracts/Hasher3.json')
 const rewardVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/RewardVerifier.sol/RewardVerifier.json')
 const withdrawVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/WithdrawVerifier.sol/WithdrawVerifier.json')
-const treeUpdateVerifier = getContractData('../sacred-anonymity-mining/build/contracts/verifiers/TreeUpdateVerifier.json')
-const airdrop = require('../airdrop.json')
+const treeUpdateVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/TreeUpdateVerifier.sol/TreeUpdateVerifier.json')
 
 const actions = []
 
@@ -42,12 +42,24 @@ actions.push(
 // Deploy Governance implementation
 actions.push(
   deploy({
-    domain: config.governanceImpl.address,
+    domain: config.governance.address,
     contract: governance,
     title: 'Governance implementation',
     description: 'Initial implementation of upgradable governance contract',
   }),
 )
+
+// Deploy TORN
+actions.push(
+  deploy({
+    domain: config.torn.address,
+    contract: torn,
+    args: [ensToAddr(config.governance.address), config.torn.pausePeriod],
+    title: 'TORN token',
+    description: 'Tornado.cash governance token',
+  }),
+)
+const tornActionIndex = actions.length - 1
 
 // Deploy Governance proxy
 const governanceContract = new ethers.utils.Interface(governance.abi)
@@ -56,24 +68,13 @@ actions.push(
   deploy({
     domain: config.governance.address,
     contract: governanceProxy,
-    args: [ensToAddr(config.governanceImpl.address), initData],
-    dependsOn: [config.deployer.address, config.governanceImpl.address],
+    args: [ensToAddr(config.governance.address), initData],
+    dependsOn: [config.deployer.address, config.governance.address],
     title: 'Governance Upgradable Proxy',
     description:
       'EIP-1167 Upgradable Proxy for Governance. It can only be upgraded through a proposal by TORN holders',
   }),
 )
-
-actions.push(
-  deploy({
-    domain: config.torn.address,
-    contract: torn,
-    args: [ensToAddr(config.governance.address), config.torn.pausePeriod, distribution],
-    title: 'TORN token',
-    description: 'Tornado.cash governance token',
-  }),
-)
-const tornActionIndex = actions.length - 1
 
 // Deploy Verifiers
 actions.push(
@@ -108,10 +109,9 @@ actions.push(
     contract: rewardSwap,
     args: [
       ensToAddr(config.torn.address),
-      ensToAddr(config.miningV2.address),
       config.torn.distribution.miningV2.amount,
       config.miningV2.initialBalance,
-      config.rewardSwap.poolWeight,
+      config.rewardSwap.poolWeight
     ],
     title: 'Reward Swap',
     description: 'AMM that allows to swap Anonymity Points to TORN',
@@ -159,10 +159,7 @@ actions.push(
     domain: config.tornadoTrees.address,
     contract: tornadoTrees,
     args: [
-      ensToAddr(config.tornadoProxy.address),
-      ensToAddr(config.poseidonHasher2.address),
-      ensToAddr(config.poseidonHasher3.address),
-      config.tornadoTrees.levels,
+      ensToAddr(config.governance.address)
     ],
     title: 'TornadoTrees',
     description: 'Merkle tree with information about tornado cash deposits and withdrawals',
@@ -198,13 +195,10 @@ actions.push(
 
 // Set args for RewardSwap Initialization
 actions[rewardSwapActionIndex].initArgs = [
-  config.torn.distribution.miningV2.amount,
-  config.miningV2.initialBalance,
-  config.rewardSwap.poolWeight
+  ensToAddr(config.miningV2.address)
 ]
 
 // Deploy Voucher
-const airdrops = airdrop.actions.map((a) => ({ to: a.expectedAddress, amount: a.amount }))
 actions.push(
   deploy({
     domain: config.voucher.address,
@@ -213,12 +207,12 @@ actions.push(
       ensToAddr(config.torn.address),
       ensToAddr(config.governance.address),
       config.voucher.duration * 2592000, // 60 * 60 * 24 * 30
-      airdrops,
     ],
     title: 'Voucher',
     description: 'TornadoCash voucher contract for early adopters',
   }),
 )
+const voucherActionIndex = actions.length - 1
 
 // Deploy Vestings
 config.vesting.governance.beneficiary = actions.find(
@@ -247,11 +241,55 @@ actions[tornActionIndex].initArgs = [
   distribution
 ]
 
+// Starting AirDrop
+const airdropActions = []
+const list = fs
+  .readFileSync('./airdrop/airdrop.csv')
+  .toString()
+  .split('\n')
+  .map((a) => a.split(','))
+  .filter((a) => a.length === 2)
+  .map((a) => ({ to: a[0], amount: ethers.BigNumber.from(a[1]) }))
+
+const total = list.reduce((acc, a) => acc.add(a.amount), ethers.BigNumber.from(0))
+const expectedAirdrop = ethers.BigNumber.from(config.torn.distribution.airdrop.amount)
+if (total.gt(expectedAirdrop)) {
+  console.log(
+    `Total airdrop amount ${formatEther(total)} is greater than expected ${formatEther(expectedAirdrop)}`,
+  )
+  process.exit(1)
+}
+console.log('Airdrop amount:', formatEther(total))
+console.log('Airdrop expected:', formatEther(expectedAirdrop))
+
+let i = 0
+while (list.length) {
+  i++
+  const chunk = list.splice(0, AIRDROP_CHUNK_SIZE)
+  const total = chunk.reduce((acc, a) => acc.add(a.amount), ethers.BigNumber.from(0))
+  airdropActions.push(
+    deploy({
+      amount: total.toString(),
+      contract: airdrop,
+      args: [ensToAddr(config.voucher.address), chunk],
+      dependsOn: [config.deployer.address, config.voucher.address],
+      title: `Airdrop Voucher ${i}`,
+      description: 'Early adopters voucher coupons',
+    }),
+  )
+}
+
+// Set args for Voucher Initialization
+const airdrops = airdropActions.map((a) => ({ to: a.expectedAddress, amount: a.amount }))
+actions[voucherActionIndex].initArgs = [
+  airdrops
+]
+
 // Write output
 const result = {
   deployer: DEPLOYER,
   salt: SALT,
-  actions: actions.concat(airdrop.actions),
+  actions: actions.concat(airdropActions),
 }
 fs.writeFileSync('actions.json', JSON.stringify(result, null, '  '))
 console.log('Created actions.json')
