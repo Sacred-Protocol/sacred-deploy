@@ -10,15 +10,15 @@ const { DEPLOYER, SALT, AIRDROP_CHUNK_SIZE } = process.env
 
 const airdrop = getContractData('../sacred-token/artifacts/contracts/Airdrop.sol/Airdrop.json')
 const deployer = getContractData('../deployer/artifacts/contracts/Deployer.sol/Deployer.json')
-const torn = getContractData('../sacred-token/artifacts/contracts/TORN.sol/TORN.json')
+const sacred = getContractData('../sacred-token/artifacts/contracts/SACRED.sol/SACRED.json')
 const vesting = getContractData('../sacred-token/artifacts/contracts/Vesting.sol/Vesting.json')
 const voucher = getContractData('../sacred-token/artifacts/contracts/Voucher.sol/Voucher.json')
 const governance = getContractData('../sacred-governance/artifacts/contracts/Governance.sol/Governance.json')
 const governanceProxy = getContractData('../sacred-governance/artifacts/contracts/LoopbackProxy.sol/LoopbackProxy.json')
 const miner = getContractData('../sacred-anonymity-mining/artifacts/contracts/Miner.sol/Miner.json')
 const rewardSwap = getContractData('../sacred-anonymity-mining/artifacts/contracts/RewardSwap.sol/RewardSwap.json')
-const tornadoTrees = getContractData('../sacred-anonymity-mining/artifacts/sacred-trees/contracts/TornadoTrees.sol/TornadoTrees.json')
-// const tornadoProxy = getContractData('../sacred-anonymity-mining/artifacts/contracts/TornadoProxy.json')
+const sacredTrees = getContractData('../sacred-anonymity-mining/artifacts/sacred-trees/contracts/SacredTrees.sol/SacredTrees.json')
+// const sacredProxy = getContractData('../sacred-anonymity-mining/artifacts/contracts/SacredProxy.json')
 // const poseidonHasher2 = getContractData('../sacred-anonymity-mining/artifacts/contracts/Hasher2.json')
 // const poseidonHasher3 = getContractData('../sacred-anonymity-mining/artifacts/contracts/Hasher3.json')
 const rewardVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/RewardVerifier.sol/RewardVerifier.json')
@@ -49,21 +49,21 @@ actions.push(
   }),
 )
 
-// Deploy TORN
+// Deploy SACRED
 actions.push(
   deploy({
-    domain: config.torn.address,
-    contract: torn,
-    args: [ensToAddr(config.governance.address), config.torn.pausePeriod],
-    title: 'TORN token',
-    description: 'Tornado.cash governance token',
+    domain: config.sacred.address,
+    contract: sacred,
+    args: [ensToAddr(config.governance.address), config.sacred.pausePeriod],
+    title: 'SACRED token',
+    description: 'Sacred.cash governance token',
   }),
 )
-const tornActionIndex = actions.length - 1
+const sacredActionIndex = actions.length - 1
 
 // Deploy Governance proxy
 const governanceContract = new ethers.utils.Interface(governance.abi)
-const initData = governanceContract.encodeFunctionData('initialize', [ensToAddr(config.torn.address)])
+const initData = governanceContract.encodeFunctionData('initialize', [ensToAddr(config.sacred.address)])
 actions.push(
   deploy({
     domain: config.governance.address,
@@ -72,7 +72,7 @@ actions.push(
     dependsOn: [config.deployer.address, config.governance.address],
     title: 'Governance Upgradable Proxy',
     description:
-      'EIP-1167 Upgradable Proxy for Governance. It can only be upgraded through a proposal by TORN holders',
+      'EIP-1167 Upgradable Proxy for Governance. It can only be upgraded through a proposal by SACRED holders',
   }),
 )
 
@@ -108,13 +108,13 @@ actions.push(
     domain: config.rewardSwap.address,
     contract: rewardSwap,
     args: [
-      ensToAddr(config.torn.address),
-      config.torn.distribution.miningV2.amount,
+      ensToAddr(config.sacred.address),
+      config.sacred.distribution.miningV2.amount,
       config.miningV2.initialBalance,
       config.rewardSwap.poolWeight
     ],
     title: 'Reward Swap',
-    description: 'AMM that allows to swap Anonymity Points to TORN',
+    description: 'AMM that allows to swap Anonymity Points to SACRED',
   }),
 )
 
@@ -140,29 +140,29 @@ const rewardSwapActionIndex = actions.length - 1
 //   }),
 // )
 
-// // Deploy TornadoProxy
+// // Deploy SacredProxy
 // const instances = config.miningV2.rates.map((rate) => ensToAddr(rate.instance))
 // actions.push(
 //   deploy({
-//     domain: config.tornadoProxy.address,
-//     contract: tornadoProxy,
-//     args: [ensToAddr(config.tornadoTrees.address), ensToAddr(config.governance.address), instances],
-//     title: 'TornadoCash Proxy',
+//     domain: config.sacredProxy.address,
+//     contract: sacredProxy,
+//     args: [ensToAddr(config.sacredTrees.address), ensToAddr(config.governance.address), instances],
+//     title: 'SacredCash Proxy',
 //     description:
-//       'Proxy contract for tornado.cash deposits and withdrawals that records block numbers for mining',
+//       'Proxy contract for sacred.cash deposits and withdrawals that records block numbers for mining',
 //   }),
 // )
 
-// Deploy TornadoTrees
+// Deploy SacredTrees
 actions.push(
   deploy({
-    domain: config.tornadoTrees.address,
-    contract: tornadoTrees,
+    domain: config.sacredTrees.address,
+    contract: sacredTrees,
     args: [
       ensToAddr(config.governance.address)
     ],
-    title: 'TornadoTrees',
-    description: 'Merkle tree with information about tornado cash deposits and withdrawals',
+    title: 'SacredTrees',
+    description: 'Merkle tree with information about sacred cash deposits and withdrawals',
   }),
 )
 
@@ -179,7 +179,7 @@ actions.push(
     args: [
       ensToAddr(config.rewardSwap.address),
       ensToAddr(config.governance.address),
-      ensToAddr(config.tornadoTrees.address),
+      ensToAddr(config.sacredTrees.address),
       [
         ensToAddr(config.rewardVerifier.address),
         ensToAddr(config.withdrawVerifier.address),
@@ -204,19 +204,19 @@ actions.push(
     domain: config.voucher.address,
     contract: voucher,
     args: [
-      ensToAddr(config.torn.address),
+      ensToAddr(config.sacred.address),
       ensToAddr(config.governance.address),
       config.voucher.duration * 2592000, // 60 * 60 * 24 * 30
     ],
     title: 'Voucher',
-    description: 'TornadoCash voucher contract for early adopters',
+    description: 'SacredCash voucher contract for early adopters',
   }),
 )
 const voucherActionIndex = actions.length - 1
 
 // Deploy Vestings
 config.vesting.governance.beneficiary = actions.find(
-  (a) => a.domain === 'governance.contract.tornadocash.eth',
+  (a) => a.domain === 'governance.contract.sacredcash.eth',
 ).expectedAddress
 const vestings = Object.values(config.vesting)
 for (const [i, vest] of vestings.entries()) {
@@ -224,7 +224,7 @@ for (const [i, vest] of vestings.entries()) {
     deploy({
       domain: vest.address,
       contract: vesting,
-      args: [ensToAddr(config.torn.address), vest.beneficiary, 0, vest.cliff, vest.duration],
+      args: [ensToAddr(config.sacred.address), vest.beneficiary, 0, vest.cliff, vest.duration],
       title: `Vesting ${i + 1} / ${vestings.length}`,
       description: `Vesting contract for ${vest.address}`,
     }),
@@ -232,12 +232,12 @@ for (const [i, vest] of vestings.entries()) {
 }
 
 // Set args for RewardSwap Initialization
-const distribution = Object.values(config.torn.distribution).map(({ to, amount }) => ({
+const distribution = Object.values(config.sacred.distribution).map(({ to, amount }) => ({
   to: ensToAddr(get(config, to).address),
   amount,
 }))
 console.log(distribution)
-actions[tornActionIndex].initArgs = [
+actions[sacredActionIndex].initArgs = [
   distribution
 ]
 
@@ -252,7 +252,7 @@ const list = fs
   .map((a) => ({ to: a[0], amount: ethers.BigNumber.from(a[1]) }))
 
 const total = list.reduce((acc, a) => acc.add(a.amount), ethers.BigNumber.from(0))
-const expectedAirdrop = ethers.BigNumber.from(config.torn.distribution.airdrop.amount)
+const expectedAirdrop = ethers.BigNumber.from(config.sacred.distribution.airdrop.amount)
 if (total.gt(expectedAirdrop)) {
   console.log(
     `Total airdrop amount ${formatEther(total)} is greater than expected ${formatEther(expectedAirdrop)}`,

@@ -30,10 +30,10 @@ function initAddressTable(configData) {
 }
 
 initAddressTable(config)
-addressTable['eth-01.tornadocash.eth'] = tokenConfig.deployments["netId" + NET_ID].eth.instanceAddress['0.1']
-addressTable['eth-1.tornadocash.eth'] = tokenConfig.deployments["netId" + NET_ID].eth.instanceAddress['1']
-addressTable['eth-10.tornadocash.eth'] = tokenConfig.deployments["netId" + NET_ID].eth.instanceAddress['10']
-addressTable['eth-100.tornadocash.eth'] = tokenConfig.deployments["netId" + NET_ID].eth.instanceAddress['100']
+addressTable['eth-01.sacredcash.eth'] = tokenConfig.deployments["netId" + NET_ID].eth.instanceAddress['0.1']
+addressTable['eth-1.sacredcash.eth'] = tokenConfig.deployments["netId" + NET_ID].eth.instanceAddress['1']
+addressTable['eth-10.sacredcash.eth'] = tokenConfig.deployments["netId" + NET_ID].eth.instanceAddress['10']
+addressTable['eth-100.sacredcash.eth'] = tokenConfig.deployments["netId" + NET_ID].eth.instanceAddress['100']
 
 const poseidonHash = (items) => poseidon(items)
 const poseidonHash2 = (a, b) => poseidonHash([a, b])

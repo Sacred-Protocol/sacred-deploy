@@ -22,7 +22,7 @@ const list = fs
   .map((a) => ({ to: a[0], amount: ethers.BigNumber.from(a[1]) }))
 
 const total = list.reduce((acc, a) => acc.add(a.amount), ethers.BigNumber.from(0))
-const expectedAirdrop = ethers.BigNumber.from(config.torn.distribution.airdrop.amount)
+const expectedAirdrop = ethers.BigNumber.from(config.sacred.distribution.airdrop.amount)
 if (total.gt(expectedAirdrop)) {
   console.log(
     `Total airdrop amount ${formatEther(total)} is greater than expected ${formatEther(expectedAirdrop)}`,

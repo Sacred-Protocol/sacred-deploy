@@ -24,7 +24,7 @@
             "type": "uint256"
           }
         ],
-        "internalType": "struct TORN.Recipient[]",
+        "internalType": "struct SACRED.Recipient[]",
         "name": "_vestings",
         "type": "tuple[]"
       }
