@@ -25,7 +25,6 @@ async function main() {
     wallet = new ethers.Wallet(privateKey, provider)  
   }
 
-  
   const deployer = new ethers.Contract(actions.deployer, abi, wallet)
   const deployerProxy = new ethers.Contract(actions.actions[0].expectedAddress, abi, wallet)
 
@@ -43,11 +42,9 @@ async function main() {
       await tx.wait()
       console.log(`Deployed ${action.contract} to ${explorer}/address/${action.expectedAddress}\n`)
       if(action.initArgs) {
-        const deployedContract = new ethers.Contract(action.expectedAddress,
-          abi,
-          wallet,
-        )
-        await deployedContract.initialize(...action.initArgs)
+        const deployedContract = new ethers.Contract(action.expectedAddress, action.abi, wallet)
+        const tx = await (await deployedContract.initialize(...action.initArgs)).wait()
+        console.log(`Initialized ${action.contract}\n`)
       }
     } catch (e) {
       console.error(`Failed to deploy ${action.contract}, sending debug tx`)
@@ -60,11 +57,8 @@ async function main() {
     }
   }
 
-  const voucher = new ethers.Contract(
-    actions.actions.find((a) => a.contract === 'Voucher.sol').expectedAddress,
-    erc20,
-    wallet,
-  )
+  const voucherAction = actions.actions.find((a) => a.contract === 'Voucher.sol')
+  const voucher = new ethers.Contract( voucherAction.expectedAddress, voucherAction.abi, provider)
   for (const action of actions.actions.filter((a) => a.contract === 'Airdrop.sol')) {
     let bal = await voucher.balanceOf(action.expectedAddress)
     if (bal.eq(0)) {

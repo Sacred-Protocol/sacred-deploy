@@ -81,6 +81,7 @@ function deploy({
     amount,
     contract: contract.name + '.sol',
     bytecode,
+    abi: contract.abi,
     expectedAddress: expAddr,
     title,
     description,
