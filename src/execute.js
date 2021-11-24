@@ -57,23 +57,6 @@ async function main() {
     }
   }
 
-  const voucherAction = actions.actions.find((a) => a.contract === 'Voucher.sol')
-  const voucher = new ethers.Contract( voucherAction.expectedAddress, voucherAction.abi, provider)
-  for (const action of actions.actions.filter((a) => a.contract === 'Airdrop.sol')) {
-    let bal = await voucher.balanceOf(action.expectedAddress)
-    if (bal.eq(0)) {
-      console.log('This airdrop was already processed, skipping')
-      continue
-    }
-    console.log(`Airdropping ${formatEther(action.amount)} vouchers`)
-    const tx = await deployerProxy.deploy(action.bytecode, actions.salt, {
-      gasLimit: 7e6,
-      gasPrice: 20000000000,
-    })
-    console.log(`TX hash ${explorer}/tx/${tx.hash}`)
-    await tx.wait()
-    console.log('Airdropped successfully')
-  }
 }
 
 main()

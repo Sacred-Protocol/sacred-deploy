@@ -5,14 +5,13 @@ const { formatEther } = ethers.utils
 const config = require('../sacred-token/config')
 const get = require('get-value')
 const { deploy, getContractData, zeroMerkleRoot, ensToAddr } = require('./utils')
+const { toFixedHex } = require('../sacred-pool/src/utils')
 
-const { DEPLOYER, SALT, AIRDROP_CHUNK_SIZE } = process.env
+const { DEPLOYER, SALT } = process.env
 
-const airdrop = getContractData('../sacred-token/artifacts/contracts/Airdrop.sol/Airdrop.json')
 const deployer = getContractData('../deployer/artifacts/contracts/Deployer.sol/Deployer.json')
 const sacred = getContractData('../sacred-token/artifacts/contracts/SACRED.sol/SACRED.json')
 const vesting = getContractData('../sacred-token/artifacts/contracts/Vesting.sol/Vesting.json')
-const voucher = getContractData('../sacred-token/artifacts/contracts/Voucher.sol/Voucher.json')
 const governance = getContractData('../sacred-governance/artifacts/contracts/Governance.sol/Governance.json')
 const governanceProxy = getContractData('../sacred-governance/artifacts/contracts/LoopbackProxy.sol/LoopbackProxy.json')
 const miner = getContractData('../sacred-anonymity-mining/artifacts/contracts/Miner.sol/Miner.json')
@@ -24,6 +23,18 @@ const sacredTrees = getContractData('../sacred-anonymity-mining/artifacts/sacred
 const rewardVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/RewardVerifier.sol/RewardVerifier.json')
 const withdrawVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/WithdrawVerifier.sol/WithdrawVerifier.json')
 const treeUpdateVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/TreeUpdateVerifier.sol/TreeUpdateVerifier.json')
+const verifier2 = getContractData('../sacred-pool/artifacts/contracts/Verifier2.sol/Verifier2.json')
+const verifier16 = getContractData('../sacred-pool/artifacts/contracts/Verifier16.sol/Verifier16.json')
+const sacredPool = getContractData('../sacred-pool/artifacts/contracts/SacredPool.sol/SacredPool.json')
+const upgradeableProxy = getContractData(
+  '../sacred-pool/artifacts/contracts/CrossChainUpgradeableProxy.sol/CrossChainUpgradeableProxy.json',
+)
+
+const MERKLE_TREE_HEIGHT = 23
+const MerkleTree = require('fixed-merkle-tree')
+const { poseidon } = require('circomlib')
+const poseidonHash = (items) => ethers.BigNumber.from(poseidon(items).toString())
+const poseidonHash2 = (a, b) => poseidonHash([a, b])
 
 const actions = []
 
@@ -198,22 +209,6 @@ actions[rewardSwapActionIndex].initArgs = [
   ensToAddr(config.miningV2.address)
 ]
 
-// Deploy Voucher
-actions.push(
-  deploy({
-    domain: config.voucher.address,
-    contract: voucher,
-    args: [
-      ensToAddr(config.sacred.address),
-      ensToAddr(config.governance.address),
-      config.voucher.duration * 2592000, // 60 * 60 * 24 * 30
-    ],
-    title: 'Voucher',
-    description: 'SacredCash voucher contract for early adopters',
-  }),
-)
-const voucherActionIndex = actions.length - 1
-
 // Deploy Vestings
 config.vesting.governance.beneficiary = actions.find(
   (a) => a.domain === 'governance.contract.sacredcash.eth',
@@ -241,55 +236,71 @@ actions[sacredActionIndex].initArgs = [
   distribution
 ]
 
-// Starting AirDrop
-const airdropActions = []
-const list = fs
-  .readFileSync('./airdrop/airdrop.csv')
-  .toString()
-  .split('\n')
-  .map((a) => a.split(','))
-  .filter((a) => a.length === 2)
-  .map((a) => ({ to: a[0], amount: ethers.BigNumber.from(a[1]) }))
+// sacred-pool
+actions.push(
+  deploy({
+    domain: 'verifier2.contract.sacredcash.eth',
+    contract: verifier2,
+    title: 'Verifier2',
+    description: 'zkSNARK verifier contract for 2 input operations'
+  }),
+)
 
-const total = list.reduce((acc, a) => acc.add(a.amount), ethers.BigNumber.from(0))
-const expectedAirdrop = ethers.BigNumber.from(config.sacred.distribution.airdrop.amount)
-if (total.gt(expectedAirdrop)) {
-  console.log(
-    `Total airdrop amount ${formatEther(total)} is greater than expected ${formatEther(expectedAirdrop)}`,
-  )
-  process.exit(1)
-}
-console.log('Airdrop amount:', formatEther(total))
-console.log('Airdrop expected:', formatEther(expectedAirdrop))
+actions.push(
+  deploy({
+    domain: 'verifier16.contract.sacredcash.eth',
+    contract: verifier16,
+    title: 'Verifier16',
+    description: 'zkSNARK verifier contract for 16 input operations'
+  }),
+)
 
-let i = 0
-while (list.length) {
-  i++
-  const chunk = list.splice(0, AIRDROP_CHUNK_SIZE)
-  const total = chunk.reduce((acc, a) => acc.add(a.amount), ethers.BigNumber.from(0))
-  airdropActions.push(
-    deploy({
-      amount: total.toString(),
-      contract: airdrop,
-      args: [ensToAddr(config.voucher.address), chunk],
-      dependsOn: [config.deployer.address, config.voucher.address],
-      title: `Airdrop Voucher ${i}`,
-      description: 'Early adopters voucher coupons',
-    }),
-  )
-}
-
-// Set args for Voucher Initialization
-const airdrops = airdropActions.map((a) => ({ to: a.expectedAddress, amount: a.amount }))
-actions[voucherActionIndex].initArgs = [
-  airdrops
+const tree = new MerkleTree(MERKLE_TREE_HEIGHT, [], { hashFunction: poseidonHash2 })
+const root = tree.root()
+actions.push(
+  deploy({
+    domain: 'sacredPool.contract.sacredcash.eth',
+    contract: sacredPool,
+    title: 'Sacred Pool implementation',
+    description: 'Sacred Pool proxy implementation',
+    dependsOn: [
+      'verifier2.contract.sacredcash.eth',
+      'verifier16.contract.sacredcash.eth',
+    ],
+    args: [
+      ensToAddr('verifier2.contract.sacredcash.eth'),
+      ensToAddr('verifier16.contract.sacredcash.eth')
+    ],
+  }),
+)
+const poolActionIndex = actions.length - 1
+actions[poolActionIndex].initArgs = [
+  toFixedHex(root)
 ]
+
+// Deploy Proxy
+const crossDomainMessenger = '0x4200000000000000000000000000000000000007'
+actions.push(
+  deploy({
+    domain: 'proxy.contract.sacredcash.eth',
+    contract: upgradeableProxy,
+    title: 'Cross-chain Upgradeable Proxy',
+    description: 'Upgradability proxy contract for Sacred Pool owned by SacredCash governance',
+    dependsOn: ['deployerL2.contract.sacredcash.eth', 'sacredPool.contract.sacredcash.eth'],
+    args: [
+      ensToAddr('sacredPool.contract.sacredcash.eth'),
+      ensToAddr(config.governance.address),
+      [],
+      crossDomainMessenger,
+    ],
+  }),
+)
 
 // Write output
 const result = {
   deployer: DEPLOYER,
   salt: SALT,
-  actions: actions.concat(airdropActions),
+  actions
 }
 fs.writeFileSync('actions.json', JSON.stringify(result, null, '  '))
 console.log('Created actions.json')

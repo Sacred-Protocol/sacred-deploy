@@ -27,3 +27,9 @@ if [[ ! -f "build/circuits/TreeUpdateVerifier.sol" ]]; then
 fi
 yarn compile
 cd ..
+
+cd sacred-pool 
+yarn
+yarn download
+yarn build
+cd ..
