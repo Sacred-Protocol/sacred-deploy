@@ -8,3 +8,6 @@
 [submodule "sacred-governance"]
 	path = sacred-governance
 	url = git@github.com:Sacred-Finance/sacred-governance.git
+[submodule "sacred-pool"]
+	path = sacred-pool
+	url = https://github.com/Sacred-Finance/sacred-pool.git
