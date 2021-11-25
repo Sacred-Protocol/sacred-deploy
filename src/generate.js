@@ -53,7 +53,7 @@ actions.push(
 // Deploy Governance implementation
 actions.push(
   deploy({
-    domain: config.governance.address,
+    domain: config.governanceImpl.address,
     contract: governance,
     title: 'Governance implementation',
     description: 'Initial implementation of upgradable governance contract',
@@ -65,7 +65,7 @@ actions.push(
   deploy({
     domain: config.sacred.address,
     contract: sacred,
-    args: [ensToAddr(config.governance.address), config.sacred.pausePeriod],
+    args: [config.sacred.pausePeriod],
     title: 'SACRED token',
     description: 'Sacred.cash governance token',
   }),
@@ -79,8 +79,8 @@ actions.push(
   deploy({
     domain: config.governance.address,
     contract: governanceProxy,
-    args: [ensToAddr(config.governance.address), initData],
-    dependsOn: [config.deployer.address, config.governance.address],
+    args: [ensToAddr(config.governanceImpl.address), initData],
+    dependsOn: [config.deployer.address, config.governanceImpl.address],
     title: 'Governance Upgradable Proxy',
     description:
       'EIP-1167 Upgradable Proxy for Governance. It can only be upgraded through a proposal by SACRED holders',
@@ -233,6 +233,7 @@ const distribution = Object.values(config.sacred.distribution).map(({ to, amount
 }))
 console.log(distribution)
 actions[sacredActionIndex].initArgs = [
+  ensToAddr(config.governance.address), 
   distribution
 ]
 
