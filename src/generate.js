@@ -16,8 +16,9 @@ const governance = getContractData('../sacred-governance/artifacts/contracts/Gov
 const governanceProxy = getContractData('../sacred-governance/artifacts/contracts/LoopbackProxy.sol/LoopbackProxy.json')
 const miner = getContractData('../sacred-anonymity-mining/artifacts/contracts/Miner.sol/Miner.json')
 const rewardSwap = getContractData('../sacred-anonymity-mining/artifacts/contracts/RewardSwap.sol/RewardSwap.json')
-const sacredTrees = getContractData('../sacred-anonymity-mining/artifacts/sacred-trees/contracts/SacredTrees.sol/SacredTrees.json')
-// const sacredProxy = getContractData('../sacred-anonymity-mining/artifacts/contracts/SacredProxy.json')
+const sacredTrees = getContractData('../sacred-trees/artifacts/contracts/SacredTrees.sol/SacredTrees.json')
+const batchTreeUpdateVerifier = getContractData('../sacred-trees/artifacts/contracts/verifiers/BatchTreeUpdateVerifier.sol/BatchTreeUpdateVerifier.json')
+const sacredProxy = getContractData('../sacred-anonymity-mining/artifacts/contracts/SacredProxy.sol/SacredProxy.json')
 // const poseidonHasher2 = getContractData('../sacred-anonymity-mining/artifacts/contracts/Hasher2.json')
 // const poseidonHasher3 = getContractData('../sacred-anonymity-mining/artifacts/contracts/Hasher3.json')
 const rewardVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/RewardVerifier.sol/RewardVerifier.json')
@@ -151,18 +152,16 @@ const rewardSwapActionIndex = actions.length - 1
 //   }),
 // )
 
-// // Deploy SacredProxy
-// const instances = config.miningV2.rates.map((rate) => ensToAddr(rate.instance))
-// actions.push(
-//   deploy({
-//     domain: config.sacredProxy.address,
-//     contract: sacredProxy,
-//     args: [ensToAddr(config.sacredTrees.address), ensToAddr(config.governance.address), instances],
-//     title: 'SacredCash Proxy',
-//     description:
-//       'Proxy contract for sacred.cash deposits and withdrawals that records block numbers for mining',
-//   }),
-// )
+// Deploy BatchTreeUpdateVerifier
+actions.push(
+  deploy({
+    domain: "batchTreeUpdateVerifier.contract.sacredcash.eth",
+    contract: batchTreeUpdateVerifier,
+    args: [],
+    title: 'BatchTreeUpdateVerifier',
+    description: 'BatchTreeUpdateVerifier',
+  }),
+)
 
 // Deploy SacredTrees
 actions.push(
@@ -176,6 +175,36 @@ actions.push(
     description: 'Merkle tree with information about sacred cash deposits and withdrawals',
   }),
 )
+
+// Deploy SacredProxy
+//const instances = config.miningV2.rates.map((rate) => ensToAddr(rate.instance))
+//TornadoTreeV2 was deployed through proposalContract
+//https://etherscan.io/address/0x722122df12d4e14e13ac3b6895a86e84145b6967#code
+const instances = config.miningV2.rates.map((rate) => ({
+  addr: ensToAddr(rate.instance),
+  instance: {
+    isERC20: false,
+    token: ethers.constants.AddressZero,
+    state: 2 //"MINEABLE"
+  },
+}))
+
+actions.push(
+  deploy({
+    domain: config.sacredProxy.address,
+    contract: sacredProxy,
+    args: [ensToAddr(config.sacredTrees.address), ensToAddr(config.governance.address), instances],
+    title: 'SacredCash Proxy',
+    description:
+      'Proxy contract for sacred.cash deposits and withdrawals that records block numbers for mining',
+  }),
+)
+
+const sacredTreeActionIndex = actions.length - 1;
+actions[sacredTreeActionIndex].initArgs = [
+  ensToAddr(config.sacredProxy.address),
+  ensToAddr("batchTreeUpdateVerifier.contract.sacredcash.eth")
+];
 
 // Deploy Miner
 const rates = config.miningV2.rates.map((rate) => ({

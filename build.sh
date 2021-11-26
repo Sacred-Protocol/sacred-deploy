@@ -19,6 +19,13 @@ yarn
 yarn compile
 cd ..
 
+cd sacred-trees
+yarn
+#yarn circuit
+cp ./snarks/BatchTreeUpdateVerifier.sol ./artifacts/circuits/BatchTreeUpdateVerifier.sol
+yarn compile
+cd ..
+
 cd sacred-anonymity-mining
 yarn link sacred-token
 yarn

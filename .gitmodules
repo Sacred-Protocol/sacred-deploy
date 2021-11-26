@@ -11,6 +11,6 @@
 [submodule "sacred-pool"]
 	path = sacred-pool
 	url = https://github.com/Sacred-Finance/sacred-pool.git
-[submodule "sacred-tree"]
-	path = sacred-tree
+[submodule "sacred-trees"]
+	path = sacred-trees
 	url = https://github.com/Sacred-Finance/sacred-trees.git
