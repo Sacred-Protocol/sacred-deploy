@@ -268,64 +268,64 @@ actions[sacredActionIndex].initArgs = [
 ]
 
 // sacred-pool
-actions.push(
-  deploy({
-    domain: 'verifier2.contract.sacredcash.eth',
-    contract: verifier2,
-    title: 'Verifier2',
-    description: 'zkSNARK verifier contract for 2 input operations'
-  }),
-)
+// actions.push(
+//   deploy({
+//     domain: 'verifier2.contract.sacredcash.eth',
+//     contract: verifier2,
+//     title: 'Verifier2',
+//     description: 'zkSNARK verifier contract for 2 input operations'
+//   }),
+// )
 
-actions.push(
-  deploy({
-    domain: 'verifier16.contract.sacredcash.eth',
-    contract: verifier16,
-    title: 'Verifier16',
-    description: 'zkSNARK verifier contract for 16 input operations'
-  }),
-)
+// actions.push(
+//   deploy({
+//     domain: 'verifier16.contract.sacredcash.eth',
+//     contract: verifier16,
+//     title: 'Verifier16',
+//     description: 'zkSNARK verifier contract for 16 input operations'
+//   }),
+// )
 
-const tree = new MerkleTree(MERKLE_TREE_HEIGHT, [], { hashFunction: poseidonHash2 })
-const root = tree.root()
-actions.push(
-  deploy({
-    domain: 'sacredPool.contract.sacredcash.eth',
-    contract: sacredPool,
-    title: 'Sacred Pool implementation',
-    description: 'Sacred Pool proxy implementation',
-    dependsOn: [
-      'verifier2.contract.sacredcash.eth',
-      'verifier16.contract.sacredcash.eth',
-    ],
-    args: [
-      ensToAddr('verifier2.contract.sacredcash.eth'),
-      ensToAddr('verifier16.contract.sacredcash.eth')
-    ],
-  }),
-)
-const poolActionIndex = actions.length - 1
-actions[poolActionIndex].initArgs = [
-  toFixedHex(root)
-]
+// const tree = new MerkleTree(MERKLE_TREE_HEIGHT, [], { hashFunction: poseidonHash2 })
+// const root = tree.root()
+// actions.push(
+//   deploy({
+//     domain: 'sacredPool.contract.sacredcash.eth',
+//     contract: sacredPool,
+//     title: 'Sacred Pool implementation',
+//     description: 'Sacred Pool proxy implementation',
+//     dependsOn: [
+//       'verifier2.contract.sacredcash.eth',
+//       'verifier16.contract.sacredcash.eth',
+//     ],
+//     args: [
+//       ensToAddr('verifier2.contract.sacredcash.eth'),
+//       ensToAddr('verifier16.contract.sacredcash.eth')
+//     ],
+//   }),
+// )
+// const poolActionIndex = actions.length - 1
+// actions[poolActionIndex].initArgs = [
+//   toFixedHex(root)
+// ]
 
-// Deploy Proxy
-const crossDomainMessenger = '0x4200000000000000000000000000000000000007'
-actions.push(
-  deploy({
-    domain: 'proxy.contract.sacredcash.eth',
-    contract: upgradeableProxy,
-    title: 'Cross-chain Upgradeable Proxy',
-    description: 'Upgradability proxy contract for Sacred Pool owned by SacredCash governance',
-    dependsOn: ['deployerL2.contract.sacredcash.eth', 'sacredPool.contract.sacredcash.eth'],
-    args: [
-      ensToAddr('sacredPool.contract.sacredcash.eth'),
-      ensToAddr(config.governance.address),
-      [],
-      crossDomainMessenger,
-    ],
-  }),
-)
+// // Deploy Proxy
+// const crossDomainMessenger = '0x4200000000000000000000000000000000000007'
+// actions.push(
+//   deploy({
+//     domain: 'proxy.contract.sacredcash.eth',
+//     contract: upgradeableProxy,
+//     title: 'Cross-chain Upgradeable Proxy',
+//     description: 'Upgradability proxy contract for Sacred Pool owned by SacredCash governance',
+//     dependsOn: ['deployerL2.contract.sacredcash.eth', 'sacredPool.contract.sacredcash.eth'],
+//     args: [
+//       ensToAddr('sacredPool.contract.sacredcash.eth'),
+//       ensToAddr(config.governance.address),
+//       [],
+//       crossDomainMessenger,
+//     ],
+//   }),
+// )
 
 // Write output
 const result = {
