@@ -4,7 +4,7 @@ const ethers = require('ethers')
 const { formatEther } = ethers.utils
 const config = require('../sacred-token/config')
 const get = require('get-value')
-const { deploy, getContractData, zeroMerkleRoot, ensToAddr } = require('./utils')
+const { deploy, getContractData, zeroMerkleRoot, ensToAddr, addressTable } = require('./utils')
 const { toFixedHex } = require('../sacred-pool/src/utils')
 
 const { DEPLOYER, SALT } = process.env
@@ -176,6 +176,8 @@ actions.push(
   }),
 )
 
+const sacredTreeActionIndex = actions.length - 1;
+
 // Deploy SacredProxy
 //const instances = config.miningV2.rates.map((rate) => ensToAddr(rate.instance))
 //TornadoTreeV2 was deployed through proposalContract
@@ -200,7 +202,6 @@ actions.push(
   }),
 )
 
-const sacredTreeActionIndex = actions.length - 1;
 actions[sacredTreeActionIndex].initArgs = [
   ensToAddr(config.sacredProxy.address),
   ensToAddr("batchTreeUpdateVerifier.contract.sacredcash.eth")
@@ -332,5 +333,9 @@ const result = {
   salt: SALT,
   actions
 }
+
 fs.writeFileSync('actions.json', JSON.stringify(result, null, '  '))
 console.log('Created actions.json')
+
+fs.writeFileSync('address.json', JSON.stringify(addressTable, null, '  '))
+console.log('Created address.json')

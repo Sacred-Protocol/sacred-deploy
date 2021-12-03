@@ -49,6 +49,19 @@ module.exports = {
         symbol: 'DAI',
         decimals: 18
       },
+    },
+    netId80001: {
+      eth: {
+        instanceAddress: {
+          '0.01' : '0x449EfDAdB9Dd5143a429A661c9161b01eDdaD81b',
+          '0.1': '0x9567Ca1cf1B2bcdc88086d4a40De2C7399419DD3',
+          '1': '0x9567Ca1cf1B2bcdc88086d4a40De2C7399419DD3',
+          '10': '0x9567Ca1cf1B2bcdc88086d4a40De2C7399419DD3',
+          '100': '0x9567Ca1cf1B2bcdc88086d4a40De2C7399419DD3'
+        },
+        symbol: 'ETH',
+        decimals: 18
+      }
     }
   }
 }

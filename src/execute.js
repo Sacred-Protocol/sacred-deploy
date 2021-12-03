@@ -1,8 +1,6 @@
 require('dotenv').config()
 const actions = require('../actions.json')
 const abi = require('../abi/deployer.abi.json')
-const erc20 = require('../abi/erc20.abi.json')
-const { formatEther } = ethers.utils
 
 const prefix = {
   1: '',
@@ -12,7 +10,7 @@ const prefix = {
 
 const explorer = `https://${prefix[process.env.NET_ID]}etherscan.io`
 
-async function main() {
+async function deployContracts() {
   const privateKey = process.env.PRIVATE_KEY
   //const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL)
   const provider = ethers.provider
@@ -26,7 +24,7 @@ async function main() {
   }
 
   const deployer = new ethers.Contract(actions.deployer, abi, wallet)
-  const deployerProxy = new ethers.Contract(actions.actions[0].expectedAddress, abi, wallet)
+  const deployerProxy = new ethers.Contract(actions.actions[0].expectedAddress, actions.actions[0].abi, wallet)
 
   for (const action of actions.actions.filter((a) => a.contract !== 'Airdrop.sol')) {
     let code = await provider.getCode(action.expectedAddress)
@@ -36,15 +34,14 @@ async function main() {
     }
     console.log(`Deploying ${action.contract} to ${action.domain} (${action.expectedAddress})`)
     const dep = action === actions.actions[0] ? deployer : deployerProxy
-    const tx = await dep.deploy(action.bytecode, actions.salt)
+    const tx = await dep.deploy(action.bytecode, actions.salt, {gasLimit: 20000000})
     console.log(`TX hash ${explorer}/tx/${tx.hash}`)
     try {
       await tx.wait()
       console.log(`Deployed ${action.contract} to ${explorer}/address/${action.expectedAddress}\n`)
       if(action.initArgs) {
         const deployedContract = new ethers.Contract(action.expectedAddress, action.abi, wallet)
-        const tx = await (await deployedContract.initialize(...action.initArgs)).wait()
-        console.log(`Initialized ${action.contract}\n`)
+        await (await deployedContract.initialize(...action.initArgs)).wait()
       }
     } catch (e) {
       console.error(`Failed to deploy ${action.contract}, sending debug tx`)
@@ -56,7 +53,14 @@ async function main() {
       // throw new Error(`Failed to deploy ${action.contract}`)
     }
   }
+}
 
+async function main() {
+  await deployContracts()
 }
 
 main()
+
+module.exports = {
+  deployContracts
+}

@@ -35,11 +35,15 @@ const config = {
         timeout: 120000000,
         // blockNumber: 12552123
       },
-      //blockGasLimit: 20000000,
+      blockGasLimit: 20000000000,
       //timeout: 120000,
       gas: "auto",
     },
     kovan: {
+      url: process.env.RPC_URL,
+      //accounts: [process.env.PRIVATE_KEY],
+    },
+    mumbai: {
       url: process.env.RPC_URL,
       //accounts: [process.env.PRIVATE_KEY],
     },

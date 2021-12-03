@@ -93,10 +93,15 @@ function ensToAddr(ens) {
   return addressTable[ens]
 }
 
+function updateAddressTable(table) {
+  addressTable = table
+}
+
 module.exports = {
   deploy,
   getContractData,
   zeroMerkleRoot,
   addressTable,
-  ensToAddr
+  ensToAddr,
+  updateAddressTable
 }
