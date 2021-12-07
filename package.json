@@ -33,7 +33,8 @@
     "fixed-merkle-tree": "^0.5.0",
     "get-value": "^3.0.1",
     "hardhat": "^2.6.0",
-    "mocha": "^9.1.3"
+    "mocha": "^9.1.3",
+    "websnark": "git+https://github.com/tornadocash/websnark.git#2041cfa5fa0b71cd5cca9022a4eeea4afe28c9f7"
   },
   "devDependencies": {
     "babel-eslint": "^10.1.0",

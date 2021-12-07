@@ -33,18 +33,15 @@ async function deployContracts() {
       continue
     }
     console.log(`Deploying ${action.contract} to ${action.domain} (${action.expectedAddress})`)
-    const dep = action === actions.actions[0] ? deployer : deployerProxy
-    const tx = await dep.deploy(action.bytecode, actions.salt, {gasLimit: 20000000000})
+    const dep = deployer
+    //const dep = action === actions.actions[0] ? deployer : deployerProxy
+    const tx = await dep.deploy(action.bytecode, actions.salt, {gasLimit: 300000000})
     console.log(`TX hash ${explorer}/tx/${tx.hash}`)
     try {
       await tx.wait()
       code = await provider.getCode(action.expectedAddress)
       if (code && code !== '0x') {
         console.log(`Deployed ${action.contract} to ${explorer}/address/${action.expectedAddress}\n`)
-        // if(action.initArgs) {
-        //   const deployedContract = new ethers.Contract(action.expectedAddress, action.abi, wallet)
-        //   await (await deployedContract.initialize(...action.initArgs)).wait()
-        // }
       } else {
         console.log(`Failed to deploy ${action.contract}\n`)
       }
