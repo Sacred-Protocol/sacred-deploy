@@ -14,6 +14,3 @@
 [submodule "sacred-trees"]
 	path = sacred-trees
 	url = https://github.com/Sacred-Finance/sacred-trees.git
-[submodule "sacred-root-updater"]
-	path = sacred-root-updater
-	url = https://github.com/Sacred-Finance/sacred-root-updater.git

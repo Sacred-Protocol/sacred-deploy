@@ -172,7 +172,7 @@ async function deposit({ currency, amount, instance }) {
     const value = ethers.utils.parseEther(amount.toString())
     console.log('Submitting deposit transaction')
     console.log(value.toString())
-    let overrides = { value, from: senderAccount }
+    let overrides = { value, from: senderAccount, gasLimit: 30000000 }
     const tx = await (await proxyContract.deposit(instance, toHex(deposit.commitment), note, overrides)).wait()
     blockNumber = tx.blockNumber
   } else { // a token
@@ -208,7 +208,7 @@ async function deposit({ currency, amount, instance }) {
   const { proof, args } = await generateProof({ deposit, recipient, refund })
 
   console.log('Submitting withdraw transaction')
-  const tx = await (await proxyContract.withdraw(instance, proof, ...args, { from: senderAccount, value: refund.toString()})).wait()
+  const tx = await (await proxyContract.withdraw(instance, proof, ...args, { from: senderAccount, value: refund.toString(), gasLimit: 30000000})).wait()
   console.log('Done')
   return tx.blockNumber
 }
