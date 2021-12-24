@@ -5,7 +5,9 @@ const { BigNumber } = require('ethers')
 const { deployContracts } = require('./execute')
 const fs = require('fs')
 const cli = require('./clitest');
-const treeCli = require('../sacred-trees/src/index');
+const rootUpdaterEvents = require('../lib/root-updater/events')
+const { updateTree } = require('../lib/root-updater/update')
+const { action } = require('../lib/root-updater/utils')
 //const { takeSnapshot, revertSnapshot, mineBlock } = require('../sacred-anonymity-mining/scripts/ganacheHelper')
 const config = require('../sacred-token/config')
 const Controller = require('../sacred-anonymity-mining/src/controller')
@@ -47,6 +49,11 @@ async function timeReset() {
   // const delay = 1000 - new Date().getMilliseconds()
   // await new Promise((resolve) => setTimeout(resolve, delay))
   // await mineBlock()
+}
+
+async function upateRoot(type) {
+  const { committedEvents, pendingEvents } = await rootUpdaterEvents.getEvents(type)
+  await updateTree(committedEvents, pendingEvents, type)
 }
 
 describe('Testing SacredAnanomityMining', () => {
@@ -137,40 +144,56 @@ describe('Testing SacredAnanomityMining', () => {
     })
   })
 
-  describe('#Deposit', () => {
+  describe('#Deposit And Withdraw', () => {
     it('should work', async () => {
-      let ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
-      console.log('Before Deposit: User ETH balance is ', ethbalance);
-      const result = await cli.deposit({instance: addressTable['eth-01.sacredcash.eth'], currency:'eth', amount:0.1});
-      noteString = result.noteString;
-      depositBlockNum = result.blockNumber;
-      ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
-      console.log('Deposit block number is ', depositBlockNum);
-      console.log('After Deposit: User ETH balance is ', ethbalance);
+      for(let i = 0; i < 0; i++) {
+        let ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
+        console.log('Before Deposit: User ETH balance is ', ethbalance);
+        //Deposit
+        const result = await cli.deposit({instance: addressTable['eth-01.sacredcash.eth'], currency:'eth', amount:0.1});
+        noteString = result.noteString;
+        depositBlockNum = result.blockNumber;
+        console.log('Deposit block number is ', depositBlockNum);
+        ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
+        console.log('After Deposit: User ETH balance is ', ethbalance);
+        //increase time
+        const sevenDays = 7 * 24 * 60 * 60;
+        await ethers.provider.send('evm_increaseTime', [sevenDays]);
+        await ethers.provider.send('evm_mine');
+
+        //Withdraw
+        let data = cli.parseNote(noteString);
+        withdrawBlockNum = await cli.withdraw({instance: addressTable['eth-01.sacredcash.eth'], deposit: data.deposit, currency: data.currency, amount:data.amount, recipient: owner.address, relayerURL: null });
+        console.log('Withdraw block number is ', withdrawBlockNum);
+        ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
+        console.log('After Withdraw: User ETH balance is ', ethbalance);
+      }
     })
   })
 
-  describe('#Withdraw', () => {
-    it('should work', async () => {
-      const sevenDays = 7 * 24 * 60 * 60;
-      await ethers.provider.send('evm_increaseTime', [sevenDays]);
-      await ethers.provider.send('evm_mine');
-
-      let ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
-      console.log('Before Withdraw: User ETH balance is ', ethbalance);
-      let data = cli.parseNote(noteString);
-      withdrawBlockNum = await cli.withdraw({instance: addressTable['eth-01.sacredcash.eth'], deposit: data.deposit, currency: data.currency, amount:data.amount, recipient: owner.address, relayerURL: null });
-      ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
-      console.log('Withdraw block number is ', withdrawBlockNum);
-      console.log('After Withdraw: User ETH balance is ', ethbalance);
-    })
-  })
+  // describe('#Withdraw', () => {
+  //   it('should work', async () => {
+  //     let ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
+  //     console.log('Before Withdraw: User ETH balance is ', ethbalance);
+  //     let data = cli.parseNote(noteString);
+  //     withdrawBlockNum = await cli.withdraw({instance: addressTable['eth-01.sacredcash.eth'], deposit: data.deposit, currency: data.currency, amount:data.amount, recipient: owner.address, relayerURL: null });
+  //     ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
+  //     console.log('Withdraw block number is ', withdrawBlockNum);
+  //     console.log('After Withdraw: User ETH balance is ', ethbalance);
+  //   })
+  // })
 
   describe('#reward', () => {
     it('should work', async () => {
       const zeroAccount = new Account()
       const accountCount = await miner.accountCount()
       //expect(zeroAccount.amount).to.equal(BigNumber.from(0))
+
+      //###########################
+      await upateRoot(action.DEPOSIT)
+      await upateRoot(action.WITHDRAWAL)
+      //###########################
+
       note = Note.fromString(noteString, addressTable['eth-01.sacredcash.eth'], depositBlockNum, withdrawBlockNum)
       const { proof, args, account } = await controller.reward({ account: zeroAccount, note, publicKey, fee:0, relayer:0})
       const tx = await (await miner['reward(bytes,(uint256,uint256,address,bytes32,bytes32,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](proof, args)).wait();

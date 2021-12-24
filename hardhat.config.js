@@ -32,7 +32,7 @@ const config = {
     hardhat: {
       forking: {
         url: process.env.RPC_URL,
-        timeout: 120000000,
+        timeout: 120000000000,
         // blockNumber: 12552123
       },
       blockGasLimit: 20000000000,
@@ -41,7 +41,8 @@ const config = {
     },
     kovan: {
       url: process.env.RPC_URL,
-      //accounts: [process.env.PRIVATE_KEY],
+      accounts: [process.env.PRIVATE_KEY],
+      blockGasLimit: 20000000000,
     },
     mumbai: {
       url: process.env.RPC_URL,

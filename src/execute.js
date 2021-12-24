@@ -1,7 +1,6 @@
 require('dotenv').config()
 const actions = require('../actions.json')
 const abi = require('../abi/deployer.abi.json')
-
 const prefix = {
   1: '',
   42: 'kovan.',
@@ -35,7 +34,7 @@ async function deployContracts() {
     console.log(`Deploying ${action.contract} to ${action.domain} (${action.expectedAddress})`)
     const dep = deployer
     //const dep = action === actions.actions[0] ? deployer : deployerProxy
-    const tx = await dep.deploy(action.bytecode, actions.salt, {gasLimit: 300000000})
+    const tx = await dep.deploy(action.bytecode, actions.salt, {gasLimit: 30000000})
     console.log(`TX hash ${explorer}/tx/${tx.hash}`)
     try {
       await tx.wait()
