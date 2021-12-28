@@ -39,17 +39,17 @@ const poseidonHash2 = (a, b) => poseidonHash([a, b])
 
 const actions = []
 
-actions.push(
-  deploy({
-    domain: config.deployer.address,
-    contract: deployer,
-    args: ['0x0000000000000000000000000000000000000000'],
-    dependsOn: [],
-    title: 'Deployment proxy',
-    description:
-      'This a required contract to initialize all other contracts. It is simple wrapper around EIP-2470 Singleton Factory that emits an event of contract deployment. The wrapper also validates if the deployment was successful.',
-  }),
-)
+// actions.push(
+//   deploy({
+//     domain: config.deployer.address,
+//     contract: deployer,
+//     args: ['0x0000000000000000000000000000000000000000'],
+//     dependsOn: [],
+//     title: 'Deployment proxy',
+//     description:
+//       'This a required contract to initialize all other contracts. It is simple wrapper around EIP-2470 Singleton Factory that emits an event of contract deployment. The wrapper also validates if the deployment was successful.',
+//   }),
+// )
 
 // Deploy Governance implementation
 actions.push(
@@ -131,26 +131,6 @@ actions.push(
 )
 
 const rewardSwapActionIndex = actions.length - 1
-
-// // Deploy PoseidonHasher2
-// actions.push(
-//   deploy({
-//     domain: config.poseidonHasher2.address,
-//     contract: poseidonHasher2,
-//     title: 'Poseidon hasher 2',
-//     description: 'Poseidon hash function for 2 arguments',
-//   }),
-// )
-
-// // Deploy PoseidonHasher3
-// actions.push(
-//   deploy({
-//     domain: config.poseidonHasher3.address,
-//     contract: poseidonHasher3,
-//     title: 'Poseidon hasher 3',
-//     description: 'Poseidon hash function for 3 arguments',
-//   }),
-// )
 
 // Deploy BatchTreeUpdateVerifier
 actions.push(
