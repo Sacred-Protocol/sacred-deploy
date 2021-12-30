@@ -211,10 +211,11 @@ describe('Testing SacredAnanomityMining', () => {
       const balanceAfter = await sacred.balanceOf(recipient)
       const increasedBalance = balanceAfter.sub(balanceBefore)
       expect(increasedBalance.gt(0)).to.equal(true)
-      expect(tx.events[0].event).to.equal('NewAccount')
-      expect(tx.events[0].args.commitment).to.equal(toFixedHex(account.commitment))
-      expect(tx.events[0].args.nullifier).to.equal(toFixedHex(account.nullifierHash))
-      const encryptedAccount = tx.events[0].args.encryptedAccount
+      const newAccountEvent = tx.events.find(item => item.event === 'NewAccount')
+      expect(newAccountEvent.event).to.equal('NewAccount')
+      expect(newAccountEvent.args.commitment).to.equal(toFixedHex(account.commitment))
+      expect(newAccountEvent.args.nullifier).to.equal(toFixedHex(account.nullifierHash))
+      const encryptedAccount = newAccountEvent.args.encryptedAccount
       const account2 = Account.decrypt(privateKey, unpackEncryptedMessage(encryptedAccount))
       expect(withdrawSnark.account.amount.toString()).to.equal(account2.amount.toString())
       expect(withdrawSnark.account.secret.toString()).to.equal(account2.secret.toString())
