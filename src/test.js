@@ -210,7 +210,7 @@ describe('Testing SacredAnanomityMining', () => {
       const newAccountEvent = tx.events.find(item => item.event === 'NewAccount')
       expect(newAccountEvent.event).to.equal('NewAccount')
       expect(newAccountEvent.args.commitment).to.equal(toFixedHex(withdrawSnark.account.commitment))
-      expect(newAccountEvent.args.nullifier).to.equal(toFixedHex(withdrawSnark.account.nullifier))
+      expect(newAccountEvent.args.nullifier).to.equal(toFixedHex(account.nullifierHash))
       const encryptedAccount = newAccountEvent.args.encryptedAccount
       const account2 = Account.decrypt(privateKey, unpackEncryptedMessage(encryptedAccount))
       expect(withdrawSnark.account.amount.toString()).to.equal(account2.amount.toString())
