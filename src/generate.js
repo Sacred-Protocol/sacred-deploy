@@ -22,12 +22,12 @@ const sacredProxy = getContractData('../sacred-anonymity-mining/artifacts/contra
 const rewardVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/RewardVerifier.sol/RewardVerifier.json')
 const withdrawVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/WithdrawVerifier.sol/WithdrawVerifier.json')
 const treeUpdateVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/TreeUpdateVerifier.sol/TreeUpdateVerifier.json')
-const verifier2 = getContractData('../sacred-pool/artifacts/contracts/Verifier2.sol/Verifier2.json')
-const verifier16 = getContractData('../sacred-pool/artifacts/contracts/Verifier16.sol/Verifier16.json')
-const sacredPool = getContractData('../sacred-pool/artifacts/contracts/SacredPool.sol/SacredPool.json')
-const upgradeableProxy = getContractData(
-  '../sacred-pool/artifacts/contracts/CrossChainUpgradeableProxy.sol/CrossChainUpgradeableProxy.json',
-)
+// const verifier2 = getContractData('../sacred-pool/artifacts/contracts/Verifier2.sol/Verifier2.json')
+// const verifier16 = getContractData('../sacred-pool/artifacts/contracts/Verifier16.sol/Verifier16.json')
+// const sacredPool = getContractData('../sacred-pool/artifacts/contracts/SacredPool.sol/SacredPool.json')
+// const upgradeableProxy = getContractData(
+//   '../sacred-pool/artifacts/contracts/CrossChainUpgradeableProxy.sol/CrossChainUpgradeableProxy.json',
+// )
 
 const actions = []
 
