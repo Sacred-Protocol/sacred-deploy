@@ -102,10 +102,6 @@ describe('Testing SacredAnanomityMining', () => {
     await controller.init()
   })
 
-  beforeEach(async () => {
-    await timeReset()
-  })
-
   describe('#constructor', () => {
     it('should initialize', async () => {
       const tokenFromContract = await rewardSwap.sacred()
