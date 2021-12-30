@@ -2,13 +2,13 @@
 const { expect } = require('chai');
 const { waffle, ethers } = require("hardhat");
 const { BigNumber } = require('ethers')
+const { toBN } = require('web3-utils')
 const { deployContracts } = require('./execute')
 const fs = require('fs')
 const cli = require('./clitest');
 const rootUpdaterEvents = require('../lib/root-updater/events')
 const { updateTree } = require('../lib/root-updater/update')
 const { action } = require('../lib/root-updater/utils')
-//const { takeSnapshot, revertSnapshot, mineBlock } = require('../sacred-anonymity-mining/scripts/ganacheHelper')
 const config = require('../sacred-token/config')
 const Controller = require('../sacred-anonymity-mining/src/controller')
 const Account = require('../sacred-anonymity-mining/src/account')
@@ -21,18 +21,13 @@ const sacredAbi = require('../sacred-token/artifacts/contracts/SACRED.sol/SACRED
 const rewardSwapAbi = require('../sacred-anonymity-mining/artifacts/contracts/RewardSwap.sol/RewardSwap.json')
 const minerAbi = require('../sacred-anonymity-mining/artifacts/contracts/Miner.sol/Miner.json')
 const ethSacredAbi = require('../abi/ethSacred.json')
-const MerkleTree = require('fixed-merkle-tree')
 const buildGroth16 = require('websnark/src/groth16')
 const {
   toFixedHex,
-  poseidonHash,
-  poseidonHash2,
-  packEncryptedMessage,
-  unpackEncryptedMessage,
-  getExtWithdrawArgsHash,
+  unpackEncryptedMessage
 } = require('../sacred-anonymity-mining/src/utils')
 const { getEncryptionPublicKey } = require('eth-sig-util');
-const { fromString } = require('../sacred-anonymity-mining/src/note');
+
 const provingKeys = {
   rewardCircuit: require('../sacred-anonymity-mining/build/circuits/Reward.json'),
   withdrawCircuit: require('../sacred-anonymity-mining/build/circuits/Withdraw.json'),
@@ -44,51 +39,29 @@ const provingKeys = {
 
 const { PRIVATE_KEY } = process.env
 
-// Set time to beginning of a second
-async function timeReset() {
-  // const delay = 1000 - new Date().getMilliseconds()
-  // await new Promise((resolve) => setTimeout(resolve, delay))
-  // await mineBlock()
-}
-
 async function upateRoot(type) {
   const { committedEvents, pendingEvents } = await rootUpdaterEvents.getEvents(type)
   await updateTree(committedEvents, pendingEvents, type)
 }
 
 describe('Testing SacredAnanomityMining', () => {
+  const RATE = BigNumber.from(10)
+  const levels = 20
+
   let miner
   let sacred
   let rewardSwap
   let sacredTrees
   let sacredProxy
-  
-  const RATE = BigNumber.from(10)
-  const amount = BigNumber.from(15)
-  // eslint-disable-next-line no-unused-vars
-  //const sender = accounts[0]
-  //const recipient = accounts[1]
-  // eslint-disable-next-line no-unused-vars
-  //const relayer = accounts[2]
-  const levels = 20
-  let snapshotId
+    
   let controller
-  //const privateKey = web3.eth.accounts.create().privateKey.slice(2)
-  //const publicKey = getEncryptionPublicKey(privateKey)
-  //const governance = accounts[9]
-  let depositTree
-  let withdrawalTree
   let wallet
 
   let noteString
   let depositBlockNum;
   let withdrawBlockNum;
 
-  let note = new Note({
-    instance: sacred,
-    depositBlock: 10,
-    withdrawalBlock: 10 + 4 * 60 * 24,
-  })
+  let proof, args, account
 
   const privateKey = PRIVATE_KEY
   const publicKey = getEncryptionPublicKey(privateKey)
@@ -171,163 +144,83 @@ describe('Testing SacredAnanomityMining', () => {
     })
   })
 
-  // describe('#Withdraw', () => {
-  //   it('should work', async () => {
-  //     let ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
-  //     console.log('Before Withdraw: User ETH balance is ', ethbalance);
-  //     let data = cli.parseNote(noteString);
-  //     withdrawBlockNum = await cli.withdraw({instance: addressTable['eth-01.sacredcash.eth'], deposit: data.deposit, currency: data.currency, amount:data.amount, recipient: owner.address, relayerURL: null });
-  //     ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
-  //     console.log('Withdraw block number is ', withdrawBlockNum);
-  //     console.log('After Withdraw: User ETH balance is ', ethbalance);
-  //   })
-  // })
+  describe('#Update Root of SacredTree', () => {
+    it('should work', async () => {
+      await upateRoot(action.DEPOSIT)
+      await upateRoot(action.WITHDRAWAL)
+    }).timeout(3000000);
+  })
 
   describe('#reward', () => {
     it('should work', async () => {
       const zeroAccount = new Account()
       const accountCount = await miner.accountCount()
-      //expect(zeroAccount.amount).to.equal(BigNumber.from(0))
+      expect(zeroAccount.amount.toString()).to.equal("0")
 
-      //###########################
-      await upateRoot(action.DEPOSIT)
-      await upateRoot(action.WITHDRAWAL)
-      //###########################
+      depositBlockNum = 28998362
+      withdrawBlockNum = 28998388
+      noteString = "sacred-eth-0.1-42-0x76710504970fe6fba4f1b61584356dca5bfb527218171f93d40a390e580b0f7541570213fe456dddf9d4d585036026123417bda89c2a344ad96afaa28bae"
+      const note = Note.fromString(noteString, addressTable['eth-01.sacredcash.eth'], depositBlockNum, withdrawBlockNum)
 
-      note = Note.fromString(noteString, addressTable['eth-01.sacredcash.eth'], depositBlockNum, withdrawBlockNum)
-      const { proof, args, account } = await controller.reward({ account: zeroAccount, note, publicKey, fee:0, relayer:0})
+      const eventsDeposit = await rootUpdaterEvents.getEvents(action.DEPOSIT)
+      const eventsWithdraw = await rootUpdaterEvents.getEvents(action.WITHDRAWAL)
+      const result = await controller.reward({ account: zeroAccount, note, publicKey, fee:0, relayer:0, accountCommitments: null, depositDataEvents: eventsDeposit.committedEvents, withdrawalDataEvents: eventsWithdraw.committedEvents})
+      proof = result.proof
+      args = result.args
+      account = result.account
       const tx = await (await miner['reward(bytes,(uint256,uint256,address,bytes32,bytes32,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](proof, args)).wait();
-      console.log(tx)
-      logs[0].event.should.be.equal('NewAccount')
-      logs[0].args.commitment.should.be.equal(toFixedHex(account.commitment))
-      logs[0].args.index.should.be.eq.BN(accountCount)
 
-      logs[0].args.nullifier.should.be.equal(toFixedHex(zeroAccount.nullifierHash))
+      const newAccountEvent = tx.events.find(item => item.event === 'NewAccount')
 
-      const encryptedAccount = logs[0].args.encryptedAccount
+      expect(newAccountEvent.event).to.equal('NewAccount')
+      expect(newAccountEvent.args.commitment).to.equal(toFixedHex(account.commitment))
+      expect(newAccountEvent.args.index).to.equal(accountCount)
+      expect(newAccountEvent.args.nullifier).to.equal(toFixedHex(zeroAccount.nullifierHash))
+
+      const encryptedAccount = newAccountEvent.args.encryptedAccount
       const account2 = Account.decrypt(privateKey, unpackEncryptedMessage(encryptedAccount))
-      account.amount.should.be.eq.BN(account2.amount)
-      account.secret.should.be.eq.BN(account2.secret)
-      account.nullifier.should.be.eq.BN(account2.nullifier)
-      account.commitment.should.be.eq.BN(account2.commitment)
+      expect(account.amount.toString()).to.equal(account2.amount.toString())
+      expect(account.secret.toString()).to.equal(account2.secret.toString())
+      expect(account.nullifier.toString()).to.equal(account2.nullifier.toString())
+      expect(account.commitment.toString()).to.equal(account2.commitment.toString())
 
       const accountCountAfter = await miner.accountCount()
-      accountCountAfter.should.be.eq.BN(accountCount.add(BigNumber.from(1)))
+      expect(accountCountAfter).to.equal(accountCount.add(BigNumber.from(1)))
       const rootAfter = await miner.getLastAccountRoot()
-      rootAfter.should.be.equal(args.account.outputRoot)
+      expect(rootAfter).to.equal(args.account.outputRoot)
       const rewardNullifierAfter = await miner.rewardNullifiers(toFixedHex(note.rewardNullifier))
-      rewardNullifierAfter.should.be.true
+      expect(rewardNullifierAfter).to.equal(true)
       const accountNullifierAfter = await miner.accountNullifiers(toFixedHex(zeroAccount.nullifierHash))
-      accountNullifierAfter.should.be.true
+      expect(accountNullifierAfter).to.equal(true)
 
-      account.amount.should.be.eq.BN(BigNumber.from(note.withdrawalBlock - note.depositBlock).mul(RATE))
+      expect(account.amount.toString()).to.equal(BigNumber.from(note.withdrawalBlock - note.depositBlock).mul(RATE).toString())
+
+    }).timeout(3000000);
+  })
+
+  describe('#withdraw', () => {
+    it('should work', async () => {
+      const accountNullifierBefore = await miner.accountNullifiers(toFixedHex(account.nullifierHash))
+      expect(accountNullifierBefore).to.equal(false)
+
+      const recipient = owner.address
+      const amount = account.amount
+      const withdrawSnark = await controller.withdraw({ account, amount, recipient, publicKey })
+      const balanceBefore = await sacred.balanceOf(recipient)
+      const tx = await (await miner['withdraw(bytes,(uint256,bytes32,(uint256,address,address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](withdrawSnark.proof, withdrawSnark.args)).wait()
+      const balanceAfter = await sacred.balanceOf(recipient)
+      const increasedBalance = balanceAfter.sub(balanceBefore)
+      expect(increasedBalance.gt(0)).to.equal(true)
+      expect(tx.events[0].event).to.equal('NewAccount')
+      expect(tx.events[0].args.commitment).to.equal(toFixedHex(account.commitment))
+      expect(tx.events[0].args.nullifier).to.equal(toFixedHex(account.nullifierHash))
+      const encryptedAccount = tx.events[0].args.encryptedAccount
+      const account2 = Account.decrypt(privateKey, unpackEncryptedMessage(encryptedAccount))
+      expect(withdrawSnark.account.amount.toString()).to.equal(account2.amount.toString())
+      expect(withdrawSnark.account.secret.toString()).to.equal(account2.secret.toString())
+      expect(withdrawSnark.account.nullifier.toString()).to.equal(account2.nullifier.toString())
+      expect(withdrawSnark.account.commitment.toString()).to.equal(account2.commitment.toString())
     })
   })
 
-  // describe('#withdraw', () => {
-  //   let proof, args, account
-  //   // prettier-ignore
-  //   beforeEach(async () => {
-  //     ({ proof, args, account } = await controller.reward({ account: new Account(), note, publicKey }))
-  //     await miner.reward(proof, args)
-  //   })
-
-  //   it('should work', async () => {
-  //     const accountNullifierBefore = await miner.accountNullifiers(toFixedHex(account.nullifierHash))
-  //     accountNullifierBefore.should.be.false
-
-  //     const accountCount = await miner.accountCount()
-  //     const withdrawSnark = await controller.withdraw({ account, amount, recipient, publicKey })
-  //     await timeReset()
-  //     const expectedAmountInSacred = await rewardSwap.getExpectedReturn(amount)
-  //     const balanceBefore = await sacred.balanceOf(recipient)
-  //     const { logs } = await miner.withdraw(withdrawSnark.proof, withdrawSnark.args)
-  //     const balanceAfter = await sacred.balanceOf(recipient)
-  //     balanceAfter.should.be.eq.BN(balanceBefore.add(expectedAmountInSacred))
-
-  //     const accountCountAfter = await miner.accountCount()
-  //     accountCountAfter.should.be.eq.BN(accountCount.add(BigNumber.from(1)))
-  //     const rootAfter = await miner.getLastAccountRoot()
-  //     rootAfter.should.be.equal(withdrawSnark.args.account.outputRoot)
-  //     const accountNullifierAfter = await miner.accountNullifiers(toFixedHex(account.nullifierHash))
-  //     accountNullifierAfter.should.be.true
-
-  //     logs[0].event.should.be.equal('NewAccount')
-  //     logs[0].args.commitment.should.be.equal(toFixedHex(withdrawSnark.account.commitment))
-  //     logs[0].args.index.should.be.eq.BN(accountCount)
-  //     logs[0].args.nullifier.should.be.equal(toFixedHex(account.nullifierHash))
-
-  //     const encryptedAccount = logs[0].args.encryptedAccount
-  //     const account2 = Account.decrypt(privateKey, unpackEncryptedMessage(encryptedAccount))
-  //     withdrawSnark.account.amount.should.be.eq.BN(account2.amount)
-  //     withdrawSnark.account.secret.should.be.eq.BN(account2.secret)
-  //     withdrawSnark.account.nullifier.should.be.eq.BN(account2.nullifier)
-  //     withdrawSnark.account.commitment.should.be.eq.BN(account2.commitment)
-  //   })
-  // })
-
-  // describe('#batchReward', () => {
-  //   it('should work', async () => {
-  //     let account = new Account()
-  //     const claim = await controller.reward({ account, note, publicKey })
-  //     await miner.reward(claim.proof, claim.args)
-
-  //     const { proofs, args } = await controller.batchReward({
-  //       account: claim.account,
-  //       notes: notes.slice(1),
-  //       publicKey,
-  //     })
-  //     await miner.batchReward(args)
-
-  //     account = proofs.slice(-1)[0].account
-  //     const amount = BigNumber.from(55)
-  //     const rewardSnark = await controller.withdraw({ account, amount, recipient, publicKey })
-  //     await timeReset()
-  //     const balanceBefore = await sacred.balanceOf(recipient)
-  //     const expectedAmountInSacred = await rewardSwap.getExpectedReturn(amount)
-  //     await miner.withdraw(rewardSnark.proof, rewardSnark.args)
-  //     const balanceAfter = await sacred.balanceOf(recipient)
-  //     balanceAfter.should.be.eq.BN(balanceBefore.add(expectedAmountInSacred))
-  //   })
-  // })
-
-  // describe('#isKnownAccountRoot', () => {
-  //   it('should work', async () => {
-  //     const claim1 = await controller.reward({ account: new Account(), note: note1, publicKey })
-  //     await miner.reward(claim1.proof, claim1.args)
-
-  //     const claim2 = await controller.reward({ account: new Account(), note: note2, publicKey })
-  //     await miner.reward(claim2.proof, claim2.args)
-
-  //     const tree = new MerkleTree(levels, [], { hashFunction: poseidonHash2 })
-  //     await miner.isKnownAccountRoot(toFixedHex(tree.root()), 0).should.eventually.be.true
-
-  //     tree.insert(claim1.account.commitment)
-  //     await miner.isKnownAccountRoot(toFixedHex(tree.root()), 1).should.eventually.be.true
-
-  //     tree.insert(claim2.account.commitment)
-  //     await miner.isKnownAccountRoot(toFixedHex(tree.root()), 2).should.eventually.be.true
-
-  //     await miner.isKnownAccountRoot(toFixedHex(tree.root()), 1).should.eventually.be.false
-  //     await miner.isKnownAccountRoot(toFixedHex(tree.root()), 5).should.eventually.be.false
-  //     await miner.isKnownAccountRoot(toFixedHex(1234), 1).should.eventually.be.false
-  //     await miner.isKnownAccountRoot(toFixedHex(0), 0).should.eventually.be.false
-  //     await miner.isKnownAccountRoot(toFixedHex(0), 5).should.eventually.be.false
-  //   })
-  // })
-
-  // describe('#setRates', () => {
-  //   it('should reject for invalid rates', async () => {
-  //     const bigNum = BigNumber.from(2).pow(BigNumber.from(128))
-  //     await miner
-  //       .setRates([{ instance: sacred, value: bigNum.toString() }], { from: governance })
-  //       .should.be.rejectedWith('Incorrect rate')
-  //   })
-  // })
-
-  afterEach(async () => {
-    //await revertSnapshot(snapshotId.result)
-    // eslint-disable-next-line require-atomic-updates
-    //snapshotId = await takeSnapshot()
-  })
 })

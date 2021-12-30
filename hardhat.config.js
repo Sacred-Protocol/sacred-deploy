@@ -36,7 +36,7 @@ const config = {
         // blockNumber: 12552123
       },
       blockGasLimit: 20000000000,
-      //timeout: 120000,
+      timeout: 12000000,
       gas: "auto",
     },
     kovan: {
