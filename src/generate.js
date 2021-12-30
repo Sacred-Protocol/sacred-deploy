@@ -19,8 +19,6 @@ const rewardSwap = getContractData('../sacred-anonymity-mining/artifacts/contrac
 const sacredTrees = getContractData('../sacred-trees/artifacts/contracts/SacredTrees.sol/SacredTrees.json')
 const batchTreeUpdateVerifier = getContractData('../sacred-trees/artifacts/contracts/verifiers/BatchTreeUpdateVerifier.sol/BatchTreeUpdateVerifier.json')
 const sacredProxy = getContractData('../sacred-anonymity-mining/artifacts/contracts/SacredProxy.sol/SacredProxy.json')
-// const poseidonHasher2 = getContractData('../sacred-anonymity-mining/artifacts/contracts/Hasher2.json')
-// const poseidonHasher3 = getContractData('../sacred-anonymity-mining/artifacts/contracts/Hasher3.json')
 const rewardVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/RewardVerifier.sol/RewardVerifier.json')
 const withdrawVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/WithdrawVerifier.sol/WithdrawVerifier.json')
 const treeUpdateVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/TreeUpdateVerifier.sol/TreeUpdateVerifier.json')
@@ -31,25 +29,7 @@ const upgradeableProxy = getContractData(
   '../sacred-pool/artifacts/contracts/CrossChainUpgradeableProxy.sol/CrossChainUpgradeableProxy.json',
 )
 
-const MERKLE_TREE_HEIGHT = 23
-const MerkleTree = require('fixed-merkle-tree')
-const { poseidon } = require('circomlib')
-const poseidonHash = (items) => ethers.BigNumber.from(poseidon(items).toString())
-const poseidonHash2 = (a, b) => poseidonHash([a, b])
-
 const actions = []
-
-// actions.push(
-//   deploy({
-//     domain: config.deployer.address,
-//     contract: deployer,
-//     args: ['0x0000000000000000000000000000000000000000'],
-//     dependsOn: [],
-//     title: 'Deployment proxy',
-//     description:
-//       'This a required contract to initialize all other contracts. It is simple wrapper around EIP-2470 Singleton Factory that emits an event of contract deployment. The wrapper also validates if the deployment was successful.',
-//   }),
-// )
 
 // Deploy Governance implementation
 actions.push(
