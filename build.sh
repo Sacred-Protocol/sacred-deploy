@@ -1,10 +1,6 @@
 #!/bin/bash -e
 
 # expecting node v12
-cd deployer
-yarn
-yarn compile
-cd ..
 
 cd sacred-token
 yarn unlink || true
@@ -35,8 +31,3 @@ fi
 yarn compile
 cd ..
 
-# cd sacred-pool 
-# yarn
-# yarn download
-# yarn build
-# cd ..

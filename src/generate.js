@@ -1,15 +1,11 @@
 require('dotenv').config()
 const fs = require('fs')
 const ethers = require('ethers')
-const { formatEther } = ethers.utils
 const config = require('../sacred-token/config')
 const get = require('get-value')
 const { deploy, getContractData, zeroMerkleRoot, ensToAddr, addressTable } = require('./utils')
-const { toFixedHex } = require('../sacred-pool/src/utils')
-
 const { DEPLOYER, SALT } = process.env
 
-const deployer = getContractData('../deployer/artifacts/contracts/Deployer.sol/Deployer.json')
 const sacred = getContractData('../sacred-token/artifacts/contracts/SACRED.sol/SACRED.json')
 const vesting = getContractData('../sacred-token/artifacts/contracts/Vesting.sol/Vesting.json')
 const governance = getContractData('../sacred-governance/artifacts/contracts/Governance.sol/Governance.json')
@@ -61,7 +57,7 @@ actions.push(
     domain: config.governance.address,
     contract: governanceProxy,
     args: [ensToAddr(config.governanceImpl.address), initData],
-    dependsOn: [config.deployer.address, config.governanceImpl.address],
+    dependsOn: [config.governanceImpl.address],
     title: 'Governance Upgradable Proxy',
     description:
       'EIP-1167 Upgradable Proxy for Governance. It can only be upgraded through a proposal by SACRED holders',
