@@ -67,6 +67,7 @@ function deploy({
   title = '',
   description = '',
   dependsOn = [config.deployer.address],
+  abi = ''
 }) {
   console.log('Generating deploy for', contract.name)
   let bytecode = contract.bytecode
@@ -81,7 +82,7 @@ function deploy({
     amount,
     contract: contract.name + '.sol',
     bytecode,
-    abi: contract.abi,
+    abi: abi ? abi : contract.abi,
     expectedAddress: expAddr,
     title,
     description,

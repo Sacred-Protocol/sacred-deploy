@@ -13,6 +13,7 @@ const governanceProxy = getContractData('../sacred-governance/artifacts/contract
 const miner = getContractData('../sacred-anonymity-mining/artifacts/contracts/Miner.sol/Miner.json')
 const rewardSwap = getContractData('../sacred-anonymity-mining/artifacts/contracts/RewardSwap.sol/RewardSwap.json')
 const sacredTrees = getContractData('../sacred-trees/artifacts/contracts/SacredTrees.sol/SacredTrees.json')
+const adminUpgradeableProxy = getContractData('../sacred-trees/artifacts/contracts/AdminUpgradeableProxy.sol/AdminUpgradeableProxy.json')
 const batchTreeUpdateVerifier = getContractData('../sacred-trees/artifacts/contracts/verifiers/BatchTreeUpdateVerifier.sol/BatchTreeUpdateVerifier.json')
 const sacredProxy = getContractData('../sacred-anonymity-mining/artifacts/contracts/SacredProxy.sol/SacredProxy.json')
 const rewardVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/RewardVerifier.sol/RewardVerifier.json')
@@ -119,16 +120,32 @@ actions.push(
   }),
 )
 
-// Deploy SacredTrees
+// Deploy SacredTreesImpl
 actions.push(
   deploy({
-    domain: config.sacredTrees.address,
+    domain: config.sacredTreesImpl.address,
     contract: sacredTrees,
     args: [
       ensToAddr(config.governance.address)
     ],
-    title: 'SacredTrees',
+    title: 'SacredTreesImpl',
     description: 'Merkle tree with information about sacred cash deposits and withdrawals',
+  }),
+)
+
+// Deploy SacredTrees
+actions.push(
+  deploy({
+    domain: config.sacredTrees.address,
+    contract: adminUpgradeableProxy,
+    args: [
+      ensToAddr(config.sacredTreesImpl.address),
+      ensToAddr(config.governance.address),
+      ethers.utils.hexlify(ethers.utils.toUtf8Bytes(""))
+    ],
+    title: 'SacredTrees',
+    description: 'Proxy to connect to SacredTreeImpl',
+    abi: sacredTrees.abi
   }),
 )
 
@@ -160,7 +177,8 @@ actions.push(
 
 actions[sacredTreeActionIndex].initArgs = [
   ensToAddr(config.sacredProxy.address),
-  ensToAddr("batchTreeUpdateVerifier.contract.sacredcash.eth")
+  ensToAddr("batchTreeUpdateVerifier.contract.sacredcash.eth"),
+  "0x29f9a0a07a22ab214d00aaa0190f54509e853f3119009baecb0035347606b0a9"
 ];
 
 // Deploy Miner
