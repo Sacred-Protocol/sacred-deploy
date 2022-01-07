@@ -153,9 +153,9 @@ describe('Testing SacredAnanomityMining', () => {
       const accountCount = await miner.accountCount()
       expect(zeroAccount.amount.toString()).to.equal("0")
 
-      depositBlockNum = 28998362
-      withdrawBlockNum = 28998388
-      noteString = "sacred-eth-0.1-42-0x76710504970fe6fba4f1b61584356dca5bfb527218171f93d40a390e580b0f7541570213fe456dddf9d4d585036026123417bda89c2a344ad96afaa28bae"
+      depositBlockNum = 29123355
+      withdrawBlockNum = 29123383
+      noteString = "sacred-eth-0.1-42-0xe54ce0efdc2c21c52967457acb8c8d2adc5b76a6b66ea6388675b776a1728d6dd237e671315002d5617b753f220e2e644b7bdd6e87ad0595a7786fc82663"
       const note = Note.fromString(noteString, addressTable['eth-01.sacredcash.eth'], depositBlockNum, withdrawBlockNum)
 
       const eventsDeposit = await rootUpdaterEvents.getEvents(action.DEPOSIT)
