@@ -1,0 +1,214 @@
+#!/usr/bin/env node
+// Temporary demo client
+// Works with node.js
+
+require('dotenv').config()
+const { waffle, ethers } = require("hardhat");
+const utils = require('./src/utils')
+const addressTable = require('./address.json')
+const ethSacredAbi = require('./abi/ethSacred.json')
+const erc20SacredAbi = require('./abi/erc20Sacred.json')
+const rootUpdaterEvents = require('./lib/root-updater/events')
+const { updateTree } = require('./lib/root-updater/update')
+const { action } = require('./lib/root-updater/utils')
+const config = require('./sacred-token/config')
+const { BigNumber } = require('ethers')
+const Account = require('./sacred-anonymity-mining/src/account')
+const Controller = require('./sacred-anonymity-mining/src/controller')
+const Note = require('./sacred-anonymity-mining/src/note')
+const sacredProxyAbi = require('./sacred-anonymity-mining/artifacts/contracts/SacredProxy.sol/SacredProxy.json')
+const sacredTreesAbi = require('./sacred-trees/artifacts/contracts/SacredTrees.sol/SacredTrees.json')
+const sacredAbi = require('./sacred-token/artifacts/contracts/SACRED.sol/SACRED.json')
+const minerAbi = require('./sacred-anonymity-mining/artifacts/contracts/Miner.sol/Miner.json')
+
+const buildGroth16 = require('websnark/src/groth16')
+const fs = require('fs')
+const program = require('commander')
+const levels = 20
+const { PRIVATE_KEY } = process.env
+
+const provingKeys = {
+  rewardCircuit: require('./sacred-anonymity-mining/build/circuits/Reward.json'),
+  withdrawCircuit: require('./sacred-anonymity-mining/build/circuits/Withdraw.json'),
+  treeUpdateCircuit: require('./sacred-anonymity-mining/build/circuits/TreeUpdate.json'),
+  rewardProvingKey: fs.readFileSync('./sacred-anonymity-mining/build/circuits/Reward_proving_key.bin').buffer,
+  withdrawProvingKey: fs.readFileSync('./sacred-anonymity-mining/build/circuits/Withdraw_proving_key.bin').buffer,
+  treeUpdateProvingKey: fs.readFileSync('./sacred-anonymity-mining/build/circuits/TreeUpdate_proving_key.bin').buffer,
+}
+
+utils.updateAddressTable(addressTable)
+
+let provider
+let miner
+let sacred
+let sacredTrees
+let sacredProxy
+let controller
+let wallet
+let netId
+
+async function init(rpc) {
+  provider = new ethers.providers.JsonRpcProvider(rpc)
+  const { chainId } = await provider.getNetwork()
+  netId = chainId
+  wallet = new ethers.Wallet(PRIVATE_KEY, provider)  
+  sacredTrees = new ethers.Contract(utils.ensToAddr(config.sacredTrees.address), sacredTreesAbi.abi, wallet)
+  sacredProxy = new ethers.Contract(utils.ensToAddr(config.sacredProxy.address), sacredProxyAbi.abi, wallet)
+  sacred = new ethers.Contract(utils.ensToAddr(config.sacred.address), sacredAbi.abi, wallet)
+  miner = new ethers.Contract(utils.ensToAddr(config.miningV2.address), minerAbi.abi, wallet)
+  let groth16 = await buildGroth16()
+  controller = new Controller({
+    contract: miner,
+    sacredTreesContract: sacredTrees,
+    merkleTreeHeight: levels,
+    provingKeys,
+    groth16
+  })
+  await controller.init()
+}
+
+async function upateRoot(type) {
+  const { committedEvents, pendingEvents } = await rootUpdaterEvents.getEvents(type)
+  await updateTree(committedEvents, pendingEvents, type)
+}
+
+async function getBlockNumbers(type, noteString) {
+  const events = await rootUpdaterEvents.getSacredTreesEvents(type, 0, 'latest')
+  const { currency, amount, netId, deposit } = utils.parseNote(noteString)
+  const note = Note.fromString(noteString, utils.getSacredInstanceAddress(netId, currency, amount), 0, 0)
+  const item = events.filter((x) => x.hash === toFixedHex(note.commitment))
+  console.log(item)
+  return item.block
+}
+
+async function main() {
+
+  program
+    .option('-r, --rpc <URL>', 'The RPC, CLI should interact with', 'http://localhost:8545')
+    .option('-R, --relayer <URL>', 'Withdraw via relayer')
+    .option('-k, --privatekey <privateKey>', 'Private Key') 
+  program
+    .command('deposit <currency> <amount>')
+    .description('Submit a deposit of specified currency and amount from default eth account and return the resulting note. The currency is one of (ETH|). The amount depends on currency, see config.js file.')
+    .action(async (currency, amount) => {
+      await init(program.rpc)
+      currency = currency.toLowerCase()
+      const instanceAddress = utils.getSacredInstanceAddress(netId, currency, amount)
+      let sacredInstance = new ethers.Contract(instanceAddress, currency === "eth" ? ethSacredAbi : erc20SacredAbi, wallet)
+      await utils.init({sender: wallet.address, proxyContractObj: sacredProxy, instanceContractObj: sacredInstance});
+      const result = await utils.deposit({instance: instanceAddress, currency, amount});
+    })
+  program
+    .command('withdraw <note> <recipient> [ETH_purchase]')
+    .description('Withdraw a note to a recipient account using relayer or specified private key. You can exchange some of your deposit`s tokens to ETH during the withdrawal by specifing ETH_purchase (e.g. 0.01) to pay for gas in future transactions. Also see the --relayer option.')
+    .action(async (noteString, recipient, refund) => {
+      await init(program.rpc)
+      const { currency, amount, netId, deposit } = utils.parseNote(noteString)
+      const instanceAddress = utils.getSacredInstanceAddress(netId, currency, amount)
+      let sacredInstance = new ethers.Contract(instanceAddress, currency === "eth" ? ethSacredAbi : erc20SacredAbi, wallet)
+      await utils.init({sender: wallet.address, proxyContractObj: sacredProxy, instanceContractObj: sacredInstance});
+      await utils.withdraw({netId: netId, deposit, currency, amount, recipient, relayerURL: program.relayer, refund });
+    })
+  program
+    .command('sacredtest <currency> <amount> <recipient>')
+    .description('Perform an automated test. It deposits and withdraws one ETH. Uses Kovan Testnet.')
+    .action(async (currency, amount, recipient) => {
+      await init(program.rpc)
+      currency = currency.toLowerCase()
+      const instanceAddress = utils.getSacredInstanceAddress(netId, currency, amount)
+      let sacredInstance = new ethers.Contract(instanceAddress, currency === "eth" ? ethSacredAbi : erc20SacredAbi, wallet)
+      await utils.init({sender: wallet.address, proxyContractObj: sacredProxy, instanceContractObj: sacredInstance});
+      const { noteString, } = await utils.deposit({instance: instanceAddress, currency, amount});
+      const { netId, deposit } = utils.parseNote(noteString)
+      const refund = '0'
+      await utils.withdraw({netId, deposit, currency, amount, recipient, relayerURL: program.relayer, refund });
+    })
+  program
+    .command('updatetree <operation>')
+    .description('Perform batch update root of SacredTree. operation indicates deposit or withdraw')
+    .action(async (operation) => {
+      await init(program.rpc)
+      operation = currency.toLowerCase()
+      if (operation === "deposit") {
+        await upateRoot(action.DEPOSIT)
+      } else if (operation === "withdraw") {
+        await upateRoot(action.WITHDRAWAL)
+      } else {
+        console.log('Please specify operation as deposit or withdraw')
+      }
+    })
+  program
+    .command('showpendings <operation>')
+    .description('Perform batch update root of SacredTree. operation indicates deposit or withdraw')
+    .action(async (operation) => {
+      await init(program.rpc)
+      operation = operation.toLowerCase()
+      if (operation === "deposit") {
+        const { committedEvents, pendingEvents } = await rootUpdaterEvents.getEvents(action.DEPOSIT)
+        console.log("Committed Deposits:", committedEvents.length)
+        console.log("Pending Deposits:", pendingEvents.length)
+      } else if (operation === "withdraw") {
+        const { committedEvents, pendingEvents } = await rootUpdaterEvents.getEvents(action.WITHDRAWAL)
+        console.log("Committed Withdrawals:", committedEvents.length)
+        console.log("Pending Withdrawals:", pendingEvents.length)
+      } else {
+        console.log('Please specify operation as deposit or withdraw')
+      }
+    })
+  program
+    .command('calcap <note>')
+    .description('Calculate AP amount.')
+    .action(async (note) => {
+      await init(program.rpc)
+      const depositBlock = await getBlockNumbers(action.DEPOSIT, note)
+      const withdrawalBlock = await getBlockNumbers(action.WITHDRAWAL, note)
+      const { currency, amount, netId, deposit } = utils.parseNote(note)
+      const rate = await miner.rates(utils.getSacredInstanceAddress(netId, currency, amount))
+      const apAmount = BigNumber.from(withdrawalBlock - depositBlock).mul(rate)
+      console.log("AP amount: ", apAmount.toString())
+    })
+  program
+    .command('reward <note> <privateKey>')
+    .description('Perform Claim Reward')
+    .action(async (note) => {
+      await init(program.rpc)
+      const zeroAccount = new Account()
+      const depositBlock = await getBlockNumbers(action.DEPOSIT, note)
+      const withdrawalBlock = await getBlockNumbers(action.WITHDRAWAL, note)
+      const { currency, amount, netId, deposit } = utils.parseNote(note)
+      const _note = Note.fromString(noteString, utils.getSacredInstanceAddress(netId, currency, amount), depositBlock, withdrawalBlock)
+      const eventsDeposit = await rootUpdaterEvents.getEvents(action.DEPOSIT)
+      const eventsWithdraw = await rootUpdaterEvents.getEvents(action.WITHDRAWAL)
+      const publicKey = getEncryptionPublicKey(privateKey || PRIVATE_KEY)
+      const result = await controller.reward({ account: zeroAccount, note: _note, publicKey, fee:0, relayer:program.relayer, accountCommitments: null, depositDataEvents: eventsDeposit.committedEvents, withdrawalDataEvents: eventsWithdraw.committedEvents})
+      const account = result.account
+      const tx = await (await miner['reward(bytes,(uint256,uint256,address,bytes32,bytes32,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](result.proof, result.args)).wait();
+      const newAccountEvent = tx.events.find(item => item.event === 'NewAccount')
+      const encryptedAccount = newAccountEvent.args.encryptedAccount
+      console.log("Claimed Amount: ", account.amount)
+      console.log("Encrypted Account: ", encryptedAccount)
+    })
+  program
+    .command('rewardswap <account> <recipient>')
+    .description('Perform Claim Reward')
+    .action(async (account, recipient) => {
+      await init(program.rpc)
+      const decryptedAccount = Account.decrypt(privateKey || PRIVATE_KEY, unpackEncryptedMessage(account))
+      const amount = decryptedAccount.amount
+      const withdrawSnark = await controller.withdraw({ account: decryptedAccount, amount, recipient, publicKey })
+      const balanceBefore = await sacred.balanceOf(recipient)
+      console.log("Balance Before RewardSwap:", balanceBefore)
+      const tx = await (await miner['withdraw(bytes,(uint256,bytes32,(uint256,address,address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](withdrawSnark.proof, withdrawSnark.args)).wait()
+      const balanceAfter = await sacred.balanceOf(recipient)
+      console.log("Balance After RewardSwap:", balanceAfter)
+    })
+  try {
+    await program.parseAsync(process.argv)
+    process.exit(0)
+  } catch (e) {
+    console.log('Error:', e)
+    process.exit(1)
+  }
+}
+
+main()

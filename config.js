@@ -5,7 +5,6 @@ module.exports = {
     netId1: {
       eth: {
         instanceAddress: {
-          '0.01' : '0x449EfDAdB9Dd5143a429A661c9161b01eDdaD81b',
           '0.1': '0x9567Ca1cf1B2bcdc88086d4a40De2C7399419DD3',
           '1': '0x0e77E2720871438979052Aa39684F007A13754A0',
           '10': '0x17B21990Cf231aD2Ce277497ba22809008dbFe34',
@@ -29,7 +28,6 @@ module.exports = {
     netId42: {
       eth: {
         instanceAddress: {
-          '0.01' : '0x449EfDAdB9Dd5143a429A661c9161b01eDdaD81b',
           '0.1': '0x9567Ca1cf1B2bcdc88086d4a40De2C7399419DD3',
           '1': '0x0e77E2720871438979052Aa39684F007A13754A0',
           '10': '0x17B21990Cf231aD2Ce277497ba22809008dbFe34',
@@ -53,7 +51,6 @@ module.exports = {
     netId80001: {
       eth: {
         instanceAddress: {
-          '0.01' : '0x449EfDAdB9Dd5143a429A661c9161b01eDdaD81b',
           '0.1': '0x9567Ca1cf1B2bcdc88086d4a40De2C7399419DD3',
           '1': '0x9567Ca1cf1B2bcdc88086d4a40De2C7399419DD3',
           '10': '0x9567Ca1cf1B2bcdc88086d4a40De2C7399419DD3',

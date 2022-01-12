@@ -6,12 +6,12 @@ const prefix = {
   42: 'kovan.',
   5: 'goerli.',
 }
-
-const explorer = `https://${prefix[process.env.NET_ID]}etherscan.io`
+const { PRIVATE_KEY, NET_ID, RPC_URL } = process.env
+const explorer = `https://${prefix[NET_ID]}etherscan.io`
 
 async function deployContracts() {
-  const privateKey = process.env.PRIVATE_KEY
-  //const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL)
+  const privateKey = PRIVATE_KEY
+  //const provider = new ethers.providers.JsonRpcProvider(RPC_URL)
   const provider = ethers.provider
   const testing = ["hardhat", "localhost"].includes(hre.network.name);
   let wallet

@@ -5,7 +5,6 @@ const { BigNumber } = require('ethers')
 const { toBN } = require('web3-utils')
 const { deployContracts } = require('./execute')
 const fs = require('fs')
-const cli = require('./clitest');
 const rootUpdaterEvents = require('../lib/root-updater/events')
 const { updateTree } = require('../lib/root-updater/update')
 const { action } = require('../lib/root-updater/utils')
@@ -14,7 +13,7 @@ const Controller = require('../sacred-anonymity-mining/src/controller')
 const Account = require('../sacred-anonymity-mining/src/account')
 const Note = require('../sacred-anonymity-mining/src/note')
 const addressTable = require('../address.json')
-const { ensToAddr, updateAddressTable } = require('./utils')
+const utils = require('./utils')
 const sacredProxyAbi = require('../sacred-anonymity-mining/artifacts/contracts/SacredProxy.sol/SacredProxy.json')
 const sacredTreesAbi = require('../sacred-trees/artifacts/contracts/SacredTrees.sol/SacredTrees.json')
 const sacredAbi = require('../sacred-token/artifacts/contracts/SACRED.sol/SACRED.json')
@@ -68,7 +67,7 @@ describe('Testing SacredAnanomityMining', () => {
 
   before(async () => {
     await deployContracts();
-    updateAddressTable(addressTable)
+    utils.updateAddressTable(addressTable)
     
     const signers = await ethers.getSigners();
     owner = signers[0];
@@ -83,14 +82,14 @@ describe('Testing SacredAnanomityMining', () => {
       wallet = new ethers.Wallet(privateKey, provider)  
     }
 
-    sacredTrees = new ethers.Contract(ensToAddr(config.sacredTrees.address), sacredTreesAbi.abi, wallet)
-    sacredProxy = new ethers.Contract(ensToAddr(config.sacredProxy.address), sacredProxyAbi.abi, wallet)
-    sacred = new ethers.Contract(ensToAddr(config.sacred.address), sacredAbi.abi, wallet)
-    rewardSwap = new ethers.Contract(ensToAddr(config.rewardSwap.address), rewardSwapAbi.abi, wallet)
-    miner = new ethers.Contract(ensToAddr(config.miningV2.address), minerAbi.abi, wallet)
+    sacredTrees = new ethers.Contract(utils.ensToAddr(config.sacredTrees.address), sacredTreesAbi.abi, wallet)
+    sacredProxy = new ethers.Contract(utils.ensToAddr(config.sacredProxy.address), sacredProxyAbi.abi, wallet)
+    sacred = new ethers.Contract(utils.ensToAddr(config.sacred.address), sacredAbi.abi, wallet)
+    rewardSwap = new ethers.Contract(utils.ensToAddr(config.rewardSwap.address), rewardSwapAbi.abi, wallet)
+    miner = new ethers.Contract(utils.ensToAddr(config.miningV2.address), minerAbi.abi, wallet)
 
-    let sacredInstance = new ethers.Contract(ensToAddr('eth-01.sacredcash.eth'), ethSacredAbi, wallet)
-    await cli.init({sender: owner.address, proxyContractObj: sacredProxy, instanceContractObj: sacredInstance});
+    let sacredInstance = new ethers.Contract(utils.getSacredInstanceAddress(NET_ID, 'eth', 0.1), ethSacredAbi, wallet)
+    await utils.init({sender: owner.address, proxyContractObj: sacredProxy, instanceContractObj: sacredInstance});
     let groth16 = await buildGroth16()
     controller = new Controller({
       contract: miner,
@@ -108,7 +107,7 @@ describe('Testing SacredAnanomityMining', () => {
       expect(tokenFromContract).to.equal(sacred.address)
       const rewardSwapFromContract = await miner.rewardSwap()
       expect(rewardSwapFromContract).to.equal(rewardSwap.address)
-      const rateFromContract = await miner.rates(ensToAddr('eth-01.sacredcash.eth'))
+      const rateFromContract = await miner.rates(utils.getSacredInstanceAddress(NET_ID, 'eth', 0.1))
       expect(rateFromContract).to.equal(BigNumber.from(RATE))
     })
   })
@@ -119,7 +118,7 @@ describe('Testing SacredAnanomityMining', () => {
         let ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
         console.log('Before Deposit: User ETH balance is ', ethbalance);
         //Deposit
-        const result = await cli.deposit({instance: addressTable['eth-01.sacredcash.eth'], currency:'eth', amount:0.1});
+        const result = await utils.deposit({netId: NET_ID, currency:'eth', amount:0.1});
         noteString = result.noteString;
         depositBlockNum = result.blockNumber;
         console.log('Deposit block number is ', depositBlockNum);
@@ -131,8 +130,8 @@ describe('Testing SacredAnanomityMining', () => {
         await ethers.provider.send('evm_mine');
 
         //Withdraw
-        let data = cli.parseNote(noteString);
-        withdrawBlockNum = await cli.withdraw({instance: addressTable['eth-01.sacredcash.eth'], deposit: data.deposit, currency: data.currency, amount:data.amount, recipient: owner.address, relayerURL: null });
+        let data = utils.parseNote(noteString);
+        withdrawBlockNum = await utils.withdraw({netId: NET_ID, deposit: data.deposit, currency: data.currency, amount:data.amount, recipient: owner.address, relayerURL: null });
         console.log('Withdraw block number is ', withdrawBlockNum);
         ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
         console.log('After Withdraw: User ETH balance is ', ethbalance);
@@ -156,7 +155,7 @@ describe('Testing SacredAnanomityMining', () => {
       depositBlockNum = 29123355
       withdrawBlockNum = 29123383
       noteString = "sacred-eth-0.1-42-0xe54ce0efdc2c21c52967457acb8c8d2adc5b76a6b66ea6388675b776a1728d6dd237e671315002d5617b753f220e2e644b7bdd6e87ad0595a7786fc82663"
-      const note = Note.fromString(noteString, addressTable['eth-01.sacredcash.eth'], depositBlockNum, withdrawBlockNum)
+      const note = Note.fromString(noteString, utils.getSacredInstanceAddress(NET_ID, 'eth', 0.1), depositBlockNum, withdrawBlockNum)
 
       const eventsDeposit = await rootUpdaterEvents.getEvents(action.DEPOSIT)
       const eventsWithdraw = await rootUpdaterEvents.getEvents(action.WITHDRAWAL)
