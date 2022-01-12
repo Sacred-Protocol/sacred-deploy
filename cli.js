@@ -20,12 +20,12 @@ const sacredProxyAbi = require('./sacred-anonymity-mining/artifacts/contracts/Sa
 const sacredTreesAbi = require('./sacred-trees/artifacts/contracts/SacredTrees.sol/SacredTrees.json')
 const sacredAbi = require('./sacred-token/artifacts/contracts/SACRED.sol/SACRED.json')
 const minerAbi = require('./sacred-anonymity-mining/artifacts/contracts/Miner.sol/Miner.json')
-
+const { toFixedHex, unpackEncryptedMessage } = require('./sacred-anonymity-mining/src/utils')
 const buildGroth16 = require('websnark/src/groth16')
 const fs = require('fs')
 const program = require('commander')
 const levels = 20
-const { PRIVATE_KEY } = process.env
+const { PRIVATE_KEY, RPC_URL } = process.env
 
 const provingKeys = {
   rewardCircuit: require('./sacred-anonymity-mining/build/circuits/Reward.json'),
@@ -48,7 +48,7 @@ let wallet
 let netId
 
 async function init(rpc) {
-  provider = new ethers.providers.JsonRpcProvider(rpc)
+  provider = new ethers.providers.JsonRpcProvider(rpc || RPC_URL)
   const { chainId } = await provider.getNetwork()
   netId = chainId
   wallet = new ethers.Wallet(PRIVATE_KEY, provider)  
@@ -76,9 +76,20 @@ async function getBlockNumbers(type, noteString) {
   const events = await rootUpdaterEvents.getSacredTreesEvents(type, 0, 'latest')
   const { currency, amount, netId, deposit } = utils.parseNote(noteString)
   const note = Note.fromString(noteString, utils.getSacredInstanceAddress(netId, currency, amount), 0, 0)
-  const item = events.filter((x) => x.hash === toFixedHex(note.commitment))
-  console.log(item)
-  return item.block
+  const item = events.find(function(x) {
+    if(type === action.WITHDRAWAL) {
+      return x.hash === toFixedHex(note.nullifierHash)
+    } else if(type === action.DEPOSIT){
+      return x.hash === toFixedHex(note.commitment)
+    } else {
+      return false
+    }
+  })
+  let blockNum = -1
+  if(item) {
+    blockNum = item.block
+  }
+  return blockNum
 }
 
 async function main() {
@@ -96,7 +107,7 @@ async function main() {
       const instanceAddress = utils.getSacredInstanceAddress(netId, currency, amount)
       let sacredInstance = new ethers.Contract(instanceAddress, currency === "eth" ? ethSacredAbi : erc20SacredAbi, wallet)
       await utils.init({sender: wallet.address, proxyContractObj: sacredProxy, instanceContractObj: sacredInstance});
-      const result = await utils.deposit({instance: instanceAddress, currency, amount});
+      const result = await utils.deposit({netId, currency, amount});
     })
   program
     .command('withdraw <note> <recipient> [ETH_purchase]')
@@ -107,7 +118,7 @@ async function main() {
       const instanceAddress = utils.getSacredInstanceAddress(netId, currency, amount)
       let sacredInstance = new ethers.Contract(instanceAddress, currency === "eth" ? ethSacredAbi : erc20SacredAbi, wallet)
       await utils.init({sender: wallet.address, proxyContractObj: sacredProxy, instanceContractObj: sacredInstance});
-      await utils.withdraw({netId: netId, deposit, currency, amount, recipient, relayerURL: program.relayer, refund });
+      await utils.withdraw({netId, deposit, currency, amount, recipient, relayerURL: program.relayer, refund });
     })
   program
     .command('sacredtest <currency> <amount> <recipient>')
@@ -118,8 +129,8 @@ async function main() {
       const instanceAddress = utils.getSacredInstanceAddress(netId, currency, amount)
       let sacredInstance = new ethers.Contract(instanceAddress, currency === "eth" ? ethSacredAbi : erc20SacredAbi, wallet)
       await utils.init({sender: wallet.address, proxyContractObj: sacredProxy, instanceContractObj: sacredInstance});
-      const { noteString, } = await utils.deposit({instance: instanceAddress, currency, amount});
-      const { netId, deposit } = utils.parseNote(noteString)
+      const { noteString, } = await utils.deposit({netId, currency, amount});
+      const { _netId, deposit } = utils.parseNote(noteString)
       const refund = '0'
       await utils.withdraw({netId, deposit, currency, amount, recipient, relayerURL: program.relayer, refund });
     })
@@ -162,10 +173,18 @@ async function main() {
       await init(program.rpc)
       const depositBlock = await getBlockNumbers(action.DEPOSIT, note)
       const withdrawalBlock = await getBlockNumbers(action.WITHDRAWAL, note)
-      const { currency, amount, netId, deposit } = utils.parseNote(note)
-      const rate = await miner.rates(utils.getSacredInstanceAddress(netId, currency, amount))
-      const apAmount = BigNumber.from(withdrawalBlock - depositBlock).mul(rate)
-      console.log("AP amount: ", apAmount.toString())
+      if(depositBlock < 0) {
+        console.log("The note isn't included in deposit transactions")
+      }
+      if(withdrawalBlock < 0) {
+        console.log("The note isn't included in withdrawal transactions")
+      }
+      if(depositBlock > 0 && withdrawalBlock > 0) {
+        const { currency, amount, netId, deposit } = utils.parseNote(note)
+        const rate = await miner.rates(utils.getSacredInstanceAddress(netId, currency, amount))
+        const apAmount = BigNumber.from(withdrawalBlock - depositBlock).mul(rate)
+        console.log("AP amount: ", apAmount.toString())
+      }
     })
   program
     .command('reward <note> <privateKey>')
@@ -175,18 +194,26 @@ async function main() {
       const zeroAccount = new Account()
       const depositBlock = await getBlockNumbers(action.DEPOSIT, note)
       const withdrawalBlock = await getBlockNumbers(action.WITHDRAWAL, note)
-      const { currency, amount, netId, deposit } = utils.parseNote(note)
-      const _note = Note.fromString(noteString, utils.getSacredInstanceAddress(netId, currency, amount), depositBlock, withdrawalBlock)
-      const eventsDeposit = await rootUpdaterEvents.getEvents(action.DEPOSIT)
-      const eventsWithdraw = await rootUpdaterEvents.getEvents(action.WITHDRAWAL)
-      const publicKey = getEncryptionPublicKey(privateKey || PRIVATE_KEY)
-      const result = await controller.reward({ account: zeroAccount, note: _note, publicKey, fee:0, relayer:program.relayer, accountCommitments: null, depositDataEvents: eventsDeposit.committedEvents, withdrawalDataEvents: eventsWithdraw.committedEvents})
-      const account = result.account
-      const tx = await (await miner['reward(bytes,(uint256,uint256,address,bytes32,bytes32,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](result.proof, result.args)).wait();
-      const newAccountEvent = tx.events.find(item => item.event === 'NewAccount')
-      const encryptedAccount = newAccountEvent.args.encryptedAccount
-      console.log("Claimed Amount: ", account.amount)
-      console.log("Encrypted Account: ", encryptedAccount)
+      if(depositBlock < 0) {
+        console.log("The note isn't included in deposit transactions")
+      }
+      if(withdrawalBlock < 0) {
+        console.log("The note isn't included in withdrawal transactions")
+      }
+      if(depositBlock > 0 && withdrawalBlock > 0) {
+        const { currency, amount, netId, deposit } = utils.parseNote(note)
+        const _note = Note.fromString(noteString, utils.getSacredInstanceAddress(netId, currency, amount), depositBlock, withdrawalBlock)
+        const eventsDeposit = await rootUpdaterEvents.getEvents(action.DEPOSIT)
+        const eventsWithdraw = await rootUpdaterEvents.getEvents(action.WITHDRAWAL)
+        const publicKey = getEncryptionPublicKey(privateKey || PRIVATE_KEY)
+        const result = await controller.reward({ account: zeroAccount, note: _note, publicKey, fee:0, relayer:program.relayer, accountCommitments: null, depositDataEvents: eventsDeposit.committedEvents, withdrawalDataEvents: eventsWithdraw.committedEvents})
+        const account = result.account
+        const tx = await (await miner['reward(bytes,(uint256,uint256,address,bytes32,bytes32,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](result.proof, result.args)).wait();
+        const newAccountEvent = tx.events.find(item => item.event === 'NewAccount')
+        const encryptedAccount = newAccountEvent.args.encryptedAccount
+        console.log("Claimed Amount: ", account.amount)
+        console.log("Encrypted Account: ", encryptedAccount)
+      }
     })
   program
     .command('rewardswap <account> <recipient>')

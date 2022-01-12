@@ -23,7 +23,18 @@ let MERKLE_TREE_HEIGHT
 const { DEPLOYER, SALT, NET_ID } = process.env
 
 let addressTable = {}
+let provider
 
+async function getProvider() {
+  if(!provider) {
+    if(ethers.provider && typeof hre !== 'undefined') {
+      provider = ethers.provider
+    } else {
+      provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL)
+    }
+  }
+  return provider
+}
 
 /** Generate random number of specified byte length */
 const rbigint = nbytes => snarkjs.bigInt.leBuff2int(crypto.randomBytes(nbytes))
@@ -52,7 +63,7 @@ async function printERC20Balance({ address, name, tokenAddress }) {
 const getEvents = async (contract, options) => {
   const { eventName, fromBlock = 0, toBlock = 'latest', topics } = options;
 
-  const provider = ethers.provider
+  const provider = await getProvider()
 
   const parsedTopic = topics ? ethers.utils.id(contract.interface.events[topics].signature) : null;
 
