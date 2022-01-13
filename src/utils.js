@@ -3,7 +3,7 @@ const config = require('../sacred-token/config')
 const path = require('path')
 const { getCreate2Address } = require('@ethersproject/address')
 const { keccak256 } = require('@ethersproject/solidity')
-const ethers = require('ethers')
+const { ethers } = require("hardhat");
 const MerkleTree = require('fixed-merkle-tree')
 const { poseidon } = require('circomlib')
 const tokenConfig = require('../config')
@@ -62,11 +62,8 @@ async function printERC20Balance({ address, name, tokenAddress }) {
 
 const getEvents = async (contract, options) => {
   const { eventName, fromBlock = 0, toBlock = 'latest', topics } = options;
-
   const provider = await getProvider()
-
   const parsedTopic = topics ? ethers.utils.id(contract.interface.events[topics].signature) : null;
-
   const events = await provider.getLogs({
     fromBlock,
     toBlock,
