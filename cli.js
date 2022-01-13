@@ -48,7 +48,14 @@ let wallet
 let netId
 
 async function init(rpc) {
-  provider = new ethers.providers.JsonRpcProvider(rpc || RPC_URL)
+  if(!provider) {
+    if(ethers.provider && typeof hre !== 'undefined') {
+      provider = ethers.provider
+    } else {
+      provider = new ethers.providers.JsonRpcProvider(rpc || RPC_URL)
+    }
+  }
+
   const { chainId } = await provider.getNetwork()
   netId = chainId
   wallet = new ethers.Wallet(PRIVATE_KEY, provider)  
