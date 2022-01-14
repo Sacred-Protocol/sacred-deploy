@@ -195,9 +195,9 @@ async function main() {
       }
     })
   program
-    .command('reward <note> <privateKey>')
+    .command('reward <note>')
     .description('Perform Claim Reward')
-    .action(async (note, privateKey) => {
+    .action(async (note) => {
       await init(program.rpc)
       const zeroAccount = new Account()
       const depositBlock = await getBlockNumbers(action.DEPOSIT, note)
@@ -213,7 +213,7 @@ async function main() {
         const _note = Note.fromString(note, utils.getSacredInstanceAddress(netId, currency, amount), depositBlock, withdrawalBlock)
         const eventsDeposit = await rootUpdaterEvents.getEvents(action.DEPOSIT)
         const eventsWithdraw = await rootUpdaterEvents.getEvents(action.WITHDRAWAL)
-        const publicKey = getEncryptionPublicKey(privateKey || PRIVATE_KEY)
+        const publicKey = getEncryptionPublicKey(program.privateKey || PRIVATE_KEY)
         const result = await controller.reward({ account: zeroAccount, note: _note, publicKey, fee:0, relayer:program.relayer, accountCommitments: null, depositDataEvents: eventsDeposit.committedEvents, withdrawalDataEvents: eventsWithdraw.committedEvents})
         const account = result.account
         const tx = await (await miner['reward(bytes,(uint256,uint256,address,bytes32,bytes32,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](result.proof, result.args)).wait();
@@ -224,12 +224,12 @@ async function main() {
       }
     })
   program
-    .command('rewardswap <account> <privateKey> <recipient>')
+    .command('rewardswap <account> <recipient>')
     .description('Perform Claim Reward')
-    .action(async (account, privateKey, recipient) => {
+    .action(async (account, recipient) => {
       await init(program.rpc)
-      const publicKey = getEncryptionPublicKey(privateKey)
-      const decryptedAccount = Account.decrypt(privateKey || PRIVATE_KEY, unpackEncryptedMessage(account))
+      const publicKey = getEncryptionPublicKey(program.privateKey)
+      const decryptedAccount = Account.decrypt(program.privateKey || PRIVATE_KEY, unpackEncryptedMessage(account))
       const amount = decryptedAccount.amount
       const withdrawSnark = await controller.withdraw({ account: decryptedAccount, amount, recipient, publicKey })
       const balanceBefore = await sacred.balanceOf(recipient)
