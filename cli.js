@@ -146,7 +146,7 @@ async function main() {
     .description('Perform batch update root of SacredTree. operation indicates deposit or withdraw')
     .action(async (operation) => {
       await init(program.rpc)
-      operation = currency.toLowerCase()
+      operation = operation.toLowerCase()
       if (operation === "deposit") {
         await upateRoot(action.DEPOSIT)
       } else if (operation === "withdraw") {
