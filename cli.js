@@ -196,7 +196,7 @@ async function main() {
   program
     .command('reward <note> <privateKey>')
     .description('Perform Claim Reward')
-    .action(async (note) => {
+    .action(async (note, privateKey) => {
       await init(program.rpc)
       const zeroAccount = new Account()
       const depositBlock = await getBlockNumbers(action.DEPOSIT, note)
@@ -209,7 +209,7 @@ async function main() {
       }
       if(depositBlock > 0 && withdrawalBlock > 0) {
         const { currency, amount, netId, deposit } = utils.parseNote(note)
-        const _note = Note.fromString(noteString, utils.getSacredInstanceAddress(netId, currency, amount), depositBlock, withdrawalBlock)
+        const _note = Note.fromString(note, utils.getSacredInstanceAddress(netId, currency, amount), depositBlock, withdrawalBlock)
         const eventsDeposit = await rootUpdaterEvents.getEvents(action.DEPOSIT)
         const eventsWithdraw = await rootUpdaterEvents.getEvents(action.WITHDRAWAL)
         const publicKey = getEncryptionPublicKey(privateKey || PRIVATE_KEY)
