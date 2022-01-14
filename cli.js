@@ -219,15 +219,16 @@ async function main() {
         const tx = await (await miner['reward(bytes,(uint256,uint256,address,bytes32,bytes32,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](result.proof, result.args)).wait();
         const newAccountEvent = tx.events.find(item => item.event === 'NewAccount')
         const encryptedAccount = newAccountEvent.args.encryptedAccount
-        console.log("Claimed Amount: ", account.amount)
+        console.log("Claimed Amount: ", account.amount.toString())
         console.log("Encrypted Account: ", encryptedAccount)
       }
     })
   program
-    .command('rewardswap <account> <recipient>')
+    .command('rewardswap <account> <privateKey> <recipient>')
     .description('Perform Claim Reward')
-    .action(async (account, recipient) => {
+    .action(async (account, privateKey, recipient) => {
       await init(program.rpc)
+      const publicKey = getEncryptionPublicKey(privateKey)
       const decryptedAccount = Account.decrypt(privateKey || PRIVATE_KEY, unpackEncryptedMessage(account))
       const amount = decryptedAccount.amount
       const withdrawSnark = await controller.withdraw({ account: decryptedAccount, amount, recipient, publicKey })
