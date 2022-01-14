@@ -331,7 +331,11 @@ function initAddressTable(configData) {
       initAddressTable(data)
     }
   }
- 
+
+  addressTable['eth-01.sacredcash.eth'] = getSacredInstanceAddress(NET_ID, "eth", 0.1)
+  addressTable['eth-1.sacredcash.eth'] = getSacredInstanceAddress(NET_ID, "eth", 1)
+  addressTable['eth-10.sacredcash.eth'] = getSacredInstanceAddress(NET_ID, "eth", 10)
+  addressTable['eth-100.sacredcash.eth'] = getSacredInstanceAddress(NET_ID, "eth", 100)
 }
 
 initAddressTable(config)
