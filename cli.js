@@ -196,7 +196,7 @@ async function main() {
     })
   program
     .command('reward <note>')
-    .description('Perform Claim Reward')
+    .description('It claiming reward. With executing this, you can get your encoded account that contains your AP.')
     .action(async (note) => {
       await init(program.rpc)
       const zeroAccount = new Account()
@@ -225,7 +225,7 @@ async function main() {
     })
   program
     .command('rewardswap <account> <recipient>')
-    .description('Perform Claim Reward')
+    .description('It swaps your AP that is included in your account to ETH.')
     .action(async (account, recipient) => {
       await init(program.rpc)
       const publicKey = getEncryptionPublicKey(program.privateKey)

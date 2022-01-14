@@ -33,3 +33,42 @@ In order to generate exactly the same actions.json the code has to be compiled i
 ```
 cat actions.json | jq '.actions[] | {domain,expectedAddress,contract} '
 ```
+
+## How to use cli tool  
+### options  
+-r, --rpc <URL>
+The RPC, CLI should interact with, default: http://localhost:8545
+-R, --relayer <URL>
+Withdraw via relayer
+-k, --privatekey <privateKey>
+Private Key
+
+### Available commands  
+deposit <currency> <amount>  
+Submit a deposit of specified currency and amount from default eth account and return the resulting note. 
+The currency is one of (ETH|). The amount depends on currency, see config.js file.
+
+withdraw <note> <recipient>  
+Withdraw a note to a recipient account using relayer or specified private key. You can exchange some of your deposit`s tokens to ETH during the withdrawal by specifing ETH_purchase (e.g. 0.1) to pay for gas in future transactions. Also see the --relayer option.
+
+sacredtest <currency> <amount> <recipient>
+Perform an automated test. It deposits and withdraws amount ETH. Uses Kovan Testnet.
+
+updatetree <operation>
+It performs batchUpdateRoot for deposits/withdrawal roots of SacredTrees
+operation can be diposit/withdraw
+
+showpendings <operation>
+It shows how many number of deposit/withdraw event are pending in SacredTrees
+operation can be diposit/withdraw
+
+calcap <note>
+It shows calculated AP amount based on deposit / withdrawal block number
+
+reward <note>
+It claiming reward. With executing this, you can get your encoded account that contains your AP.
+
+rewardswap <account> <recipient>
+It swaps your AP that is included in your account to ETH.
+
+
