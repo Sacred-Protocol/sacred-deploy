@@ -25,6 +25,7 @@ cd ..
 cd sacred-anonymity-mining
 yarn link sacred-token
 yarn
+yarn compile:hasher
 if [[ ! -f "build/circuits/TreeUpdateVerifier.sol" ]]; then
   yarn circuit
 fi
