@@ -20,12 +20,14 @@ const sacredAbi = require('../sacred-token/artifacts/contracts/SACRED.sol/SACRED
 const rewardSwapAbi = require('../sacred-anonymity-mining/artifacts/contracts/RewardSwap.sol/RewardSwap.json')
 const minerAbi = require('../sacred-anonymity-mining/artifacts/contracts/Miner.sol/Miner.json')
 const ethSacredAbi = require('../abi/ethSacred.json')
+const erc20Abi = require('../abi/erc20.abi.json')
 const buildGroth16 = require('websnark/src/groth16')
 const {
   toFixedHex,
   unpackEncryptedMessage
 } = require('../sacred-anonymity-mining/src/utils')
 const { getEncryptionPublicKey } = require('eth-sig-util');
+const exp = require('constants');
 
 const provingKeys = {
   rewardCircuit: require('../sacred-anonymity-mining/build/circuits/Reward.json'),
@@ -36,11 +38,31 @@ const provingKeys = {
   treeUpdateProvingKey: fs.readFileSync('./sacred-anonymity-mining/build/circuits/TreeUpdate_proving_key.bin').buffer,
 }
 
-const { PRIVATE_KEY, NET_ID } = process.env
+const { PRIVATE_KEY, NET_ID, WETH_TOKEN } = process.env
 
 async function upateRoot(type) {
   const { committedEvents, pendingEvents } = await rootUpdaterEvents.getEvents(type)
   await updateTree(committedEvents, pendingEvents, type)
+}
+
+async function getBlockNumbers(type, noteString) {
+  const events = await rootUpdaterEvents.getSacredTreesEvents(type, 0, 'latest')
+  const { currency, amount, netId, deposit } = utils.parseNote(noteString)
+  const note = Note.fromString(noteString, utils.getSacredInstanceAddress(netId, currency, amount), 0, 0)
+  const item = events.find(function(x) {
+    if(type === action.WITHDRAWAL) {
+      return x.hash === toFixedHex(note.nullifierHash)
+    } else if(type === action.DEPOSIT){
+      return x.hash === toFixedHex(note.commitment)
+    } else {
+      return false
+    }
+  })
+  let blockNum = -1
+  if(item) {
+    blockNum = item.block
+  }
+  return blockNum
 }
 
 describe('Testing SacredAnanomityMining', () => {
@@ -114,7 +136,7 @@ describe('Testing SacredAnanomityMining', () => {
 
   describe('#Deposit And Withdraw', () => {
     it('should work', async () => {
-      for(let i = 0; i < 1; i++) {
+      for(let i = 0; i < 0; i++) {
         let ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
         console.log('Before Deposit: User ETH balance is ', ethbalance);
         //Deposit
@@ -141,8 +163,8 @@ describe('Testing SacredAnanomityMining', () => {
 
   describe('#Update Root of SacredTree', () => {
     it('should work', async () => {
-      await upateRoot(action.DEPOSIT)
-      await upateRoot(action.WITHDRAWAL)
+      //await upateRoot(action.DEPOSIT)
+      //await upateRoot(action.WITHDRAWAL)
     }).timeout(3000000);
   })
 
@@ -152,10 +174,15 @@ describe('Testing SacredAnanomityMining', () => {
       const accountCount = await miner.accountCount()
       expect(zeroAccount.amount.toString()).to.equal("0")
 
-      depositBlockNum = 24477436
-      withdrawBlockNum = 24477447
-      noteString = "sacred-eth-0.1-80001-0xcda9fbffddaba75057f03fbea8d999f0c68b1608c8e378d9969c6d56b10e7b0c77fa40e9eee3688f8cf5d620ed4c1f59157f987bb04d46b50e25e8ae2e95"
+      noteString = "sacred-eth-0.1-80001-0x13b44527958108cdca6201b55a02c097f0ea8bddd608d79d1be4fa15f3bfbe4e1ac1d0e2023793b32d7467c626394be895ebc9b54ee5a9ba2935f710cc93"
+      depositBlockNum = await getBlockNumbers(action.DEPOSIT, noteString)
+      withdrawBlockNum = await getBlockNumbers(action.WITHDRAWAL, noteString)
       const note = Note.fromString(noteString, utils.getSacredInstanceAddress(NET_ID, 'eth', 0.1), depositBlockNum, withdrawBlockNum)
+
+      const shareTracks = await miner.shareTrack()
+      const totalShares = await miner.totalShareSnapshots(toFixedHex(note.rewardNullifier))
+      expect(totalShares).to.greaterThan(BigNumber.from(0))
+      expect(shareTracks.totalShares).to.greaterThanOrEqual(totalShares)
 
       const eventsDeposit = await rootUpdaterEvents.getEvents(action.DEPOSIT)
       const eventsWithdraw = await rootUpdaterEvents.getEvents(action.WITHDRAWAL)
@@ -164,8 +191,11 @@ describe('Testing SacredAnanomityMining', () => {
       args = result.args
       account = result.account
       const recipient = owner.address
-      const tx = await (await miner['reward(bytes,(uint256,uint256,address,uint256,bytes32,bytes32,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)),address)'](proof, args, recipient)).wait();
-
+      const aToken = new ethers.Contract(WETH_TOKEN, erc20Abi, wallet)
+      const prevAaveTokenAmount = await aToken.balanceOf(recipient)
+      const tx = await (await miner['reward(bytes,(uint256,uint256,address,uint256,bytes32,bytes32,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)),address)'](proof, args, recipient, {gasLimit: 500000000})).wait();
+      const aaveTokenAmount = await aToken.balanceOf(recipient)
+      console.log("Received ATokens", aaveTokenAmount - prevAaveTokenAmount)
       const newAccountEvent = tx.events.find(item => item.event === 'NewAccount')
 
       expect(newAccountEvent.event).to.equal('NewAccount')
@@ -190,6 +220,8 @@ describe('Testing SacredAnanomityMining', () => {
       expect(accountNullifierAfter).to.equal(true)
 
       expect(account.amount.toString()).to.equal(BigNumber.from(note.withdrawalBlock - note.depositBlock).mul(RATE).toString())
+      WETH_TOKEN
+      
 
     }).timeout(3000000);
   })
