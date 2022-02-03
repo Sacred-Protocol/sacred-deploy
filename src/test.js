@@ -152,9 +152,9 @@ describe('Testing SacredAnanomityMining', () => {
       const accountCount = await miner.accountCount()
       expect(zeroAccount.amount.toString()).to.equal("0")
 
-      depositBlockNum = 29123355
-      withdrawBlockNum = 29123383
-      noteString = "sacred-eth-0.1-42-0xe54ce0efdc2c21c52967457acb8c8d2adc5b76a6b66ea6388675b776a1728d6dd237e671315002d5617b753f220e2e644b7bdd6e87ad0595a7786fc82663"
+      depositBlockNum = 24477436
+      withdrawBlockNum = 24477447
+      noteString = "sacred-eth-0.1-80001-0xcda9fbffddaba75057f03fbea8d999f0c68b1608c8e378d9969c6d56b10e7b0c77fa40e9eee3688f8cf5d620ed4c1f59157f987bb04d46b50e25e8ae2e95"
       const note = Note.fromString(noteString, utils.getSacredInstanceAddress(NET_ID, 'eth', 0.1), depositBlockNum, withdrawBlockNum)
 
       const eventsDeposit = await rootUpdaterEvents.getEvents(action.DEPOSIT)
@@ -163,7 +163,8 @@ describe('Testing SacredAnanomityMining', () => {
       proof = result.proof
       args = result.args
       account = result.account
-      const tx = await (await miner['reward(bytes,(uint256,uint256,address,bytes32,bytes32,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](proof, args)).wait();
+      const recipient = owner.address
+      const tx = await (await miner['reward(bytes,(uint256,uint256,address,uint256,bytes32,bytes32,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)),address)'](proof, args, recipient)).wait();
 
       const newAccountEvent = tx.events.find(item => item.event === 'NewAccount')
 
