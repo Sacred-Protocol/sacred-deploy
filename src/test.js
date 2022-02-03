@@ -181,8 +181,8 @@ describe('Testing SacredAnanomityMining', () => {
 
       const shareTracks = await miner.shareTrack()
       const totalShares = await miner.totalShareSnapshots(toFixedHex(note.rewardNullifier))
-      expect(totalShares).to.greaterThan(BigNumber.from(0))
-      expect(shareTracks.totalShares).to.greaterThanOrEqual(totalShares)
+      expect(totalShares > BigNumber.from(0)).to.equal(true)
+      expect(shareTracks.totalShares >= totalShares).to.equal(true)
 
       const eventsDeposit = await rootUpdaterEvents.getEvents(action.DEPOSIT)
       const eventsWithdraw = await rootUpdaterEvents.getEvents(action.WITHDRAWAL)
