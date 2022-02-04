@@ -195,9 +195,9 @@ async function main() {
       }
     })
   program
-    .command('reward <note>')
+    .command('reward <note> <recipient>')
     .description('It claiming reward. With executing this, you can get your encoded account that contains your AP.')
-    .action(async (note) => {
+    .action(async (note, recipient) => {
       await init(program.rpc)
       const zeroAccount = new Account()
       const depositBlock = await getBlockNumbers(action.DEPOSIT, note)
@@ -216,7 +216,7 @@ async function main() {
         const publicKey = getEncryptionPublicKey(program.privateKey || PRIVATE_KEY)
         const result = await controller.reward({ account: zeroAccount, note: _note, publicKey, fee:0, relayer:program.relayer, accountCommitments: null, depositDataEvents: eventsDeposit.committedEvents, withdrawalDataEvents: eventsWithdraw.committedEvents})
         const account = result.account
-        const tx = await (await miner['reward(bytes,(uint256,uint256,address,bytes32,bytes32,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](result.proof, result.args)).wait();
+        const tx = await (await miner['reward(bytes,(uint256,uint256,address,uint256,bytes32,bytes32,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)),address)'](result.proof, result.args, recipient, {gasLimit: 500000})).wait();
         const newAccountEvent = tx.events.find(item => item.event === 'NewAccount')
         const encryptedAccount = newAccountEvent.args.encryptedAccount
         console.log("Claimed Amount: ", account.amount.toString())

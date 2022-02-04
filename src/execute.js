@@ -1,6 +1,10 @@
 require('dotenv').config()
+const utils = require('./utils');
 const actions = require('../actions.json')
 const abi = require('../abi/deployer.abi.json')
+const config = require('../sacred-token/config')
+const ethSacredAbi = require('../abi/ethSacred.json')
+const addressTable = require('../address.json')
 const prefix = {
   1: '',
   42: 'kovan.',
@@ -22,6 +26,8 @@ async function deployContracts() {
     wallet = new ethers.Wallet(privateKey, provider)  
   }
 
+  utils.updateAddressTable(addressTable)
+
   const deployer = new ethers.Contract(actions.deployer, abi, wallet)
   const deployerProxy = new ethers.Contract(actions.actions[0].expectedAddress, actions.actions[0].abi, wallet)
 
@@ -34,7 +40,7 @@ async function deployContracts() {
     console.log(`Deploying ${action.contract} to ${action.domain} (${action.expectedAddress})`)
     const dep = deployer
     //const dep = action === actions.actions[0] ? deployer : deployerProxy
-    const tx = await dep.deploy(action.bytecode, actions.salt, {gasLimit: 30000000})
+    const tx = await dep.deploy(action.bytecode, actions.salt, {gasLimit: 5000000})
     console.log(`TX hash ${explorer}/tx/${tx.hash}`)
     try {
       await tx.wait()
@@ -43,6 +49,7 @@ async function deployContracts() {
         console.log(`Deployed ${action.contract} to ${explorer}/address/${action.expectedAddress}\n`)
       } else {
         console.log(`Failed to deploy ${action.contract}\n`)
+        return
       }
     } catch (e) {
       console.error(`Failed to deploy ${action.contract}, sending debug tx`)
@@ -62,6 +69,12 @@ async function deployContracts() {
       const deployedContract = new ethers.Contract(action.expectedAddress, action.abi, wallet)
       await (await deployedContract.initialize(...action.initArgs)).wait()
     }
+  }
+
+  const instances = [0.1, 1, 10, 100]
+  for(let i = 0; i < instances.length; i++) {
+    let sacredInstance = new ethers.Contract(utils.getSacredInstanceAddress(NET_ID, 'eth', instances[i]), ethSacredAbi, wallet)
+    await (await sacredInstance.setAaveInterestsProxy(utils.ensToAddr(config.aaveInterestsProxy.address))).wait()
   }
 }
 

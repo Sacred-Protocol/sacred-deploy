@@ -46,7 +46,14 @@ const config = {
     },
     mumbai: {
       url: process.env.RPC_URL,
-      //accounts: [process.env.PRIVATE_KEY],
+      blockGasLimit: 20000000000,
+      accounts: [process.env.PRIVATE_KEY],
+    },
+    matic: {
+      url: process.env.RPC_URL,
+      blockGasLimit: 20000000000,
+      gasPrice: 100000000000000,
+      accounts: [process.env.PRIVATE_KEY],
     },
   },
   mocha: {
