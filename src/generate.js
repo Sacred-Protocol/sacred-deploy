@@ -4,7 +4,7 @@ const ethers = require('ethers')
 const config = require('../sacred-token/config')
 const get = require('get-value')
 const { deploy, getContractData, zeroMerkleRoot, ensToAddr, addressTable } = require('./utils')
-const { DEPLOYER, SALT } = process.env
+const { DEPLOYER, SALT, WETH_TOKEN, MINIMUM_INTERESTS } = process.env
 
 const sacred = getContractData('../sacred-token/artifacts/contracts/SACRED.sol/SACRED.json')
 const vesting = getContractData('../sacred-token/artifacts/contracts/Vesting.sol/Vesting.json')
@@ -16,9 +16,11 @@ const sacredTrees = getContractData('../sacred-trees/artifacts/contracts/SacredT
 const adminUpgradeableProxy = getContractData('../sacred-trees/artifacts/contracts/AdminUpgradeableProxy.sol/AdminUpgradeableProxy.json')
 const batchTreeUpdateVerifier = getContractData('../sacred-trees/artifacts/contracts/verifiers/BatchTreeUpdateVerifier.sol/BatchTreeUpdateVerifier.json')
 const sacredProxy = getContractData('../sacred-anonymity-mining/artifacts/contracts/SacredProxy.sol/SacredProxy.json')
+const aaveInterestsProxy = getContractData('../sacred-anonymity-mining/artifacts/contracts/AaveInterestsProxy.sol/AaveInterestsProxy.json')
 const rewardVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/RewardVerifier.sol/RewardVerifier.json')
 const withdrawVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/WithdrawVerifier.sol/WithdrawVerifier.json')
 const treeUpdateVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/TreeUpdateVerifier.sol/TreeUpdateVerifier.json')
+const poseidonHasher = getContractData('../sacred-anonymity-mining/build/contracts/Hasher.json')
 // const verifier2 = getContractData('../sacred-pool/artifacts/contracts/Verifier2.sol/Verifier2.json')
 // const verifier16 = getContractData('../sacred-pool/artifacts/contracts/Verifier16.sol/Verifier16.json')
 // const sacredPool = getContractData('../sacred-pool/artifacts/contracts/SacredPool.sol/SacredPool.json')
@@ -151,6 +153,16 @@ actions.push(
 
 const sacredTreeActionIndex = actions.length - 1;
 
+// Deploy PoseidonHasher
+actions.push(
+  deploy({
+    domain: config.poseidonHasher1.address,
+    contract: poseidonHasher,
+    title: 'Poseidon hasher 1',
+    description: 'Poseidon hash function for 1 arguments',
+  }),
+)
+
 // Deploy SacredProxy
 //const instances = config.miningV2.rates.map((rate) => ensToAddr(rate.instance))
 //TornadoTreeV2 was deployed through proposalContract
@@ -175,11 +187,24 @@ actions.push(
   }),
 )
 
+const sacredProxyActionIndex = actions.length - 1;
+
 actions[sacredTreeActionIndex].initArgs = [
   ensToAddr(config.sacredProxy.address),
   ensToAddr("batchTreeUpdateVerifier.contract.sacredcash.eth"),
   "0x29f9a0a07a22ab214d00aaa0190f54509e853f3119009baecb0035347606b0a9"
 ];
+
+// Deploy AaveInterestsProxy
+actions.push(
+  deploy({
+    domain: config.aaveInterestsProxy.address,
+    contract: aaveInterestsProxy,
+    args: [WETH_TOKEN],
+    title: 'AaveInterestsProxy',
+    description: 'AaveInterestsProxy collect aave interests from ETHSacred instances',
+  }),
+)
 
 // Deploy Miner
 const rates = config.miningV2.rates.map((rate) => ({
@@ -192,16 +217,22 @@ actions.push(
     domain: config.miningV2.address,
     contract: miner,
     args: [
-      ensToAddr(config.rewardSwap.address),
-      ensToAddr(config.governance.address),
-      ensToAddr(config.sacredTrees.address),
+      {
+        rewardSwap: ensToAddr(config.rewardSwap.address),
+        governance: ensToAddr(config.governance.address),
+        sacredTrees: ensToAddr(config.sacredTrees.address),
+        sacredProxy: ensToAddr(config.sacredProxy.address),
+        aaveInterestsProxy: ensToAddr(config.aaveInterestsProxy.address)
+      },
       [
         ensToAddr(config.rewardVerifier.address),
         ensToAddr(config.withdrawVerifier.address),
         ensToAddr(config.treeUpdateVerifier.address),
       ],
+      ensToAddr(config.poseidonHasher1.address),
       zeroMerkleRoot,
       rates,
+      MINIMUM_INTERESTS,
     ],
     title: 'Miner',
     description: 'Mining contract for Anonymity Points',
@@ -212,6 +243,11 @@ actions.push(
 actions[rewardSwapActionIndex].initArgs = [
   ensToAddr(config.miningV2.address)
 ]
+
+// Set args for SacredProxy Initialization
+actions[sacredProxyActionIndex].initArgs = [
+  ensToAddr(config.miningV2.address)
+];
 
 // Deploy Vestings
 config.vesting.governance.beneficiary = actions.find(
