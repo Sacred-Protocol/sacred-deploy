@@ -26,6 +26,7 @@ cd sacred-contracts-eth
 ```
 - Copy .env.example and setup
 `ETH_AMOUNT`: denomination amount for a sacred pool, it's WEI value for one of 0.1, 1, 10 and 100ETH  
+`OPERATOR_FEE`: default is 50(0.5%), the value range is 0, 1(0.01%) ~ 1000(10%)  
 `LENDING_POOL_ADDRESS_PROVIDER`: AAVE LendingPoolAddressesProvider Contract Address  
 `WETH_GATEWAY`: AAVE WETHGateway contract address  
 `WETH_TOKEN `: aWETH token address  
