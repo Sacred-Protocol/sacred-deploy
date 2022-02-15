@@ -50,7 +50,7 @@ cd sacred-deploy
 git submodule update --init --recursive
 ```
 - Fill config.js with the deployed instance addresses.
-- Setup .env
+- Setup .env  
 `RPC_URL, NET_ID, NETWORK, SALT`  
 (we can improve source code to detect NET_ID and NETWORK from RPC_URL so that simply file evn settings)  
 You should change SALT value if you want to have fresh deployed contracts.  
