@@ -5,7 +5,6 @@
 require('dotenv').config()
 const { waffle, ethers } = require("hardhat");
 const utils = require('./src/utils')
-const addressTable = require('./address.json')
 const ethSacredAbi = require('./abi/ethSacred.json')
 const erc20SacredAbi = require('./abi/erc20Sacred.json')
 const rootUpdaterEvents = require('./lib/root-updater/events')
@@ -26,7 +25,8 @@ const { getEncryptionPublicKey } = require('eth-sig-util');
 const fs = require('fs')
 const program = require('commander')
 const levels = 20
-const { PRIVATE_KEY, RPC_URL } = process.env
+const { PRIVATE_KEY, RPC_URL, NETWORK } = process.env
+const addressTable = require('./'+NETWORK+'/address.json')
 
 const provingKeys = {
   rewardCircuit: require('./sacred-anonymity-mining/build/circuits/Reward.json'),

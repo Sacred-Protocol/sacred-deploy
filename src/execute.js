@@ -30,7 +30,7 @@ async function deployContracts() {
 
   const deployer = new ethers.Contract(actions.deployer, abi, wallet)
   const deployerProxy = new ethers.Contract(actions.actions[0].expectedAddress, actions.actions[0].abi, wallet)
-
+  let gasUsed = BigInt(0)
   for (const action of actions.actions) {
     let code = await provider.getCode(action.expectedAddress)
     if (code && code !== '0x') {
@@ -43,7 +43,9 @@ async function deployContracts() {
     const tx = await dep.deploy(action.bytecode, actions.salt, {gasLimit: 5000000})
     console.log(`TX hash ${explorer}/tx/${tx.hash}`)
     try {
-      await tx.wait()
+      const receipt = await tx.wait()
+      const _gasUsed = BigInt(receipt.cumulativeGasUsed) * BigInt(receipt.effectiveGasPrice);
+      gasUsed = gasUsed + _gasUsed
       code = await provider.getCode(action.expectedAddress)
       if (code && code !== '0x') {
         console.log(`Deployed ${action.contract} to ${explorer}/address/${action.expectedAddress}\n`)
@@ -67,15 +69,21 @@ async function deployContracts() {
     if (code && code !== '0x') {
       console.log(`Initializing ${action.contract}`)
       const deployedContract = new ethers.Contract(action.expectedAddress, action.abi, wallet)
-      await (await deployedContract.initialize(...action.initArgs)).wait()
+      const receipt = await (await deployedContract.initialize(...action.initArgs)).wait()
+      const _gasUsed = BigInt(receipt.cumulativeGasUsed) * BigInt(receipt.effectiveGasPrice);
+      gasUsed = gasUsed + _gasUsed
     }
   }
 
   const instances = [0.1, 1, 10, 100]
   for(let i = 0; i < instances.length; i++) {
     let sacredInstance = new ethers.Contract(utils.getSacredInstanceAddress(NET_ID, 'eth', instances[i]), ethSacredAbi, wallet)
-    await (await sacredInstance.setAaveInterestsProxy(utils.ensToAddr(config.aaveInterestsProxy.address))).wait()
+    const receipt = await (await sacredInstance.setAaveInterestsProxy(utils.ensToAddr(config.aaveInterestsProxy.address))).wait()
+    const _gasUsed = BigInt(receipt.cumulativeGasUsed) * BigInt(receipt.effectiveGasPrice);
+    gasUsed = gasUsed + _gasUsed
   }
+
+  console.log("Total used gas: ", gasUsed.toString())
 }
 
 async function main() {
