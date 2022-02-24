@@ -68,74 +68,17 @@ Please uncomment #yarn circuit in build.sh
 yarn
 #yarn circuit
 ```
-Sacred-Tree's circuit compilation requires 50+G RAM and high performance CPU.
-If you have precompiled one, don't need to enable it.
+Sacred-Tree's circuit compilation requires 50+G RAM and high performance CPU.  
+If you have precompiled one, don't need to enable it.  
 
-- Download Prebuilt Sacred-Tree's circuit data
+- Download Prebuilt Sacred-Tree's circuit data  
 Please download it and copy it into sacred-trees-snarks.
 (We need to upload it somewhere so that anyone can download it to use and write automated script for downloading it while deploying)
 
-- yarn deploy
-it will generate address.json that contains contract addresses.
+- yarn deploy  
+it will generate address.json that contains contract addresses.  
 
 ## How to create cli-tool
-Please execute `./cli-setup.sh` after deployed contracts.
-It'll create cli-tool folder and copy abi, circuit data, and js files which are requried to access contracts into cli-tool folder.
-You should run `yarn install` in cli-tool folder and execute cli commands per following commands.
-
-## How to use cli-tool
-### options  
-`-r, --rpc <URL>`
-
-The RPC, CLI should interact with, default: http://localhost:8545
-
-`-R, --relayer <URL>`
-
-Withdraw via relayer
-
-`-k, --privatekey <privateKey>`
-
-Private Key
-
-
-### Available commands  
-`deposit <currency> <amount>`
-
-Submit a deposit of specified currency and amount from default eth account and return the resulting note. 
-The currency is one of (ETH|). The amount depends on currency, see config.js file.
-
-`withdraw <note> <recipient>`
-
-Withdraw a note to a recipient account using relayer or specified private key. You can exchange some of your deposit\`s tokens to ETH during the withdrawal by specifing ETH_purchase (e.g. 0.1) to pay for gas in future transactions. Also see the --relayer option.
-
-`sacredtest <currency> <amount> <recipient>`
-
-Perform an automated test. It deposits and withdraws amount ETH. Uses Kovan Testnet.
-
-`updatetree <operation>`
-  
-It performs batchUpdateRoot for deposits/withdrawal roots of SacredTrees
-operation can be diposit/withdraw
-
-`showpendings <operation>`
-
-It shows how many number of deposit/withdraw event are pending in SacredTrees
-operation can be diposit/withdraw
-
-`calcap <note>`
-
-It shows calculated AP amount based on deposit / withdrawal block number
-
-`reward <note> <recipient>`
-
-It claiming reward and returns your AAVE interests to the recipient address.  
-With executing this, you can get your encoded account that contains your AP.  
-
-`rewardswap <account> <recipient>`
-
-It swaps your AP that is included in your account to ETH.
-
-
-
-
-
+Please execute `./create-cli.sh` after deployed contracts.  
+It'll create cli-tool folder and copy abi, circuit data, and js files which are requried to access contracts into cli-tool folder.  
+Furthermore, please refer ReadMe of sacred-cli-tools, https://github.com/Sacred-Finance/sacred-cli-tools  
