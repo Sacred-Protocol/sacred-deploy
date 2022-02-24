@@ -49,6 +49,4 @@ mkdir -p ./cli-tool/sacred-trees/artifacts
 cp -r ./sacred-trees/artifacts/contracts ./cli-tool/sacred-trees/artifacts
 cp -r ./sacred-trees/src ./cli-tool/sacred-trees
 
-echo "Copying sacred-trees-snarks..."
-cp -r sacred-trees-snarks ./cli-tool
 echo "Done!"
