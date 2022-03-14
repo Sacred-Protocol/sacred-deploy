@@ -114,7 +114,7 @@ describe('Testing SacredAnanomityMining', () => {
     await utils.init({sender: owner.address, proxyContractObj: sacredProxy, instanceContractObj: sacredInstance});
     let groth16 = await buildGroth16()
     controller = new Controller({
-      contract: miner,
+      minerContract: miner,
       sacredTreesContract: sacredTrees,
       merkleTreeHeight: levels,
       provingKeys,
@@ -136,7 +136,7 @@ describe('Testing SacredAnanomityMining', () => {
 
   describe('#Deposit And Withdraw', () => {
     it('should work', async () => {
-      for(let i = 0; i < 0; i++) {
+      for(let i = 0; i < 1; i++) {
         let ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
         console.log('Before Deposit: User ETH balance is ', ethbalance);
         //Deposit
@@ -146,10 +146,10 @@ describe('Testing SacredAnanomityMining', () => {
         console.log('Deposit block number is ', depositBlockNum);
         ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
         console.log('After Deposit: User ETH balance is ', ethbalance);
-        //increase time
-        const sevenDays = 7 * 24 * 60 * 60;
-        await ethers.provider.send('evm_increaseTime', [sevenDays]);
-        await ethers.provider.send('evm_mine');
+        // //increase time
+        // const sevenDays = 7 * 24 * 60 * 60;
+        // await ethers.provider.send('evm_increaseTime', [sevenDays]);
+        // await ethers.provider.send('evm_mine');
 
         //Withdraw
         let data = utils.parseNote(noteString);
@@ -172,30 +172,26 @@ describe('Testing SacredAnanomityMining', () => {
     it('should work', async () => {
       const zeroAccount = new Account()
       const accountCount = await miner.accountCount()
-      expect(zeroAccount.amount.toString()).to.equal("0")
+      expect(zeroAccount.apAmount.toString()).to.equal("0")
 
-      noteString = "sacred-eth-0.1-80001-0x13b44527958108cdca6201b55a02c097f0ea8bddd608d79d1be4fa15f3bfbe4e1ac1d0e2023793b32d7467c626394be895ebc9b54ee5a9ba2935f710cc93"
+      //noteString = "sacred-eth-0.1-137-0x24bbf35ba15cc02afdc461f6099fe3db878835c1b9381a13f0979a601f9be2da1fb1830ae947378fe6c4bd4fb64115e690661b4fdb23f4d6043aa83a785f" deposit only
+      //"sacred-eth-0.1-137-0x136eb91fc52aff13f729059e486c79035f21e6ff3c7f6b1b5a510a73eed27b8b098b3944b230a09ef5f5de5acd64f8a26ab73cf22d8a4439c382a6189e39"
       depositBlockNum = await getBlockNumbers(action.DEPOSIT, noteString)
       withdrawBlockNum = await getBlockNumbers(action.WITHDRAWAL, noteString)
       const note = Note.fromString(noteString, utils.getSacredInstanceAddress(NET_ID, 'eth', 0.1), depositBlockNum, withdrawBlockNum)
-
       const shareTracks = await miner.shareTrack()
-      const totalShares = await miner.totalShareSnapshots(toFixedHex(note.rewardNullifier))
+      const totalShares = await miner.totalShareSnapshots(toFixedHex(note.rewardNullifier), 0)
+      const interests = await miner.totalShareSnapshots(toFixedHex(note.rewardNullifier), 1)
       expect(totalShares > BigNumber.from(0)).to.equal(true)
+      expect(interests > BigNumber.from(0)).to.equal(true)
       expect(shareTracks.totalShares >= totalShares).to.equal(true)
-
       const eventsDeposit = await rootUpdaterEvents.getEvents(action.DEPOSIT)
       const eventsWithdraw = await rootUpdaterEvents.getEvents(action.WITHDRAWAL)
       const result = await controller.reward({ account: zeroAccount, note, publicKey, fee:0, relayer:0, accountCommitments: null, depositDataEvents: eventsDeposit.committedEvents, withdrawalDataEvents: eventsWithdraw.committedEvents})
       proof = result.proof
       args = result.args
       account = result.account
-      const recipient = owner.address
-      const aToken = new ethers.Contract(WETH_TOKEN, erc20Abi, wallet)
-      const prevAaveTokenAmount = await aToken.balanceOf(recipient)
-      const tx = await (await miner['reward(bytes,(uint256,uint256,address,uint256,bytes32,bytes32,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)),address)'](proof, args, recipient, {gasLimit: 500000000})).wait();
-      const aaveTokenAmount = await aToken.balanceOf(recipient)
-      console.log("Received ATokens", aaveTokenAmount - prevAaveTokenAmount)
+      const tx = await (await miner['reward(bytes,(uint256,uint256,address,uint256,uint256,bytes32,bytes32,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](proof, args, {gasLimit: 500000000})).wait();
       const newAccountEvent = tx.events.find(item => item.event === 'NewAccount')
 
       expect(newAccountEvent.event).to.equal('NewAccount')
@@ -205,7 +201,8 @@ describe('Testing SacredAnanomityMining', () => {
 
       const encryptedAccount = newAccountEvent.args.encryptedAccount
       const account2 = Account.decrypt(privateKey, unpackEncryptedMessage(encryptedAccount))
-      expect(account.amount.toString()).to.equal(account2.amount.toString())
+      expect(account.apAmount.toString()).to.equal(account2.apAmount.toString())
+      expect(account.aaveInterestAmount.toString()).to.equal(account2.aaveInterestAmount.toString())
       expect(account.secret.toString()).to.equal(account2.secret.toString())
       expect(account.nullifier.toString()).to.equal(account2.nullifier.toString())
       expect(account.commitment.toString()).to.equal(account2.commitment.toString())
@@ -219,9 +216,7 @@ describe('Testing SacredAnanomityMining', () => {
       const accountNullifierAfter = await miner.accountNullifiers(toFixedHex(zeroAccount.nullifierHash))
       expect(accountNullifierAfter).to.equal(true)
 
-      expect(account.amount.toString()).to.equal(BigNumber.from(note.withdrawalBlock - note.depositBlock).mul(RATE).toString())
-      WETH_TOKEN
-      
+      expect(account.apAmount.toString()).to.equal(BigNumber.from(note.withdrawalBlock - note.depositBlock).mul(RATE).toString())
 
     }).timeout(3000000);
   })
@@ -232,20 +227,26 @@ describe('Testing SacredAnanomityMining', () => {
       expect(accountNullifierBefore).to.equal(false)
 
       const recipient = owner.address
-      const amount = account.amount
-      const withdrawSnark = await controller.withdraw({ account, amount, recipient, publicKey })
+      const aToken = new ethers.Contract(WETH_TOKEN, erc20Abi, wallet)
+      const prevAaveTokenAmount = await aToken.balanceOf(recipient)
+      const withdrawSnark = await controller.withdraw({ account, apAmount: account.apAmount, aaveInterestAmount: account.aaveInterestAmount, recipient, publicKey })
       const balanceBefore = await sacred.balanceOf(recipient)
-      const tx = await (await miner['withdraw(bytes,(uint256,bytes32,(uint256,address,address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](withdrawSnark.proof, withdrawSnark.args)).wait()
+      const tx = await (await miner['withdraw(bytes,(uint256,uint256,bytes32,(uint256,address,address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](withdrawSnark.proof, withdrawSnark.args)).wait()
       const balanceAfter = await sacred.balanceOf(recipient)
       const increasedBalance = balanceAfter.sub(balanceBefore)
       expect(increasedBalance.gt(0)).to.equal(true)
+
+      const aaveTokenAmount = await aToken.balanceOf(recipient)
+      console.log("Received ATokens", aaveTokenAmount - prevAaveTokenAmount)
+
       const newAccountEvent = tx.events.find(item => item.event === 'NewAccount')
       expect(newAccountEvent.event).to.equal('NewAccount')
       expect(newAccountEvent.args.commitment).to.equal(toFixedHex(withdrawSnark.account.commitment))
       expect(newAccountEvent.args.nullifier).to.equal(toFixedHex(account.nullifierHash))
       const encryptedAccount = newAccountEvent.args.encryptedAccount
       const account2 = Account.decrypt(privateKey, unpackEncryptedMessage(encryptedAccount))
-      expect(withdrawSnark.account.amount.toString()).to.equal(account2.amount.toString())
+      expect(withdrawSnark.account.apAmount.toString()).to.equal(account2.apAmount.toString())
+      expect(withdrawSnark.account.aaveInterestAmount.toString()).to.equal(account2.aaveInterestAmount.toString())
       expect(withdrawSnark.account.secret.toString()).to.equal(account2.secret.toString())
       expect(withdrawSnark.account.nullifier.toString()).to.equal(account2.nullifier.toString())
       expect(withdrawSnark.account.commitment.toString()).to.equal(account2.commitment.toString())

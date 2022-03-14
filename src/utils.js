@@ -25,15 +25,40 @@ const { DEPLOYER, SALT, NET_ID } = process.env
 let addressTable = {}
 let provider
 
-async function getProvider() {
+async function getProvider(rpc) {
   if(!provider) {
     if(ethers.provider && typeof hre !== 'undefined') {
       provider = ethers.provider
     } else {
-      provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL)
+      if(!rpc) {
+        rpc = getRPCUrl()
+      }
+      provider = new ethers.providers.JsonRpcProvider(rpc)
     }
   }
   return provider
+}
+
+function getRPCUrl() {
+  let rpc = ""
+  switch(NET_ID) {
+    case 1:
+      rpc = process.env.MAINNET_RPC_URL
+      break
+    case 42:
+      rpc = process.env.KOVAN_RPC_URL
+      break
+    case 4:
+      rpc = process.env.RINKEBY_RPC_URL
+      break
+    case 137:
+      rpc = process.env.POLYGON_RPC_URL
+      break
+    case 80001:
+      rpc = process.env.MUMBAI_RPC_URL
+      break
+  }
+  return rpc
 }
 
 /** Generate random number of specified byte length */
@@ -418,5 +443,7 @@ module.exports = {
   deposit,
   withdraw, 
   parseNote, 
-  init
+  init,
+  getProvider,
+  getRPCUrl
 }

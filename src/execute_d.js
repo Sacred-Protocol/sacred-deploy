@@ -11,14 +11,13 @@ const prefix = {
   5: 'goerli.',
 }
 
-const { PRIVATE_KEY, NET_ID, RPC_URL } = process.env
+const { PRIVATE_KEY, NET_ID } = process.env
 
 const explorer = `https://${prefix[NET_ID]}etherscan.io`
 
 async function main() {
   const privateKey = PRIVATE_KEY
-  //const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL)
-  const provider = ethers.provider
+  const provider = await utils.getProvider()
   const testing = ["hardhat", "localhost"].includes(hre.network.name);
   let wallet
   if (testing) {
@@ -39,7 +38,7 @@ async function main() {
   // let data = utils.parseNote("sacred-eth-0.1-42-0x68a17bc354fc0fc164e10e1ad51dce8329a180b4b1bd31f39a3ca9ab6be2d10805a53aa9b938be2d067b1cd879907bc3560187a35aaa29648a805a787b42");
   // await utils.withdraw({netdId: NET_ID, deposit: data.deposit, currency: data.currency, amount:data.amount, recipient: owner.address, relayerURL: null });
   let fs = require('fs');
-  for(let i = 0; i < 260; i++) {
+  for(let i = 0; i < 256; i++) {
     //Deposit
     console.log("Count Number:", i);
     fs.writeFile('result.txt', '' + i, function (err) {
@@ -60,7 +59,7 @@ async function main() {
       console.log("depositBlockNum = ", result.blockNumber);
       noteString = result.noteString;
     } catch(e) {
-      console.log("Deposit was failed! retrying!")
+      console.log("Deposit was failed! retrying!", e)
       i--;
       continue;
     }

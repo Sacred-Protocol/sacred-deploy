@@ -25,7 +25,7 @@ const { getEncryptionPublicKey } = require('eth-sig-util');
 const fs = require('fs')
 const program = require('commander')
 const levels = 20
-const { PRIVATE_KEY, RPC_URL, NETWORK } = process.env
+const { PRIVATE_KEY, NETWORK } = process.env
 const addressTable = require('./'+NETWORK+'/address.json')
 
 const provingKeys = {
@@ -50,11 +50,7 @@ let netId
 
 async function init(rpc) {
   if(!provider) {
-    if(ethers.provider && typeof hre !== 'undefined') {
-      provider = ethers.provider
-    } else {
-      provider = new ethers.providers.JsonRpcProvider(rpc || RPC_URL)
-    }
+    provider = await utils.getProvider(rpc)
   }
 
   const { chainId } = await provider.getNetwork()
@@ -72,7 +68,7 @@ async function init(rpc) {
     provingKeys,
     groth16
   })
-  await controller.init()
+  await controller.init(rpc)
 }
 
 async function upateRoot(type) {
@@ -195,9 +191,9 @@ async function main() {
       }
     })
   program
-    .command('reward <note> <recipient>')
+    .command('reward <note>')
     .description('It claiming reward. With executing this, you can get your encoded account that contains your AP.')
-    .action(async (note, recipient) => {
+    .action(async (note) => {
       await init(program.rpc)
       const zeroAccount = new Account()
       const depositBlock = await getBlockNumbers(action.DEPOSIT, note)
@@ -216,10 +212,11 @@ async function main() {
         const publicKey = getEncryptionPublicKey(program.privateKey || PRIVATE_KEY)
         const result = await controller.reward({ account: zeroAccount, note: _note, publicKey, fee:0, relayer:program.relayer, accountCommitments: null, depositDataEvents: eventsDeposit.committedEvents, withdrawalDataEvents: eventsWithdraw.committedEvents})
         const account = result.account
-        const tx = await (await miner['reward(bytes,(uint256,uint256,address,uint256,bytes32,bytes32,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)),address)'](result.proof, result.args, recipient, {gasLimit: 500000})).wait();
+        const tx = await (await miner['reward(bytes,(uint256,uint256,address,uint256,uint256,bytes32,bytes32,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](result.proof, result.args, {gasLimit: 500000})).wait();
         const newAccountEvent = tx.events.find(item => item.event === 'NewAccount')
         const encryptedAccount = newAccountEvent.args.encryptedAccount
-        console.log("Claimed Amount: ", account.amount.toString())
+        console.log("Claimed Ap Amount: ", account.apAmount.toString())
+        console.log("Estimated AaveInterest Amount: ", account.aaveInterestAmount.toString())
         console.log("Encrypted Account: ", encryptedAccount)
       }
     })
@@ -230,11 +227,12 @@ async function main() {
       await init(program.rpc)
       const publicKey = getEncryptionPublicKey(program.privateKey)
       const decryptedAccount = Account.decrypt(program.privateKey || PRIVATE_KEY, unpackEncryptedMessage(account))
-      const amount = decryptedAccount.amount
-      const withdrawSnark = await controller.withdraw({ account: decryptedAccount, amount, recipient, publicKey })
+      const apAmount = decryptedAccount.apAmount
+      const aaveInterestAmount = decryptedAccount.aaveInterestAmount
+      const withdrawSnark = await controller.withdraw({ account: decryptedAccount, apAmount, aaveInterestAmount, recipient, publicKey })
       const balanceBefore = await sacred.balanceOf(recipient)
       console.log("Balance Before RewardSwap:", balanceBefore)
-      const tx = await (await miner['withdraw(bytes,(uint256,bytes32,(uint256,address,address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](withdrawSnark.proof, withdrawSnark.args)).wait()
+      const tx = await (await miner['withdraw(bytes,(uint256,uint256,bytes32,(uint256,address,address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](withdrawSnark.proof, withdrawSnark.args)).wait()
       const balanceAfter = await sacred.balanceOf(recipient)
       console.log("Balance After RewardSwap:", balanceAfter)
     })
