@@ -101,7 +101,7 @@ describe('Testing SacredAnanomityMining', () => {
       const accounts = await ethers.getSigners();
       wallet = accounts[0];
     } else {
-      wallet = new ethers.Wallet(privateKey, provider)  
+      wallet = new ethers.Wallet(privateKey, provider)
     }
 
     sacredTrees = new ethers.Contract(utils.ensToAddr(config.sacredTrees.address), sacredTreesAbi.abi, wallet)
@@ -136,7 +136,7 @@ describe('Testing SacredAnanomityMining', () => {
 
   describe('#Deposit And Withdraw', () => {
     it('should work', async () => {
-      for(let i = 0; i < 1; i++) {
+      for(let i = 0; i < 0; i++) {
         let ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
         console.log('Before Deposit: User ETH balance is ', ethbalance);
         //Deposit
@@ -174,17 +174,19 @@ describe('Testing SacredAnanomityMining', () => {
       const accountCount = await miner.accountCount()
       expect(zeroAccount.apAmount.toString()).to.equal("0")
 
-      //noteString = "sacred-eth-0.1-137-0x24bbf35ba15cc02afdc461f6099fe3db878835c1b9381a13f0979a601f9be2da1fb1830ae947378fe6c4bd4fb64115e690661b4fdb23f4d6043aa83a785f" deposit only
-      //"sacred-eth-0.1-137-0x136eb91fc52aff13f729059e486c79035f21e6ff3c7f6b1b5a510a73eed27b8b098b3944b230a09ef5f5de5acd64f8a26ab73cf22d8a4439c382a6189e39"
+      //noteString = "sacred-eth-0.1-4-0x24bbf35ba15cc02afdc461f6099fe3db878835c1b9381a13f0979a601f9be2da1fb1830ae947378fe6c4bd4fb64115e690661b4fdb23f4d6043aa83a785f" deposit only
+      noteString = "sacred-eth-0.1-4-0xfda502c179c6fa4ad6a28d6176be1f1966707920498371539f29a01eb294c92b93eb49767958e4fc07d08aad439b9cce63d924616701e23f71c8b287e86e"
       depositBlockNum = await getBlockNumbers(action.DEPOSIT, noteString)
       withdrawBlockNum = await getBlockNumbers(action.WITHDRAWAL, noteString)
+      console.log("depositBlockNumber:", depositBlockNum)
+      console.log("withdrawBlockNumber:", withdrawBlockNum)
       const note = Note.fromString(noteString, utils.getSacredInstanceAddress(NET_ID, 'eth', 0.1), depositBlockNum, withdrawBlockNum)
       const shareTracks = await miner.shareTrack()
       const totalShares = await miner.totalShareSnapshots(toFixedHex(note.rewardNullifier), 0)
       const interests = await miner.totalShareSnapshots(toFixedHex(note.rewardNullifier), 1)
-      expect(totalShares > BigNumber.from(0)).to.equal(true)
-      expect(interests > BigNumber.from(0)).to.equal(true)
-      expect(shareTracks.totalShares >= totalShares).to.equal(true)
+      expect(totalShares.gt(BigNumber.from(0))).to.equal(true)
+      expect(interests.gt(BigNumber.from(0))).to.equal(true)
+      expect(shareTracks.totalShares.gte(totalShares)).to.equal(true)
       const eventsDeposit = await rootUpdaterEvents.getEvents(action.DEPOSIT)
       const eventsWithdraw = await rootUpdaterEvents.getEvents(action.WITHDRAWAL)
       const result = await controller.reward({ account: zeroAccount, note, publicKey, fee:0, relayer:0, accountCommitments: null, depositDataEvents: eventsDeposit.committedEvents, withdrawalDataEvents: eventsWithdraw.committedEvents})

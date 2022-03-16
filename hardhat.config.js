@@ -14,19 +14,19 @@ task('accounts', 'Prints the list of accounts', async () => {
 function getRPCUrl() {
   let rpc = ""
   switch(process.env.NET_ID) {
-    case 1:
+    case "1":
       rpc = process.env.MAINNET_RPC_URL
       break
-    case 42:
+    case "42":
       rpc = process.env.KOVAN_RPC_URL
       break
-    case 4:
+    case "4":
       rpc = process.env.RINKEBY_RPC_URL
       break
-    case 137:
+    case "137":
       rpc = process.env.POLYGON_RPC_URL
       break
-    case 80001:
+    case "80001":
       rpc = process.env.MUMBAI_RPC_URL
       break
   }

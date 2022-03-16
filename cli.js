@@ -62,7 +62,7 @@ async function init(rpc) {
   miner = new ethers.Contract(utils.ensToAddr(config.miningV2.address), minerAbi.abi, wallet)
   let groth16 = await buildGroth16()
   controller = new Controller({
-    contract: miner,
+    minerContract: miner,
     sacredTreesContract: sacredTrees,
     merkleTreeHeight: levels,
     provingKeys,
@@ -225,7 +225,7 @@ async function main() {
     .description('It swaps your AP that is included in your account to ETH.')
     .action(async (account, recipient) => {
       await init(program.rpc)
-      const publicKey = getEncryptionPublicKey(program.privateKey)
+      const publicKey = getEncryptionPublicKey(program.privateKey || PRIVATE_KEY)
       const decryptedAccount = Account.decrypt(program.privateKey || PRIVATE_KEY, unpackEncryptedMessage(account))
       const apAmount = decryptedAccount.apAmount
       const aaveInterestAmount = decryptedAccount.aaveInterestAmount
