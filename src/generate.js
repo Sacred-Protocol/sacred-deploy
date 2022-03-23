@@ -4,7 +4,7 @@ const ethers = require('ethers')
 const config = require('../sacred-token/config')
 const get = require('get-value')
 const { deploy, getContractData, zeroMerkleRoot, ensToAddr, addressTable } = require('./utils')
-const { DEPLOYER, SALT, WETH_TOKEN, MINIMUM_INTERESTS } = process.env
+const { DEPLOYER, SALT, WETH_TOKEN, MINIMUM_INTERESTS, INTERESTS_FEE } = process.env
 
 const sacred = getContractData('../sacred-token/artifacts/contracts/SACRED.sol/SACRED.json')
 const vesting = getContractData('../sacred-token/artifacts/contracts/Vesting.sol/Vesting.json')
@@ -233,6 +233,7 @@ actions.push(
       zeroMerkleRoot,
       rates,
       MINIMUM_INTERESTS,
+      INTERESTS_FEE
     ],
     title: 'Miner',
     description: 'Mining contract for Anonymity Points',
