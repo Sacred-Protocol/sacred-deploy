@@ -14,7 +14,9 @@ const Account = require('../sacred-anonymity-mining/src/account')
 const Note = require('../sacred-anonymity-mining/src/note')
 const addressTable = require('../address.json')
 const utils = require('./utils')
+const { randomBN } = require('../sacred-anonymity-mining/src/utils')
 const sacredProxyAbi = require('../sacred-anonymity-mining/artifacts/contracts/SacredProxy.sol/SacredProxy.json')
+const aaveInterestsProxyAbi = require('../sacred-anonymity-mining/artifacts/contracts/AaveInterestsProxy.sol/AaveInterestsProxy.json')
 const sacredTreesAbi = require('../sacred-trees/artifacts/contracts/SacredTrees.sol/SacredTrees.json')
 const sacredAbi = require('../sacred-token/artifacts/contracts/SACRED.sol/SACRED.json')
 const rewardSwapAbi = require('../sacred-anonymity-mining/artifacts/contracts/RewardSwap.sol/RewardSwap.json')
@@ -22,12 +24,14 @@ const minerAbi = require('../sacred-anonymity-mining/artifacts/contracts/Miner.s
 const ethSacredAbi = require('../abi/ethSacred.json')
 const erc20Abi = require('../abi/erc20.abi.json')
 const buildGroth16 = require('websnark/src/groth16')
+
 const {
   toFixedHex,
   unpackEncryptedMessage
 } = require('../sacred-anonymity-mining/src/utils')
 const { getEncryptionPublicKey } = require('eth-sig-util');
 const exp = require('constants');
+const { constants } = require('mocha/lib/utils');
 
 const provingKeys = {
   rewardCircuit: require('../sacred-anonymity-mining/build/circuits/Reward.json'),
@@ -136,7 +140,7 @@ describe('Testing SacredAnanomityMining', () => {
 
   describe('#Deposit And Withdraw', () => {
     it('should work', async () => {
-      for(let i = 0; i < 0; i++) {
+      for(let i = 0; i < 4; i++) {
         let ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
         console.log('Before Deposit: User ETH balance is ', ethbalance);
         //Deposit
@@ -146,11 +150,6 @@ describe('Testing SacredAnanomityMining', () => {
         console.log('Deposit block number is ', depositBlockNum);
         ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
         console.log('After Deposit: User ETH balance is ', ethbalance);
-        // //increase time
-        // const sevenDays = 7 * 24 * 60 * 60;
-        // await ethers.provider.send('evm_increaseTime', [sevenDays]);
-        // await ethers.provider.send('evm_mine');
-
         //Withdraw
         let data = utils.parseNote(noteString);
         withdrawBlockNum = await utils.withdraw({netId: NET_ID, deposit: data.deposit, currency: data.currency, amount:data.amount, recipient: owner.address, relayerURL: null });
@@ -163,8 +162,8 @@ describe('Testing SacredAnanomityMining', () => {
 
   describe('#Update Root of SacredTree', () => {
     it('should work', async () => {
-      //await upateRoot(action.DEPOSIT)
-      //await upateRoot(action.WITHDRAWAL)
+      await upateRoot(action.DEPOSIT)
+      await upateRoot(action.WITHDRAWAL)
     }).timeout(3000000);
   })
 
@@ -175,7 +174,6 @@ describe('Testing SacredAnanomityMining', () => {
       expect(zeroAccount.apAmount.toString()).to.equal("0")
 
       //noteString = "sacred-eth-0.1-4-0x24bbf35ba15cc02afdc461f6099fe3db878835c1b9381a13f0979a601f9be2da1fb1830ae947378fe6c4bd4fb64115e690661b4fdb23f4d6043aa83a785f" deposit only
-      noteString = "sacred-eth-0.1-4-0xfda502c179c6fa4ad6a28d6176be1f1966707920498371539f29a01eb294c92b93eb49767958e4fc07d08aad439b9cce63d924616701e23f71c8b287e86e"
       depositBlockNum = await getBlockNumbers(action.DEPOSIT, noteString)
       withdrawBlockNum = await getBlockNumbers(action.WITHDRAWAL, noteString)
       console.log("depositBlockNumber:", depositBlockNum)
@@ -254,5 +252,112 @@ describe('Testing SacredAnanomityMining', () => {
       expect(withdrawSnark.account.commitment.toString()).to.equal(account2.commitment.toString())
     })
   })
+
+  describe('#privilege Check', () => {
+    it('AaveInterestProxy', async () => {
+      const aaveInterestProxy = new ethers.Contract(utils.ensToAddr(config.aaveInterestsProxy.address), aaveInterestsProxyAbi.abi, wallet)
+      await expect(
+        aaveInterestProxy.withdraw(10, owner.address)
+      ).to.be.revertedWith('Not authorized');
+      })
+
+    it('RewardSwap', async () => {
+      //RewardSwap
+      await expect(
+        rewardSwap.setPoolWeight(0)
+      ).to.be.revertedWith('Only Miner contract can call');
+
+      await expect(
+        rewardSwap.swap(owner.address, 10)
+      ).to.be.revertedWith('Only Miner contract can call');
+    })
+
+    it('Miner', async () => {
+      //Miner
+      await expect(
+        miner.setMinimumInterests(0)
+      ).to.be.revertedWith('Only governance can perform this action');
+
+      const nullifier = randomBN(31)
+      await expect(
+        miner.updateShares(ethers.constants.AddressZero, true, toFixedHex(nullifier))
+      ).to.be.revertedWith('Not authorized');
+
+      await expect(
+        miner.setAaveInterestFee(0)
+      ).to.be.revertedWith('Only governance can perform this action');
+      
+      const rates = config.miningV2.rates.map((rate) => ({
+        instance: utils.ensToAddr(rate.instance),
+        value: rate.value,
+      }))
+
+      await expect(
+        miner.setRates(rates)
+      ).to.be.revertedWith('Only governance can perform this action');
+
+      await expect(
+        miner.setVerifiers([
+          utils.ensToAddr(config.rewardVerifier.address),
+          utils.ensToAddr(config.withdrawVerifier.address),
+          utils.ensToAddr(config.treeUpdateVerifier.address),
+        ])
+      ).to.be.revertedWith('Only governance can perform this action');
+      
+      await expect(
+        miner.setSacredTreesContract(ethers.constants.AddressZero)
+      ).to.be.revertedWith('Only governance can perform this action');
+
+      await expect(
+        miner.setAaveInterestsProxyContract(ethers.constants.AddressZero)
+      ).to.be.revertedWith('Only governance can perform this action');
+    })
+
+    it('SacredProxy', async () => {
+      //SacredProxy
+      const oldMinerAddress = await sacredProxy.miner();
+      await (await sacredProxy.initialize(ethers.constants.AddressZero)).wait();
+      const newMinerAddress = await sacredProxy.miner();
+      expect(oldMinerAddress).to.equal(newMinerAddress);
+
+      const instances = config.miningV2.rates.map((rate) => ({
+        addr: utils.ensToAddr(rate.instance),
+        instance: {
+          isERC20: false,
+          token: ethers.constants.AddressZero,
+          state: 2 //"MINEABLE"
+        },
+      }))
+      await expect(
+        sacredProxy.updateInstance(instances[0])
+      ).to.be.revertedWith('Not authorized');
+
+      await expect(
+        sacredProxy.rescueTokens(ethers.constants.AddressZero, owner.address, 10)
+      ).to.be.revertedWith('Not authorized');
+    
+    })
+    
+    it('sacredTrees', async () => {
+      //sacredTrees
+      const instanceAddr = utils.getSacredInstanceAddress(NET_ID, 'eth', 0.1)
+      await expect(
+        sacredTrees.registerDeposit(instanceAddr, toFixedHex(randomBN(31)))
+      ).to.be.revertedWith('Not authorized');
+
+      await expect(
+        sacredTrees.registerWithdrawal(instanceAddr, toFixedHex(randomBN(31)))
+      ).to.be.revertedWith('Not authorized');
+
+      await expect(
+        sacredTrees.setSacredProxyContract(ethers.constants.AddressZero)
+      ).to.be.revertedWith('Only governance can perform this action');
+
+      await expect(
+        sacredTrees.setVerifierContract(ethers.constants.AddressZero)
+      ).to.be.revertedWith('Only governance can perform this action');
+    })
+  })
+
 
 })
