@@ -42,7 +42,7 @@ const provingKeys = {
   treeUpdateProvingKey: fs.readFileSync('./sacred-anonymity-mining/build/circuits/TreeUpdate_proving_key.bin').buffer,
 }
 
-const { PRIVATE_KEY, NET_ID, WETH_TOKEN } = process.env
+const { PRIVATE_KEY, NET_ID } = process.env
 
 async function upateRoot(type) {
   const { committedEvents, pendingEvents } = await rootUpdaterEvents.getEvents(type)

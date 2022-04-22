@@ -5,6 +5,7 @@ const abi = require('../abi/deployer.abi.json')
 const config = require('../sacred-token/config')
 const ethSacredAbi = require('../abi/ethSacred.json')
 const addressTable = require('../address.json')
+const tokenConfig = require('../config.json')
 const prefix = {
   1: '',
   42: 'kovan.',
@@ -26,6 +27,11 @@ async function deployContracts() {
   }
 
   utils.updateAddressTable(addressTable)
+  const instanceConfigs = tokenConfig.deployments["netId" + NET_ID]
+  if(!instanceConfigs || !instanceConfigs.eth || !instanceConfigs.eth.instanceAddress) {
+    console.log("config.json doesn't contains sacred instances info")
+    return
+  }
 
   const deployer = new ethers.Contract(actions.deployer, abi, wallet)
   const deployerProxy = new ethers.Contract(actions.actions[0].expectedAddress, actions.actions[0].abi, wallet)
@@ -74,12 +80,16 @@ async function deployContracts() {
     }
   }
 
-  const instances = [0.1, 1, 10, 100]
-  for(let i = 0; i < instances.length; i++) {
-    let sacredInstance = new ethers.Contract(utils.getSacredInstanceAddress(NET_ID, 'eth', instances[i]), ethSacredAbi, wallet)
-    const receipt = await (await sacredInstance.setAaveInterestsProxy(utils.ensToAddr(config.aaveInterestsProxy.address))).wait()
-    const _gasUsed = BigInt(receipt.cumulativeGasUsed) * BigInt(receipt.effectiveGasPrice);
-    gasUsed = gasUsed + _gasUsed
+  for(var currency in instanceConfigs) {
+    const instanceInfo = instanceConfigs[currency]
+    for(var amount in instanceInfo.instanceAddress) {
+      const sacredInstanceAddr = instanceInfo.instanceAddress[amount]
+      console.log("Setting AaveInterestsProxy to Sacred Instance: " + currency + ", " + amount + ", " + sacredInstanceAddr)
+      let sacredInstance = new ethers.Contract(sacredInstanceAddr, ethSacredAbi, wallet)
+      const receipt = await (await sacredInstance.setAaveInterestsProxy(utils.ensToAddr(config.aaveInterestsProxy.address))).wait()
+      const _gasUsed = BigInt(receipt.cumulativeGasUsed) * BigInt(receipt.effectiveGasPrice);
+      gasUsed = gasUsed + _gasUsed
+    }
   }
 
   console.log("Total used gas: ", gasUsed.toString())

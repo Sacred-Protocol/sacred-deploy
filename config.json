@@ -1,0 +1,49 @@
+{
+  "deployments": {
+    "netId4": {
+      "eth": {
+        "instanceAddress": {
+          "1": "0xa393ab68cBD4214f7090765A4bb5b9E0c252A00A",
+          "10": "0x826cF0C10Cbd4d5d37723ed6BA3322CA4F40a082",
+          "100": "0x2Ef11AA265Dd8c03462035E49733cA9fB0e84085",
+          "0.1": "0x7a53E06820e362a2FE62bAF4EE1CC431ed016498"
+        },
+        "symbol": "ETH",
+        "decimals": 18
+      },
+      "dai": {
+        "instanceAddress": {
+          "100": "0x327736e60fAf4850fBA663c878C18BC4D36cc249",
+          "1000": "0x4ddA6DbCB62eAF68e28b9CE53e8644f984C259cF",
+          "10000": "0xB153cCDe6C7dC346f9c4F5e2F47804C3EC209250",
+          "100000": "0x12c79a2d775b31EAC08d9587aAf4213b7e9238DA"
+        },
+        "symbol": "DAI",
+        "decimals": 18,
+        "tokenAddress": "0x4aAded56bd7c69861E8654719195fCA9C670EB45"
+      },
+      "usdt": {
+        "instanceAddress": {
+          "100": "0xe8056FFAC599d8a542218778B2262070C32BBF7a",
+          "1000": "0x72A7B93A62699A96058d4C21AF6F7026e209CEFc",
+          "10000": "0x06E847d322be340EaD6316f538Cf33718ee3D10a",
+          "100000": "0x5F01950e08511c163DD73dddC864AB3ecf118a08"
+        },
+        "symbol": "USDT",
+        "decimals": 6,
+        "tokenAddress": "0x326005cFdF58bfB38650396836BEBF815F5ab4dD"
+      },
+      "usdc": {
+        "instanceAddress": {
+          "100": "0xA55000F20C8eA741eBCb9F8C04552A309E958f7A",
+          "1000": "0x1346622f8fE7BadcFdE852e997892f18984c54dc",
+          "10000": "0xf589493D95BAac950d3D047Ce02736Cd842Ad686",
+          "100000": "0xf75C833B0B30e5839792bb63e21e6e90a15Cc4EC"
+        },
+        "symbol": "ETH",
+        "decimals": 6,
+        "tokenAddress": "0xb18d016cDD2d9439A19f15633005A6b2cd6Aa774"
+      }
+    }
+  }
+}

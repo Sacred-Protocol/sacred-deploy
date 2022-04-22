@@ -6,7 +6,7 @@ const { keccak256 } = require('@ethersproject/solidity')
 const { ethers } = require("hardhat");
 const MerkleTree = require('fixed-merkle-tree')
 const { poseidon } = require('circomlib')
-const tokenConfig = require('../config')
+const tokenConfig = require('../config.json')
 const fs = require('fs')
 const snarkjs = require('snarkjs')
 const crypto = require('crypto')
@@ -357,10 +357,20 @@ function initAddressTable(configData) {
     }
   }
 
-  addressTable['eth-01.sacredcash.eth'] = getSacredInstanceAddress(NET_ID, "eth", 0.1)
-  addressTable['eth-1.sacredcash.eth'] = getSacredInstanceAddress(NET_ID, "eth", 1)
-  addressTable['eth-10.sacredcash.eth'] = getSacredInstanceAddress(NET_ID, "eth", 10)
-  addressTable['eth-100.sacredcash.eth'] = getSacredInstanceAddress(NET_ID, "eth", 100)
+  const instanceConfigs = tokenConfig.deployments["netId" + NET_ID]
+  if(!instanceConfigs || !instanceConfigs.eth || !instanceConfigs.eth.instanceAddress) {
+    console.log("config.json doesn't contains sacred instances info")
+    return
+  }
+
+  for(var currency in instanceConfigs) {
+    const instanceInfo = instanceConfigs[currency]
+    for(var amount in instanceInfo.instanceAddress) {
+      const sacredInstanceAddr = instanceInfo.instanceAddress[amount]
+      const key = currency + "-" + amount + ".sacredcash.eth"
+      addressTable[key] = sacredInstanceAddr
+    }
+  }
 }
 
 initAddressTable(config)
