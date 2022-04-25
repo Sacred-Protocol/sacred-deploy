@@ -200,7 +200,6 @@ actions.push(
   deploy({
     domain: config.aaveInterestsProxy.address,
     contract: aaveInterestsProxy,
-    args: [WETH_TOKEN],
     title: 'AaveInterestsProxy',
     description: 'AaveInterestsProxy collect aave interests from ETHSacred instances',
   }),
