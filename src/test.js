@@ -42,7 +42,7 @@ const provingKeys = {
   treeUpdateProvingKey: fs.readFileSync('./sacred-anonymity-mining/build/circuits/TreeUpdate_proving_key.bin').buffer,
 }
 
-const { PRIVATE_KEY, NET_ID, WETH_TOKEN } = process.env
+const { PRIVATE_KEY, NET_ID, MINIMUM_INTERESTS} = process.env
 
 async function upateRoot(type) {
   const { committedEvents, pendingEvents } = await rootUpdaterEvents.getEvents(type)
@@ -140,7 +140,7 @@ describe('Testing SacredAnanomityMining', () => {
 
   describe('#Deposit And Withdraw', () => {
     it('should work', async () => {
-      for(let i = 0; i < 2; i++) {
+      for(let i = 0; i < 0; i++) {
         let ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
         console.log('Before Deposit: User ETH balance is ', ethbalance);
         //Deposit
@@ -173,7 +173,7 @@ describe('Testing SacredAnanomityMining', () => {
       const accountCount = await miner.accountCount()
       expect(zeroAccount.apAmount.toString()).to.equal("0")
 
-      //noteString = "sacred-eth-0.1-4-0x52ace082094138fb6324188fbd2f74a8028602852927725155bb012fa896e82d71eeb530aaf744bbd5928de9cb9e5e06714f37b4953c8651f54b43875432"
+      //noteString = "sacred-eth-0.1-4-0x305219d8fa022cbf16e3325c16b6036a73a5e4a9602adce37d23c2e6c00444ec22fd2e6b913fd6b5958ff21d42f374ec8014f90d5d0390ab59ffd65bd6b3"
       console.log("Note: ", noteString)
       depositBlockNum = await getBlockNumbers(action.DEPOSIT, noteString)
       withdrawBlockNum = await getBlockNumbers(action.WITHDRAWAL, noteString)
@@ -228,19 +228,24 @@ describe('Testing SacredAnanomityMining', () => {
       expect(accountNullifierBefore).to.equal(false)
 
       const recipient = owner.address
-      const aToken = new ethers.Contract(WETH_TOKEN, erc20Abi, wallet)
-      
       const preETHBalance = await ethers.provider.getBalance(recipient);
-      
       const withdrawSnark = await controller.withdraw({ account, apAmount: account.apAmount, aaveInterestAmount: account.aaveInterestAmount, recipient, publicKey })
       const balanceBefore = await sacred.balanceOf(recipient)
       const tx = await (await miner['withdraw(bytes,(uint256,uint256,bytes32,(uint256,address,address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](withdrawSnark.proof, withdrawSnark.args)).wait()
+      
+      const gasUsed = BigInt(tx.cumulativeGasUsed) * BigInt(tx.effectiveGasPrice);
+
       const balanceAfter = await sacred.balanceOf(recipient)
       const increasedBalance = balanceAfter.sub(balanceBefore)
+      console.log("Received SacredTokens:", increasedBalance)
       expect(increasedBalance.gt(0)).to.equal(true)
-
+      
       const ethBalance = await ethers.provider.getBalance(recipient);
-      console.log("Received ETH", ethBalance - preETHBalance)
+      const receivedAaveInterests = ethBalance.add(gasUsed).sub(preETHBalance)
+      console.log("Received ETH", receivedAaveInterests)
+      if(account.aaveInterestAmount.gt(BigInt(MINIMUM_INTERESTS))) {
+        expect(receivedAaveInterests.gt(0)).to.equal(true)
+      }
 
       const newAccountEvent = tx.events.find(item => item.event === 'NewAccount')
       expect(newAccountEvent.event).to.equal('NewAccount')
