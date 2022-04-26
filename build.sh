@@ -37,9 +37,9 @@ yarn
 if [ ${envs["SMALL_BATCH_SIZE_ROOT_UPDATE"]} = 1 ]
   then
     yarn changeTreeHeight 1
-    yarn circuit
+    yarn circuit:batchTreeUpdateLarge
+    yarn circuit:batchTreeUpdateWitness
     cp -r ./artifacts/circuits/* ../sacred-trees-snarks-light
-    cp ./artifacts/circuits/BatchTreeUpdateVerifier.sol ./snarks
   else
     yarn changeTreeHeight 8
     cp ./snarks/BatchTreeUpdateVerifier.sol ./artifacts/circuits/BatchTreeUpdateVerifier.sol
