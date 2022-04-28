@@ -7,7 +7,6 @@ const { deploy, getContractData, zeroMerkleRoot, ensToAddr, addressTable } = req
 const { DEPLOYER, SALT, MINIMUM_INTERESTS, INTERESTS_FEE } = process.env
 
 const sacred = getContractData('../sacred-token/artifacts/contracts/SACRED.sol/SACRED.json')
-const vesting = getContractData('../sacred-token/artifacts/contracts/Vesting.sol/Vesting.json')
 const governance = getContractData('../sacred-governance/artifacts/contracts/Governance.sol/Governance.json')
 const governanceProxy = getContractData('../sacred-governance/artifacts/contracts/LoopbackProxy.sol/LoopbackProxy.json')
 const miner = getContractData('../sacred-anonymity-mining/artifacts/contracts/Miner.sol/Miner.json')
@@ -21,13 +20,6 @@ const rewardVerifier = getContractData('../sacred-anonymity-mining/artifacts/con
 const withdrawVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/WithdrawVerifier.sol/WithdrawVerifier.json')
 const treeUpdateVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/TreeUpdateVerifier.sol/TreeUpdateVerifier.json')
 const poseidonHasher = getContractData('../sacred-anonymity-mining/build/contracts/Hasher.json')
-// const verifier2 = getContractData('../sacred-pool/artifacts/contracts/Verifier2.sol/Verifier2.json')
-// const verifier16 = getContractData('../sacred-pool/artifacts/contracts/Verifier16.sol/Verifier16.json')
-// const sacredPool = getContractData('../sacred-pool/artifacts/contracts/SacredPool.sol/SacredPool.json')
-// const upgradeableProxy = getContractData(
-//   '../sacred-pool/artifacts/contracts/CrossChainUpgradeableProxy.sol/CrossChainUpgradeableProxy.json',
-// )
-
 const actions = []
 
 // Deploy Governance implementation
@@ -45,7 +37,6 @@ actions.push(
   deploy({
     domain: config.sacred.address,
     contract: sacred,
-    args: [config.sacred.pausePeriod],
     title: 'SACRED token',
     description: 'Sacred.cash governance token',
   }),
@@ -249,93 +240,13 @@ actions[sacredProxyActionIndex].initArgs = [
   ensToAddr(config.miningV2.address)
 ];
 
-// Deploy Vestings
-config.vesting.governance.beneficiary = actions.find(
-  (a) => a.domain === 'governance.contract.sacredcash.eth',
-).expectedAddress
-const vestings = Object.values(config.vesting)
-for (const [i, vest] of vestings.entries()) {
-  actions.push(
-    deploy({
-      domain: vest.address,
-      contract: vesting,
-      args: [ensToAddr(config.sacred.address), vest.beneficiary, 0, vest.cliff, vest.duration],
-      title: `Vesting ${i + 1} / ${vestings.length}`,
-      description: `Vesting contract for ${vest.address}`,
-    }),
-  )
-}
-
 // Set args for RewardSwap Initialization
 const distribution = Object.values(config.sacred.distribution).map(({ to, amount }) => ({
   to: ensToAddr(get(config, to).address),
   amount,
 }))
 console.log(distribution)
-actions[sacredActionIndex].initArgs = [
-  ensToAddr(config.governance.address), 
-  distribution
-]
-
-// sacred-pool
-// actions.push(
-//   deploy({
-//     domain: 'verifier2.contract.sacredcash.eth',
-//     contract: verifier2,
-//     title: 'Verifier2',
-//     description: 'zkSNARK verifier contract for 2 input operations'
-//   }),
-// )
-
-// actions.push(
-//   deploy({
-//     domain: 'verifier16.contract.sacredcash.eth',
-//     contract: verifier16,
-//     title: 'Verifier16',
-//     description: 'zkSNARK verifier contract for 16 input operations'
-//   }),
-// )
-
-// const tree = new MerkleTree(MERKLE_TREE_HEIGHT, [], { hashFunction: poseidonHash2 })
-// const root = tree.root()
-// actions.push(
-//   deploy({
-//     domain: 'sacredPool.contract.sacredcash.eth',
-//     contract: sacredPool,
-//     title: 'Sacred Pool implementation',
-//     description: 'Sacred Pool proxy implementation',
-//     dependsOn: [
-//       'verifier2.contract.sacredcash.eth',
-//       'verifier16.contract.sacredcash.eth',
-//     ],
-//     args: [
-//       ensToAddr('verifier2.contract.sacredcash.eth'),
-//       ensToAddr('verifier16.contract.sacredcash.eth')
-//     ],
-//   }),
-// )
-// const poolActionIndex = actions.length - 1
-// actions[poolActionIndex].initArgs = [
-//   toFixedHex(root)
-// ]
-
-// // Deploy Proxy
-// const crossDomainMessenger = '0x4200000000000000000000000000000000000007'
-// actions.push(
-//   deploy({
-//     domain: 'proxy.contract.sacredcash.eth',
-//     contract: upgradeableProxy,
-//     title: 'Cross-chain Upgradeable Proxy',
-//     description: 'Upgradability proxy contract for Sacred Pool owned by SacredCash governance',
-//     dependsOn: ['deployerL2.contract.sacredcash.eth', 'sacredPool.contract.sacredcash.eth'],
-//     args: [
-//       ensToAddr('sacredPool.contract.sacredcash.eth'),
-//       ensToAddr(config.governance.address),
-//       [],
-//       crossDomainMessenger,
-//     ],
-//   }),
-// )
+actions[sacredActionIndex].initArgs = [distribution]
 
 // Write output
 const result = {
