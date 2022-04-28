@@ -20,7 +20,7 @@ const { fromWei, toWei, toBN, BN } = require('web3-utils')
 let web3, proxyContract, instanceContract, circuit, proving_key, groth16, erc20, senderAccount
 let MERKLE_TREE_HEIGHT
 
-const { DEPLOYER, SALT, NET_ID } = process.env
+const { DEPLOYER, SALT, NET_ID, AIRDROP_RECEIVER } = process.env
 
 let addressTable = {}
 let provider
@@ -357,6 +357,8 @@ function initAddressTable(configData) {
     }
   }
 
+
+  addressTable['airdrop-receiver.sacredcash.eth'] = AIRDROP_RECEIVER
   addressTable['eth-01.sacredcash.eth'] = getSacredInstanceAddress(NET_ID, "eth", 0.1)
   addressTable['eth-1.sacredcash.eth'] = getSacredInstanceAddress(NET_ID, "eth", 1)
   addressTable['eth-10.sacredcash.eth'] = getSacredInstanceAddress(NET_ID, "eth", 10)
