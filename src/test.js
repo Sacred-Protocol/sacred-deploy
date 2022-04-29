@@ -173,7 +173,7 @@ describe('Testing SacredAnanomityMining', () => {
       const accountCount = await miner.accountCount()
       expect(zeroAccount.apAmount.toString()).to.equal("0")
 
-      //noteString = "sacred-eth-0.1-4-0x305219d8fa022cbf16e3325c16b6036a73a5e4a9602adce37d23c2e6c00444ec22fd2e6b913fd6b5958ff21d42f374ec8014f90d5d0390ab59ffd65bd6b3"
+      //noteString = "sacred-eth-0.1-4-0x972bc50762e104fab8970831442cb7e1d53244b03940be5d7d840323c7ff635b67b61a8620afe1f187714f1b9e7aa0d5fe5bb7ca7e95ecc9919c0ee814e5"
       console.log("Note: ", noteString)
       depositBlockNum = await getBlockNumbers(action.DEPOSIT, noteString)
       withdrawBlockNum = await getBlockNumbers(action.WITHDRAWAL, noteString)
@@ -243,7 +243,7 @@ describe('Testing SacredAnanomityMining', () => {
       const ethBalance = await ethers.provider.getBalance(recipient);
       const receivedAaveInterests = ethBalance.add(gasUsed).sub(preETHBalance)
       console.log("Received ETH", receivedAaveInterests)
-      if(account.aaveInterestAmount.gt(BigInt(MINIMUM_INTERESTS))) {
+      if(account.aaveInterestAmount.gt(toBN(MINIMUM_INTERESTS))) {
         expect(receivedAaveInterests.gt(0)).to.equal(true)
       }
 
