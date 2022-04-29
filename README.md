@@ -110,10 +110,9 @@ You need to changed this SALT value when you want to have your contracts fresh d
 For example, you already deployed contracts with SALT=0x----0100000, but if you need to deploy contracts after some modification, you need to change SALT as 0x----0100001.  
 Simply you can increase SALT whenever you want fresh deploy.  
 
-- `WETH_TOKEN`  
-It's aave interests token address for ETH.  
-Please find the address for WETH-AToken-Aave in following doc.  
-https://docs.aave.com/developers/deployed-contracts/v3-testnet-addresses
+- `AIRDROP_RECEIVER`  
+RewardSwap contract and AIRDROP_RECEIVER are initial receivers when deploying SacredTokens  
+In terms of total SacredToken amounts, please take a look at SacredToken/config.js.  
 
 - `SMALL_BATCH_SIZE_ROOT_UPDATE`  
 Default is 1 which means light weight circuits for updating root of sacred-trees.  
