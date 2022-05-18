@@ -42,7 +42,7 @@ const provingKeys = {
   treeUpdateProvingKey: fs.readFileSync('./sacred-anonymity-mining/build/circuits/TreeUpdate_proving_key.bin').buffer,
 }
 
-const { PRIVATE_KEY, NET_ID, MINIMUM_INTERESTS} = process.env
+const { PRIVATE_KEY, NET_ID, MINIMUM_INTERESTS, SACRED_TOKEN} = process.env
 
 async function upateRoot(type) {
   const { committedEvents, pendingEvents } = await rootUpdaterEvents.getEvents(type)
@@ -110,7 +110,7 @@ describe('Testing SacredAnanomityMining', () => {
 
     sacredTrees = new ethers.Contract(utils.ensToAddr(config.sacredTrees.address), sacredTreesAbi.abi, wallet)
     sacredProxy = new ethers.Contract(utils.ensToAddr(config.sacredProxy.address), sacredProxyAbi.abi, wallet)
-    sacred = new ethers.Contract(utils.ensToAddr(config.sacred.address), sacredAbi.abi, wallet)
+    sacred = new ethers.Contract(SACRED_TOKEN, sacredAbi.abi, wallet)
     rewardSwap = new ethers.Contract(utils.ensToAddr(config.rewardSwap.address), rewardSwapAbi.abi, wallet)
     miner = new ethers.Contract(utils.ensToAddr(config.miningV2.address), minerAbi.abi, wallet)
 
@@ -125,6 +125,13 @@ describe('Testing SacredAnanomityMining', () => {
       groth16
     })
     await controller.init()
+  })
+
+  describe('#Check RewardSwap initialized', () => {
+    it('should has initial amount of SacredTokens', async () => {
+      const balance = await sacred.balanceOf(utils.ensToAddr(config.rewardSwap.address))
+      expect(balance.gt(0)).to.equal(true)
+    })
   })
 
   describe('#constructor', () => {
