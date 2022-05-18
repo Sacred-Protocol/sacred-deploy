@@ -25,7 +25,7 @@ const { getEncryptionPublicKey } = require('eth-sig-util');
 const fs = require('fs')
 const program = require('commander')
 const levels = 20
-const { PRIVATE_KEY, NETWORK } = process.env
+const { PRIVATE_KEY, NETWORK, SACRED_TOKEN } = process.env
 const addressTable = require('./'+NETWORK+'/address.json')
 
 const provingKeys = {
@@ -58,7 +58,7 @@ async function init(rpc) {
   wallet = new ethers.Wallet(PRIVATE_KEY, provider)  
   sacredTrees = new ethers.Contract(utils.ensToAddr(config.sacredTrees.address), sacredTreesAbi.abi, wallet)
   sacredProxy = new ethers.Contract(utils.ensToAddr(config.sacredProxy.address), sacredProxyAbi.abi, wallet)
-  sacred = new ethers.Contract(utils.ensToAddr(config.sacred.address), sacredAbi.abi, wallet)
+  sacred = new ethers.Contract(SACRED_TOKEN, sacredAbi.abi, wallet)
   miner = new ethers.Contract(utils.ensToAddr(config.miningV2.address), minerAbi.abi, wallet)
   let groth16 = await buildGroth16()
   controller = new Controller({

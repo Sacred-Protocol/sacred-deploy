@@ -1,12 +1,11 @@
 require('dotenv').config()
 const fs = require('fs')
-const ethers = require('ethers')
+const { ethers } = require('hardhat')
+const { toWei } = require('web3-utils')
 const config = require('../sacred-token/config')
-const get = require('get-value')
 const { deploy, getContractData, zeroMerkleRoot, ensToAddr, addressTable } = require('./utils')
-const { DEPLOYER, SALT, MINIMUM_INTERESTS, INTERESTS_FEE } = process.env
+const { DEPLOYER, SALT, MINIMUM_INTERESTS, INTERESTS_FEE, SACRED_TOKEN, REWARDSWAP_MINING_CAP } = process.env
 
-const sacred = getContractData('../sacred-token/artifacts/contracts/SACRED.sol/SACRED.json')
 const governance = getContractData('../sacred-governance/artifacts/contracts/Governance.sol/Governance.json')
 const governanceProxy = getContractData('../sacred-governance/artifacts/contracts/LoopbackProxy.sol/LoopbackProxy.json')
 const miner = getContractData('../sacred-anonymity-mining/artifacts/contracts/Miner.sol/Miner.json')
@@ -32,20 +31,9 @@ actions.push(
   }),
 )
 
-// Deploy SACRED
-actions.push(
-  deploy({
-    domain: config.sacred.address,
-    contract: sacred,
-    title: 'SACRED token',
-    description: 'Sacred.cash governance token',
-  }),
-)
-const sacredActionIndex = actions.length - 1
-
 // Deploy Governance proxy
 const governanceContract = new ethers.utils.Interface(governance.abi)
-const initData = governanceContract.encodeFunctionData('initialize', [ensToAddr(config.sacred.address)])
+const initData = governanceContract.encodeFunctionData('initialize', [SACRED_TOKEN])
 actions.push(
   deploy({
     domain: config.governance.address,
@@ -90,8 +78,8 @@ actions.push(
     domain: config.rewardSwap.address,
     contract: rewardSwap,
     args: [
-      ensToAddr(config.sacred.address),
-      config.sacred.distribution.miningV2.amount,
+      SACRED_TOKEN,
+      toWei(REWARDSWAP_MINING_CAP),
       config.miningV2.initialBalance,
       config.rewardSwap.poolWeight
     ],
@@ -239,14 +227,6 @@ actions[rewardSwapActionIndex].initArgs = [
 actions[sacredProxyActionIndex].initArgs = [
   ensToAddr(config.miningV2.address)
 ];
-
-// Set args for RewardSwap Initialization
-const distribution = Object.values(config.sacred.distribution).map(({ to, amount }) => ({
-  to: ensToAddr(get(config, to).address),
-  amount,
-}))
-console.log(distribution)
-actions[sacredActionIndex].initArgs = [distribution]
 
 // Write output
 const result = {

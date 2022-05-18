@@ -357,8 +357,6 @@ function initAddressTable(configData) {
     }
   }
 
-
-  addressTable['airdrop-receiver.sacredcash.eth'] = AIRDROP_RECEIVER
   addressTable['eth-01.sacredcash.eth'] = getSacredInstanceAddress(NET_ID, "eth", 0.1)
   addressTable['eth-1.sacredcash.eth'] = getSacredInstanceAddress(NET_ID, "eth", 1)
   addressTable['eth-10.sacredcash.eth'] = getSacredInstanceAddress(NET_ID, "eth", 10)
