@@ -18,10 +18,13 @@
 ### Sacred Pool  
 https://github.com/Sacred-Finance/sacred-contracts-eth
 
+### Sacred Token
+https://github.com/Sacred-Finance/sacred-trees 
+
 ## Deploy Sacred Pool first  
 1. Clone Repository  
 ```
-git clone sacred-contracts-eth
+git clone https://github.com/Sacred-Finance/sacred-contracts-eth 
 cd sacred-contracts-eth
 ```
 2. Copy .env.example and setup
@@ -49,7 +52,16 @@ For example, you can see addresses of deployed contracts after deploy is complet
 ```
 5. Fill config.js with the deployed instance addresses.  
 
-## Deploy Others  
+## Deploy SacredToken   
+1. Clone Repository  
+```
+git clone https://github.com/Sacred-Finance/sacred-token 
+cd sacred-token
+```
+2. Deploy SacredToken and save the address of deployed SacredToken 
+Please follow deploy instruction of sacred-token repository 
+
+## Deploy Others through Sacred-Deploy  
 1. Clone Sacred-Deploy  
 ```
 git clone https://github.com/Sacred-Finance/sacred-deploy.git
@@ -110,9 +122,12 @@ You need to changed this SALT value when you want to have your contracts fresh d
 For example, you already deployed contracts with SALT=0x----0100000, but if you need to deploy contracts after some modification, you need to change SALT as 0x----0100001.  
 Simply you can increase SALT whenever you want fresh deploy.  
 
-- `AIRDROP_RECEIVER`  
-RewardSwap contract and AIRDROP_RECEIVER are initial receivers when deploying SacredTokens  
-In terms of total SacredToken amounts, please take a look at SacredToken/config.js.  
+- `SACRED_TOKEN`  
+The address of deployed SacredToken  
+
+- `REWARDSWAP_MINING_CAP`  
+The amount of SacredTokens to be sent to RewardSwap contract for initial liquidity.  
+You also have to charge this amount of SacredTokens to RewardSwap after deployed all contracts.  
 
 - `SMALL_BATCH_SIZE_ROOT_UPDATE`  
 Default is 1 which means light weight circuits for updating root of sacred-trees.  
@@ -157,6 +172,12 @@ cp ../../node_modules/circom_runtime/c/*.cpp ./
 cp ../../node_modules/circom_runtime/c/*.hpp ./
 g++ -pthread main.cpp calcwit.cpp utils.cpp fr.cpp fr.o ${1}.cpp -o ${1} -lgmp -std=c++11 -O3 -DSANITY_CHECK -lomp
 ```
+
+## Charging RewardSwap contract with some SacredTokens for initial liquidity.    
+You should send exact amount of SacredTokens as `REWARDSWAP_MINING_CAP`  
+address.json will be created after deployed, and you can find the address of RewardSwap contract in address.json  
+If the exact amount of tokens are not charged in RewardSwap contract, SacredFinance system will not work properly.  
+
 ## To test contracts  
 `yarn test`  
 
