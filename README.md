@@ -58,7 +58,7 @@ For example, you can see addresses of deployed contracts after deploy is complet
 git clone https://github.com/Sacred-Finance/sacred-token 
 cd sacred-token
 ```
-2. Deploy SacredToken and save the address of deployed SacredToken 
+2. Deploy SacredToken and save the address of deployed SacredToken  
 Please follow deploy instruction of sacred-token repository 
 
 ## Deploy Others through Sacred-Deploy  
