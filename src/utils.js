@@ -12,7 +12,6 @@ const snarkjs = require('snarkjs')
 const crypto = require('crypto')
 const circomlib = require('circomlib')
 const bigInt = snarkjs.bigInt
-const merkleTree = require('../lib/MerkleTree')
 const buildGroth16 = require('websnark/src/groth16')
 const websnarkUtils = require('websnark/src/utils')
 const { fromWei, toWei, toBN, BN } = require('web3-utils')
@@ -59,6 +58,14 @@ function getRPCUrl() {
       break
   }
   return rpc
+}
+
+function bitsToNumber(bits) {
+  let result = 0
+  for (const item of bits.slice().reverse()) {
+    result = (result << 1) + item
+  }
+  return result
 }
 
 /** Generate random number of specified byte length */
@@ -143,13 +150,18 @@ function createDeposit({ nullifier, secret }) {
   const leaves = events
     .sort((a, b) => a.returnValues.leafIndex - b.returnValues.leafIndex) // Sort events in chronological order
     .map(e => e.returnValues.commitment)
-  const tree = new merkleTree(MERKLE_TREE_HEIGHT, leaves)
+  const tree = new MerkleTree(MERKLE_TREE_HEIGHT, leaves, { hashFunction: poseidonHash2 })
 
   // Find current commitment in the tree
   const depositEvent = events.find(e => e.returnValues.commitment === toHex(deposit.commitment))
   const leafIndex = depositEvent ? depositEvent.returnValues.leafIndex : -1
   // Compute merkle proof of our commitment
-  return tree.path(leafIndex)
+  const path = tree.path(leafIndex) 
+  return {
+    root: tree.root(),
+    path_elements: path.pathElements,
+    path_index: bitsToNumber(path.pathIndices)
+  }
 }
 
 /**
@@ -169,10 +181,10 @@ function createDeposit({ nullifier, secret }) {
     // Public snark inputs
     root: root,
     nullifierHash: deposit.nullifierHash,
-    recipient: bigInt(recipient),
-    relayer: bigInt(relayerAddress),
-    fee: bigInt(fee),
-    refund: bigInt(refund),
+    recipient: toBN(recipient),
+    relayer: toBN(relayerAddress),
+    fee: fee,
+    refund: refund,
 
     // Private snark inputs
     nullifier: deposit.nullifier,

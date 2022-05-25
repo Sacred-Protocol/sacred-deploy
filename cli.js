@@ -3,7 +3,7 @@
 // Works with node.js
 
 require('dotenv').config()
-const { waffle, ethers } = require("hardhat");
+const { ethers } = require("hardhat")
 const utils = require('./src/utils')
 const ethSacredAbi = require('./abi/ethSacred.json')
 const erc20SacredAbi = require('./abi/erc20Sacred.json')
@@ -25,7 +25,7 @@ const { getEncryptionPublicKey } = require('eth-sig-util');
 const fs = require('fs')
 const program = require('commander')
 const levels = 20
-const { PRIVATE_KEY, NETWORK, SACRED_TOKEN } = process.env
+const { PRIVATE_KEY, NETWORK, SACRED_TOKEN, RPC_URL } = process.env
 const addressTable = require('./'+NETWORK+'/address.json')
 
 const provingKeys = {
@@ -97,16 +97,15 @@ async function getBlockNumbers(type, noteString) {
 }
 
 async function main() {
-
   program
-    .option('-r, --rpc <URL>', 'The RPC, CLI should interact with', 'http://localhost:8545')
+    .option('-r, --rpc <URL>', 'The RPC, CLI should interact with')
     .option('-R, --relayer <URL>', 'Withdraw via relayer')
     .option('-k, --privatekey <privateKey>', 'Private Key') 
   program
     .command('deposit <currency> <amount>')
     .description('Submit a deposit of specified currency and amount from default eth account and return the resulting note. The currency is one of (ETH|). The amount depends on currency, see config.js file.')
     .action(async (currency, amount) => {
-      await init(program.rpc)
+      await init(program.rpc || RPC_URL)
       currency = currency.toLowerCase()
       const instanceAddress = utils.getSacredInstanceAddress(netId, currency, amount)
       let sacredInstance = new ethers.Contract(instanceAddress, currency === "eth" ? ethSacredAbi : erc20SacredAbi, wallet)
@@ -117,7 +116,7 @@ async function main() {
     .command('withdraw <note> <recipient> [ETH_purchase]')
     .description('Withdraw a note to a recipient account using relayer or specified private key. You can exchange some of your deposit`s tokens to ETH during the withdrawal by specifing ETH_purchase (e.g. 0.01) to pay for gas in future transactions. Also see the --relayer option.')
     .action(async (noteString, recipient, refund) => {
-      await init(program.rpc)
+      await init(program.rpc || RPC_URL)
       const { currency, amount, netId, deposit } = utils.parseNote(noteString)
       const instanceAddress = utils.getSacredInstanceAddress(netId, currency, amount)
       let sacredInstance = new ethers.Contract(instanceAddress, currency === "eth" ? ethSacredAbi : erc20SacredAbi, wallet)
@@ -128,7 +127,7 @@ async function main() {
     .command('sacredtest <currency> <amount> <recipient>')
     .description('Perform an automated test. It deposits and withdraws one ETH. Uses Kovan Testnet.')
     .action(async (currency, amount, recipient) => {
-      await init(program.rpc)
+      await init(program.rpc || RPC_URL)
       currency = currency.toLowerCase()
       const instanceAddress = utils.getSacredInstanceAddress(netId, currency, amount)
       let sacredInstance = new ethers.Contract(instanceAddress, currency === "eth" ? ethSacredAbi : erc20SacredAbi, wallet)
@@ -142,7 +141,7 @@ async function main() {
     .command('updatetree <operation>')
     .description('Perform batch update root of SacredTree. operation indicates deposit or withdraw')
     .action(async (operation) => {
-      await init(program.rpc)
+      await init(program.rpc || RPC_URL)
       operation = operation.toLowerCase()
       if (operation === "deposit") {
         await upateRoot(action.DEPOSIT)
@@ -174,7 +173,7 @@ async function main() {
     .command('calcap <note>')
     .description('Calculate AP amount.')
     .action(async (note) => {
-      await init(program.rpc)
+      await init(program.rpc || RPC_URL)
       const depositBlock = await getBlockNumbers(action.DEPOSIT, note)
       const withdrawalBlock = await getBlockNumbers(action.WITHDRAWAL, note)
       if(depositBlock < 0) {
@@ -194,7 +193,7 @@ async function main() {
     .command('reward <note>')
     .description('It claiming reward. With executing this, you can get your encoded account that contains your AP.')
     .action(async (note) => {
-      await init(program.rpc)
+      await init(program.rpc || RPC_URL)
       const zeroAccount = new Account()
       const depositBlock = await getBlockNumbers(action.DEPOSIT, note)
       const withdrawalBlock = await getBlockNumbers(action.WITHDRAWAL, note)
@@ -224,7 +223,7 @@ async function main() {
     .command('rewardswap <account> <recipient>')
     .description('It swaps your AP that is included in your account to ETH.')
     .action(async (account, recipient) => {
-      await init(program.rpc)
+      await init(program.rpc || RPC_URL)
       const publicKey = getEncryptionPublicKey(program.privateKey || PRIVATE_KEY)
       const decryptedAccount = Account.decrypt(program.privateKey || PRIVATE_KEY, unpackEncryptedMessage(account))
       const apAmount = decryptedAccount.apAmount
@@ -246,3 +245,4 @@ async function main() {
 }
 
 main()
+
