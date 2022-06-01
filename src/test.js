@@ -3,7 +3,6 @@ const { expect } = require('chai');
 const { waffle, ethers } = require("hardhat");
 const { BigNumber } = require('ethers')
 const { toBN } = require('web3-utils')
-const { deployContracts } = require('./execute')
 const fs = require('fs')
 const rootUpdaterEvents = require('../lib/root-updater/events')
 const { updateTree } = require('../lib/root-updater/update')
@@ -92,7 +91,6 @@ describe('Testing SacredAnanomityMining', () => {
   const publicKey = getEncryptionPublicKey(privateKey)
 
   before(async () => {
-    await deployContracts();
     utils.updateAddressTable(addressTable)
     
     const signers = await ethers.getSigners();
