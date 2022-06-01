@@ -1,12 +1,12 @@
 [submodule "sacred-anonymity-mining"]
 	path = sacred-anonymity-mining
-	url = git@github.com:Sacred-Finance/sacred-anonymity-mining.git
+	url = https://github.com/Sacred-Finance/sacred-anonymity-mining.git
 [submodule "sacred-token"]
 	path = sacred-token
-	url = git@github.com:Sacred-Finance/sacred-token.git
+	url = https://github.com/Sacred-Finance/sacred-token.git
 [submodule "sacred-governance"]
 	path = sacred-governance
-	url = git@github.com:Sacred-Finance/sacred-governance.git
+	url = https://github.com/Sacred-Finance/sacred-governance.git
 [submodule "sacred-trees"]
 	path = sacred-trees
 	url = https://github.com/Sacred-Finance/sacred-trees.git
