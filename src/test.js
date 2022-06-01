@@ -147,7 +147,7 @@ describe('Testing SacredAnanomityMining', () => {
 
   describe('#Deposit And Withdraw', () => {
     it('should work', async () => {
-      for(let i = 0; i < 0; i++) {
+      for(let i = 0; i < 2; i++) {
         let ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
         console.log('Before Deposit: User ETH balance is ', ethbalance);
         //Deposit

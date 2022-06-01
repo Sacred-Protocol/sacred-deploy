@@ -3,7 +3,7 @@
 1. node 12
 2. yarn
 3. zkutil (`brew install rust && cargo install zkutil`) (needed only for circuit compilation and setup)
-
+4. libgmp-dev, nlohmann-json3-dev, nasm  
 
 #  How to deploy it
 
