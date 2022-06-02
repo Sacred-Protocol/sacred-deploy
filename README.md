@@ -173,6 +173,9 @@ cp ../../node_modules/circom_runtime/c/*.hpp ./
 g++ -pthread main.cpp calcwit.cpp utils.cpp fr.cpp fr.o ${1}.cpp -o ${1} -lgmp -std=c++11 -O3 -DSANITY_CHECK -lomp
 ```
 
+9. Copy the circuit data of sacred-eth-contract  
+cp sacred-contract-eth/build/circuits/* sacred_deploy/lib/sacred-eth-build/circuits  
+
 ## Charging RewardSwap contract with some SacredTokens for initial liquidity.    
 You should send exact amount of SacredTokens as `REWARDSWAP_MINING_CAP`  
 address.json will be created after deployed, and you can find the address of RewardSwap contract in address.json  
