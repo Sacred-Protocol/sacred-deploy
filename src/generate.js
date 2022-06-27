@@ -14,6 +14,7 @@ const sacredTrees = getContractData('../sacred-trees/artifacts/contracts/SacredT
 const adminUpgradeableProxy = getContractData('../sacred-trees/artifacts/contracts/AdminUpgradeableProxy.sol/AdminUpgradeableProxy.json')
 const batchTreeUpdateVerifier = getContractData('../sacred-trees/artifacts/contracts/verifiers/BatchTreeUpdateVerifier.sol/BatchTreeUpdateVerifier.json')
 const sacredProxy = getContractData('../sacred-anonymity-mining/artifacts/contracts/SacredProxy.sol/SacredProxy.json')
+const sacredEchoer = getContractData('../sacred-anonymity-mining/artifacts/contracts/utils/Echoer.sol/Echoer.json')
 const aaveInterestsProxy = getContractData('../sacred-anonymity-mining/artifacts/contracts/AaveInterestsProxy.sol/AaveInterestsProxy.json')
 const rewardVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/RewardVerifier.sol/RewardVerifier.json')
 const withdrawVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/WithdrawVerifier.sol/WithdrawVerifier.json')
@@ -69,6 +70,16 @@ actions.push(
     contract: treeUpdateVerifier,
     title: 'Tree Update Verifier',
     description: 'ZkSnark verifier smart contract for validation for account merkle tree updates',
+  }),
+)
+
+// Deploy Echoer
+actions.push(
+  deploy({
+    domain: config.sacredEchoer.address,
+    contract: sacredEchoer,
+    title: 'Echoer',
+    description: 'Echoer smart contract for on-chain backup system of AccountKey',
   }),
 )
 
