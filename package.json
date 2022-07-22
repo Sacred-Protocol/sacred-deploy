@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "clean": "rm -rf sacred-token/artifacts && rm -rf sacred-anonymity-mining/artifacts && rm -rf sacred-governance/artifacts",
-    "generate": "node src/generate.js",
+    "generate": "npx hardhat run src/generate.js",
     "airdrop": "node src/airdrop.js",
     "ens": "node src/ens.js",
     "execute": "npx hardhat run src/execute.js",
