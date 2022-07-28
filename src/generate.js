@@ -1,7 +1,7 @@
 require('dotenv').config()
 const fs = require('fs')
-const { ethers } = require('hardhat')
 const { toWei } = require('web3-utils')
+const utils = require('./utils');
 const config = require('../sacred-token/config')
 const { deploy, getContractData, zeroMerkleRoot, ensToAddr, addressTable } = require('./utils')
 const { DEPLOYER, SALT, MINIMUM_INTERESTS, INTERESTS_FEE, SACRED_TOKEN, REWARDSWAP_MINING_CAP } = process.env
@@ -21,6 +21,22 @@ const withdrawVerifier = getContractData('../sacred-anonymity-mining/artifacts/c
 const treeUpdateVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/TreeUpdateVerifier.sol/TreeUpdateVerifier.json')
 const poseidonHasher = getContractData('../sacred-anonymity-mining/build/contracts/Hasher.json')
 const actions = []
+const { PRIVATE_KEY } = process.env
+const privateKey = PRIVATE_KEY
+
+async function main() {
+
+const provider = await utils.getProvider()
+const testing = ["hardhat", "localhost"].includes(hre.network.name);
+let wallet
+if (testing) {
+  const accounts = await ethers.getSigners();
+  wallet = accounts[0];
+} else {
+  wallet = new ethers.Wallet(privateKey, provider)  
+}
+
+console.log("owner address: ", wallet.address)
 
 // Deploy Governance implementation
 actions.push(
@@ -89,6 +105,7 @@ actions.push(
     domain: config.rewardSwap.address,
     contract: rewardSwap,
     args: [
+      wallet.address,
       SACRED_TOKEN,
       toWei(REWARDSWAP_MINING_CAP),
       config.miningV2.initialBalance,
@@ -118,6 +135,7 @@ actions.push(
     domain: config.sacredTreesImpl.address,
     contract: sacredTrees,
     args: [
+      wallet.address,
       ensToAddr(config.governance.address)
     ],
     title: 'SacredTreesImpl',
@@ -170,7 +188,11 @@ actions.push(
   deploy({
     domain: config.sacredProxy.address,
     contract: sacredProxy,
-    args: [ensToAddr(config.sacredTrees.address), ensToAddr(config.governance.address), instances],
+    args: [
+      wallet.address, 
+      ensToAddr(config.sacredTrees.address), 
+      ensToAddr(config.governance.address), 
+      instances],
     title: 'SacredCash Proxy',
     description:
       'Proxy contract for sacred.cash deposits and withdrawals that records block numbers for mining',
@@ -190,6 +212,7 @@ actions.push(
   deploy({
     domain: config.aaveInterestsProxy.address,
     contract: aaveInterestsProxy,
+    args: [wallet.address],
     title: 'AaveInterestsProxy',
     description: 'AaveInterestsProxy collect aave interests from ETHSacred instances',
   }),
@@ -251,3 +274,7 @@ console.log('Created actions.json')
 
 fs.writeFileSync('address.json', JSON.stringify(addressTable, null, '  '))
 console.log('Created address.json')
+
+}
+
+main()
