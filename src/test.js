@@ -3,6 +3,7 @@ const { expect } = require('chai');
 const { waffle, ethers } = require("hardhat");
 const { BigNumber } = require('ethers')
 const { toBN } = require('web3-utils')
+const { encrypt, decrypt, getEncryptionPublicKey } = require('eth-sig-util')
 const fs = require('fs')
 const rootUpdaterEvents = require('../lib/root-updater/events')
 const { updateTree } = require('../lib/root-updater/update')
@@ -13,8 +14,9 @@ const Account = require('../sacred-anonymity-mining/src/account')
 const Note = require('../sacred-anonymity-mining/src/note')
 const addressTable = require('../address.json')
 const utils = require('./utils')
-const { randomBN } = require('../sacred-anonymity-mining/src/utils')
+const { toFixedHex, randomBN, packEncryptedMessage, unpackEncryptedMessage } = require('../sacred-anonymity-mining/src/utils')
 const sacredProxyAbi = require('../sacred-anonymity-mining/artifacts/contracts/SacredProxy.sol/SacredProxy.json')
+const sacredEchoerAbi = require('../sacred-anonymity-mining/artifacts/contracts/utils/Echoer.sol/Echoer.json')
 const aaveInterestsProxyAbi = require('../sacred-anonymity-mining/artifacts/contracts/AaveInterestsProxy.sol/AaveInterestsProxy.json')
 const sacredTreesAbi = require('../sacred-trees/artifacts/contracts/SacredTrees.sol/SacredTrees.json')
 const sacredAbi = require('../sacred-token/artifacts/contracts/SACRED.sol/SACRED.json')
@@ -23,12 +25,6 @@ const minerAbi = require('../sacred-anonymity-mining/artifacts/contracts/Miner.s
 const ethSacredAbi = require('../abi/ethSacred.json')
 const erc20Abi = require('../abi/erc20.abi.json')
 const buildGroth16 = require('websnark/src/groth16')
-
-const {
-  toFixedHex,
-  unpackEncryptedMessage
-} = require('../sacred-anonymity-mining/src/utils')
-const { getEncryptionPublicKey } = require('eth-sig-util');
 const exp = require('constants');
 const { constants } = require('mocha/lib/utils');
 
@@ -77,6 +73,7 @@ describe('Testing SacredAnanomityMining', () => {
   let rewardSwap
   let sacredTrees
   let sacredProxy
+  let sacredEchoer
     
   let controller
   let wallet
@@ -108,6 +105,7 @@ describe('Testing SacredAnanomityMining', () => {
 
     sacredTrees = new ethers.Contract(utils.ensToAddr(config.sacredTrees.address), sacredTreesAbi.abi, wallet)
     sacredProxy = new ethers.Contract(utils.ensToAddr(config.sacredProxy.address), sacredProxyAbi.abi, wallet)
+    sacredEchoer = new ethers.Contract(utils.ensToAddr(config.sacredEchoer.address), sacredEchoerAbi.abi, wallet)
     sacred = new ethers.Contract(SACRED_TOKEN, sacredAbi.abi, wallet)
     rewardSwap = new ethers.Contract(utils.ensToAddr(config.rewardSwap.address), rewardSwapAbi.abi, wallet)
     miner = new ethers.Contract(utils.ensToAddr(config.miningV2.address), minerAbi.abi, wallet)
@@ -132,7 +130,22 @@ describe('Testing SacredAnanomityMining', () => {
     })
   })
 
-  describe('#constructor', () => {
+  describe('#Backup/Restore Account Key On-Chain', () => {
+    it('should store encrypted account key on-chain', async () => {
+      const genRanHex = size => [...Array(size)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+      const accountKey = genRanHex(40)
+      const encryptedAccount = encrypt(publicKey, { data: accountKey.toString('base64') }, 'x25519-xsalsa20-poly1305')
+      const encryptedMessage = packEncryptedMessage(encryptedAccount)
+      const tx = await (await sacredEchoer.echo(encryptedMessage)).wait()
+      const accountBackupEvent = tx.events.find(item => item.event === 'Echo')
+      const encryptedMessage2 = accountBackupEvent.args.data
+      const encryptedAccount2 = unpackEncryptedMessage(encryptedMessage2)
+      const accountKey2 = decrypt(encryptedAccount2, PRIVATE_KEY)
+      expect(accountKey).to.equal(accountKey2)
+    })
+  })
+
+  /*describe('#constructor', () => {
     it('should initialize', async () => {
       const tokenFromContract = await rewardSwap.sacred()
       expect(tokenFromContract).to.equal(sacred.address)
@@ -371,6 +384,7 @@ describe('Testing SacredAnanomityMining', () => {
       ).to.be.revertedWith('Only governance can perform this action');
     })
   })
+  */
 
 
 })
