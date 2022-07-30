@@ -130,31 +130,31 @@ describe('Testing SacredAnanomityMining', () => {
     })
   })
 
-  // describe('#Backup/Restore Account Key On-Chain', () => {
-  //   it('should store encrypted account key on-chain', async () => {
-  //     const genRanHex = size => [...Array(size)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
-  //     const accountKey = genRanHex(40)
-  //     const encryptedAccount = encrypt(publicKey, { data: accountKey.toString('base64') }, 'x25519-xsalsa20-poly1305')
-  //     const encryptedMessage = packEncryptedMessage(encryptedAccount)
-  //     const tx = await (await sacredEchoer.echo(encryptedMessage)).wait()
-  //     const accountBackupEvent = tx.events.find(item => item.event === 'Echo')
-  //     const encryptedMessage2 = accountBackupEvent.args.data
-  //     const encryptedAccount2 = unpackEncryptedMessage(encryptedMessage2)
-  //     const accountKey2 = decrypt(encryptedAccount2, PRIVATE_KEY)
-  //     expect(accountKey).to.equal(accountKey2)
-  //   })
-  // })
+  describe('#Backup/Restore Account Key On-Chain', () => {
+    it('should store encrypted account key on-chain', async () => {
+      const genRanHex = size => [...Array(size)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+      const accountKey = genRanHex(40)
+      const encryptedAccount = encrypt(publicKey, { data: accountKey.toString('base64') }, 'x25519-xsalsa20-poly1305')
+      const encryptedMessage = packEncryptedMessage(encryptedAccount)
+      const tx = await (await sacredEchoer.echo(encryptedMessage)).wait()
+      const accountBackupEvent = tx.events.find(item => item.event === 'Echo')
+      const encryptedMessage2 = accountBackupEvent.args.data
+      const encryptedAccount2 = unpackEncryptedMessage(encryptedMessage2)
+      const accountKey2 = decrypt(encryptedAccount2, PRIVATE_KEY)
+      expect(accountKey).to.equal(accountKey2)
+    })
+  })
 
-  // describe('#constructor', () => {
-  //   it('should initialize', async () => {
-  //     const tokenFromContract = await rewardSwap.sacred()
-  //     expect(tokenFromContract).to.equal(sacred.address)
-  //     const rewardSwapFromContract = await miner.rewardSwap()
-  //     expect(rewardSwapFromContract).to.equal(rewardSwap.address)
-  //     const rateFromContract = await miner.rates(utils.getSacredInstanceAddress(utils.getNetId(), 'eth', 0.1))
-  //     expect(rateFromContract).to.equal(BigNumber.from(RATE))
-  //   })
-  // })
+  describe('#constructor', () => {
+    it('should initialize', async () => {
+      const tokenFromContract = await rewardSwap.sacred()
+      expect(tokenFromContract).to.equal(sacred.address)
+      const rewardSwapFromContract = await miner.rewardSwap()
+      expect(rewardSwapFromContract).to.equal(rewardSwap.address)
+      const rateFromContract = await miner.rates(utils.getSacredInstanceAddress(utils.getNetId(), 'eth', 0.1))
+      expect(rateFromContract).to.equal(BigNumber.from(RATE))
+    })
+  })
 
   describe('#Deposit And Withdraw', () => {
     it('should work', async () => {
@@ -169,8 +169,8 @@ describe('Testing SacredAnanomityMining', () => {
         ethbalance = Number(ethers.utils.formatEther(await wallet.getBalance()));
         console.log('After Deposit: User ETH balance is ', ethbalance);
         //Withdraw
-        let data = utils.baseUtils.parseNote(noteString);
-        withdrawBlockNum = await utils.withdraw({deposit: data.deposit, currency: data.currency, amount:data.amount, recipient: wallet.address, relayerURL: null });
+        const {deposit, currency, amount} = utils.baseUtils.parseNote(noteString);
+        withdrawBlockNum = await utils.withdraw({deposit, currency, amount, recipient: wallet.address, relayerURL: null });
         console.log('Withdraw block number is ', withdrawBlockNum);
         ethbalance = Number(ethers.utils.formatEther(await wallet.getBalance()));
         console.log('After Withdraw: User ETH balance is ', ethbalance);
