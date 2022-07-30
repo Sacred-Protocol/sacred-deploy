@@ -1,31 +1,23 @@
 require('dotenv').config()
-const utils = require('./utils');
+const { ensToAddr, updateAddressTable} = require('../lib/deployUtils')
+const utils = require('../lib/utils')
 const actions = require('../actions.json')
 const abi = require('../abi/deployer.abi.json')
 const config = require('../sacred-token/config')
+const instancesInfo = require('../config.json')
 const ethSacredAbi = require('../abi/ethSacred.json')
+const erc20Abi = require('../abi/erc20.abi.json')
 const addressTable = require('../address.json')
-const prefix = {
-  1: '',
-  42: 'kovan.',
-  5: 'goerli.',
-}
-const { PRIVATE_KEY, NET_ID } = process.env
-const explorer = `https://${prefix[NET_ID]}etherscan.io`
+const { PRIVATE_KEY, RPC_URL } = process.env
 
 async function deployContracts() {
   const privateKey = PRIVATE_KEY
-  const provider = await utils.getProvider()
-  const testing = ["hardhat", "localhost"].includes(hre.network.name);
-  let wallet
-  if (testing) {
-    const accounts = await ethers.getSigners();
-    wallet = accounts[0];
-  } else {
-    wallet = new ethers.Wallet(privateKey, provider)  
-  }
+  await utils.init({instancesInfo, erc20Contract: erc20Abi, RPC_URL})
+  const explorer = `https://${utils.getCurrentNetworkName()}etherscan.io`
 
-  utils.updateAddressTable(addressTable)
+  let provider = utils.getProvider()
+  let wallet = utils.getWalllet()
+  updateAddressTable(addressTable)
 
   const deployer = new ethers.Contract(actions.deployer, abi, wallet)
   const deployerProxy = new ethers.Contract(actions.actions[0].expectedAddress, actions.actions[0].abi, wallet)
@@ -76,8 +68,8 @@ async function deployContracts() {
 
   const instances = [0.1, 1, 10, 100]
   for(let i = 0; i < instances.length; i++) {
-    let sacredInstance = new ethers.Contract(utils.getSacredInstanceAddress(NET_ID, 'eth', instances[i]), ethSacredAbi, wallet)
-    const receipt = await (await sacredInstance.setAaveInterestsProxy(utils.ensToAddr(config.aaveInterestsProxy.address))).wait()
+    let sacredInstance = new ethers.Contract(utils.getSacredInstanceAddress(utils.getNetId(), 'eth', instances[i]), ethSacredAbi, wallet)
+    const receipt = await (await sacredInstance.setAaveInterestsProxy(ensToAddr(config.aaveInterestsProxy.address))).wait()
     const _gasUsed = BigInt(receipt.cumulativeGasUsed) * BigInt(receipt.effectiveGasPrice);
     gasUsed = gasUsed + _gasUsed
   }
