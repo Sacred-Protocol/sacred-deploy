@@ -1,4 +1,3 @@
-require('dotenv').config()
 const { ethers } = require("hardhat");
 const { poseidon } = require('circomlib')
 const fs = require('fs')

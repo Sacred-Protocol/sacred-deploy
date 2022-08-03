@@ -1,4 +1,3 @@
-require('dotenv').config()
 const axios = require('axios')
 const { ethers } = require("hardhat")
 const assert = require('assert')

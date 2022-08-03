@@ -15,10 +15,10 @@
     "netId4": {
       "eth": {
         "instanceAddress": {
-          "1": "0x8BACe938DA08Aa7Ef0c5044B4a638a08F6C90ac8",
-          "10": "0x5C97B50b145F64C0F2c75aC10C865b66d2672643",
-          "100": "0x3698BEdD9B5C997039f753338bd9280E587DD0F6",
-          "0.1": "0xa14e1Df12582dEEE6B944e74c39a3F9e7b67b955"
+          "1": "0x13897a8101a181F1eF8466bD2F0b3a46bA0F0F40",
+          "10": "0x8eCDE0Ffc1BF96f2bd41A11bD5B3d59F64FF8223",
+          "100": "0xE9C4068377590630B3452e5B372a12A620A74A91",
+          "0.1": "0x81719564113662F714B51348D87909A5247e5637"
         },
         "symbol": "ETH",
         "decimals": 18,
