@@ -19,7 +19,14 @@ task('accounts', 'Prints the list of accounts', async () => {
  */
 const config = {
   solidity: {
-    version: "0.8.9",
+    compilers: [
+      {
+        version: "0.6.12",
+      },
+      {
+        version: '0.8.9',
+      },
+    ],
     settings: {
       optimizer: {
         enabled: true,

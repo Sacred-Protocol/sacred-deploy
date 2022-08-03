@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "sacred-contracts-eth/contracts/TwoStepOwnerShipMgr.sol";
 
 /// @dev This contract holds a merkle tree of all sacred cash deposit and withdrawal events
-contract SacredTrees is Initializable {
+contract SacredTrees is Initializable, TwoStepOwnerShipMgr {
   address public immutable governance;
   bytes32 public depositRoot;
   bytes32 public previousDepositRoot;
@@ -110,13 +110,13 @@ contract SacredTrees is Initializable {
       mstore(add(data, 0x20), _currentRoot)
     }
     for (uint256 i = 0; i < CHUNK_SIZE; ++i) {
-      (bytes32 hash, address instance, uint32 blockNumber) = (_events[i].hash, _events[i].instance, _events[i].block);
-      bytes32 leafHash = keccak256(abi.encode(instance, hash, blockNumber));
+      (bytes32 hash, address instance, uint32  bn ) = (_events[i].hash, _events[i].instance, _events[i].block);
+      bytes32 leafHash = keccak256(abi.encode(instance, hash, bn));
       bytes32 deposit = deposits[offset + i];
       require(leafHash == deposit, "Incorrect deposit");
       assembly {
         let itemOffset := add(data, mul(ITEM_SIZE, i))
-        mstore(add(itemOffset, 0x7c), blockNumber)
+        mstore(add(itemOffset, 0x7c), bn)
         mstore(add(itemOffset, 0x78), instance)
         mstore(add(itemOffset, 0x64), hash)
       }
@@ -158,13 +158,13 @@ contract SacredTrees is Initializable {
       mstore(add(data, 0x20), _currentRoot)
     }
     for (uint256 i = 0; i < CHUNK_SIZE; ++i) {
-      (bytes32 hash, address instance, uint32 blockNumber) = (_events[i].hash, _events[i].instance, _events[i].block);
-      bytes32 leafHash = keccak256(abi.encode(instance, hash, blockNumber));
+      (bytes32 hash, address instance, uint32 bn) = (_events[i].hash, _events[i].instance, _events[i].block);
+      bytes32 leafHash = keccak256(abi.encode(instance, hash, bn));
       bytes32 withdrawal = withdrawals[offset + i];
       require(leafHash == withdrawal, "Incorrect withdrawal");
       assembly {
         let itemOffset := add(data, mul(ITEM_SIZE, i))
-        mstore(add(itemOffset, 0x7c), blockNumber)
+        mstore(add(itemOffset, 0x7c), bn)
         mstore(add(itemOffset, 0x78), instance)
         mstore(add(itemOffset, 0x64), hash)
       }

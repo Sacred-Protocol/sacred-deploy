@@ -10,7 +10,7 @@ import "./interfaces/ISacredTrees.sol";
 import "./interfaces/IMiner.sol";
 import "sacred-contracts-eth/contracts/TwoStepOwnerShipMgr.sol";
 
-contract SacredProxy {
+contract SacredProxy is TwoStepOwnerShipMgr{
   using SafeERC20 for IERC20;
 
   event EncryptedNote(address indexed sender, bytes encryptedNote);

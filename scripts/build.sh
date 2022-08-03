@@ -18,14 +18,6 @@ function load_envs() {
 
 load_envs
 
-echo "---sacred-contracts-eth---"
-cd sacred-contracts-eth
-yarn
-yarn build
-yarn deploy
-cp config.json ../
-cd ..
-
 echo "---sacred-token---"
 cd sacred-token
 yarn
