@@ -2,7 +2,7 @@
 // Temporary demo client
 // Works in node.js
 
-require('dotenv').config()
+require('dotenv').config({ path: '../.env' })
 const utils = require('./lib/utils')
 const fs = require('fs')
 const program = require('commander')

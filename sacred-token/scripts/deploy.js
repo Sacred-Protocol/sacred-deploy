@@ -1,4 +1,4 @@
-require('dotenv').config()
+require('dotenv').config({ path: '../.env' })
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
 const { toWei } = require('web3-utils')

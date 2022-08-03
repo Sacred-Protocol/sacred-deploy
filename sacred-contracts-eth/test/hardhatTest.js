@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("dotenv").config({ path: '../.env' });
 const { expect } = require('chai');
 const fs = require('fs')
 const utils = require('../lib/utils')

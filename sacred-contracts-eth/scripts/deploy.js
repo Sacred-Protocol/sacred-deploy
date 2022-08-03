@@ -1,4 +1,4 @@
-require('dotenv').config()
+require('dotenv').config({ path: '../.env' })
 const { ethers } = require("hardhat")
 const fs = require('fs')
 const baseUtils = require('../lib/baseUtils')
