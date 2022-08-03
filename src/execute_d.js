@@ -4,9 +4,9 @@ const utils = require('../sacred-contracts-eth/lib/utils')
 const { updateAddressTable} = require('../lib/deployUtils')
 const instancesInfo = require('../config.json')
 const addressTable = require('../address.json')
-const ethSacredAbi = require('./sacred-contracts-eth/artifacts/contracts/ETHSacred.sol/ETHSacred.json')
+const ethSacredAbi = require('./abi/ETHSacred.json')
 const erc20Abi = require('../abi/erc20.abi.json')
-const erc20SacredAbi = require('../artifacts/contracts/ERC20Sacred.sol/ERC20Sacred.json')
+const erc20SacredAbi = require('../abi/ERC20Sacred.json')
 const withdrawCircuit = require('../sacred-contracts-eth/build/circuits/withdraw.json')
 const withdrawProvidingKey = fs.readFileSync('sacred-contracts-etc/build/circuits/withdraw_proving_key.bin').buffer
 

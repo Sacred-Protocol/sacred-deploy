@@ -58,7 +58,7 @@ async function main() {
     console.log('' + currencyAmount + ' - ETHSacred\'s address ', addresses[i])
   }
 
-  fs.writeFileSync('./config.json', JSON.stringify(config, null, '  '))
+  await fs.writeFileSync('./config.json', JSON.stringify(config, null, '  '))
   console.log("Deployed Contract's addresses are saved into config.json!")
 }
 

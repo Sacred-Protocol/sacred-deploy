@@ -7,5 +7,4 @@ cd sacred-contracts-eth
 yarn
 yarn build
 yarn deploy
-cp config.json ../
 cd ..
