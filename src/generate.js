@@ -4,7 +4,7 @@ const { toWei } = require('web3-utils')
 const config = require('../sacred-token/config')
 const instancesInfo = require('../config.json')
 const erc20Abi = require('../abi/erc20.abi.json')
-const utils = require('../lib/utils')
+const utils = require('../sacred-contracts-eth/lib/utils')
 const { deploy, getContractData, ensToAddr, getAddressTable, setAddress, initAddressTable } = require('../lib/deployUtils')
 const { DEPLOYER, SALT, MINIMUM_INTERESTS, INTERESTS_FEE, SACRED_TOKEN, REWARDSWAP_MINING_CAP } = process.env
 

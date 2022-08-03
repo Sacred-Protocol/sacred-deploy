@@ -15,7 +15,7 @@ const Account = require('../sacred-anonymity-mining/src/account')
 const Note = require('../sacred-anonymity-mining/src/note')
 const { updateAddressTable} = require('../lib/deployUtils')
 const { ensToAddr } = require('../lib/deployUtils')
-const utils = require('../lib/utils')
+const utils = require('../sacred-contracts-eth/lib/utils')
 const { toFixedHex, randomBN, packEncryptedMessage, unpackEncryptedMessage } = require('../sacred-anonymity-mining/src/utils')
 const sacredProxyAbi = require('../sacred-anonymity-mining/artifacts/contracts/SacredProxy.sol/SacredProxy.json')
 const sacredEchoerAbi = require('../sacred-anonymity-mining/artifacts/contracts/utils/Echoer.sol/Echoer.json')
@@ -24,21 +24,21 @@ const sacredTreesAbi = require('../sacred-trees/artifacts/contracts/SacredTrees.
 const sacredAbi = require('../sacred-token/artifacts/contracts/SACRED.sol/SACRED.json')
 const rewardSwapAbi = require('../sacred-anonymity-mining/artifacts/contracts/RewardSwap.sol/RewardSwap.json')
 const minerAbi = require('../sacred-anonymity-mining/artifacts/contracts/Miner.sol/Miner.json')
-const ethSacredAbi = require('../abi/ethSacred.json')
-const erc20SacredAbi = require('../abi/erc20Sacred.json')
+const ethSacredAbi = require('../sacred-contracts/artifacts/contracts/ETHSacred.sol/ETHSacred.json')
+const erc20SacredAbi = require('../sacred-contracts/artifacts/contracts/ERC20Sacred.sol/Erc20Sacred.json')
 const erc20Abi = require('../abi/erc20.abi.json')
 const buildGroth16 = require('websnark/src/groth16')
 const addressTable = require('../address.json')
 
 const provingKeys = {
-  sacredEthWithdrawCircuit: require('../lib/sacred-eth-build/circuits/withdraw.json'),
+  sacredEthWithdrawCircuit: require('../sacred-contracts-eth/build/circuits/withdraw.json'),
   rewardCircuit: require('../sacred-anonymity-mining/build/circuits/Reward.json'),
   withdrawCircuit: require('../sacred-anonymity-mining/build/circuits/Withdraw.json'),
   treeUpdateCircuit: require('../sacred-anonymity-mining/build/circuits/TreeUpdate.json'),
   rewardProvingKey: fs.readFileSync('./sacred-anonymity-mining/build/circuits/Reward_proving_key.bin').buffer,
   withdrawProvingKey: fs.readFileSync('./sacred-anonymity-mining/build/circuits/Withdraw_proving_key.bin').buffer,
   treeUpdateProvingKey: fs.readFileSync('./sacred-anonymity-mining/build/circuits/TreeUpdate_proving_key.bin').buffer,
-  sacredEthWithdrawProvidingKey: fs.readFileSync('lib/sacred-eth-build/circuits/withdraw_proving_key.bin').buffer
+  sacredEthWithdrawProvidingKey: fs.readFileSync('sacred-contracts-eth/build/circuits/withdraw_proving_key.bin').buffer
 }
 
 const { PRIVATE_KEY, RPC_URL, MINIMUM_INTERESTS, SACRED_TOKEN} = process.env
@@ -104,8 +104,8 @@ describe('Testing SacredAnanomityMining', () => {
     miner = new ethers.Contract(ensToAddr(config.miningV2.address), minerAbi.abi, wallet)
     
     await utils.setup({
-      ethSacredAbi, 
-      erc20SacredAbi, 
+      ethSacredAbi: ethSacredAbi.abi, 
+      erc20SacredAbi:erc20SacredAbi.abi, 
       sacredProxyContract: sacredProxy,
       withdrawCircuit: provingKeys.sacredEthWithdrawCircuit, 
       withdrawProvidingKey: provingKeys.sacredEthWithdrawProvidingKey

@@ -1,11 +1,11 @@
 require('dotenv').config()
 const { ensToAddr, updateAddressTable} = require('../lib/deployUtils')
-const utils = require('../lib/utils')
+const utils = require('../sacred-contracts-eth/lib/utils')
 const actions = require('../actions.json')
 const abi = require('../abi/deployer.abi.json')
 const config = require('../sacred-token/config')
 const instancesInfo = require('../config.json')
-const ethSacredAbi = require('../abi/ethSacred.json')
+const ethSacredAbi = require('./sacred-contracts/artifacts/contracts/ETHSacred.sol/ETHSacred.json')
 const erc20Abi = require('../abi/erc20.abi.json')
 const addressTable = require('../address.json')
 const { PRIVATE_KEY, RPC_URL } = process.env
@@ -68,7 +68,7 @@ async function deployContracts() {
 
   const instances = [0.1, 1, 10, 100]
   for(let i = 0; i < instances.length; i++) {
-    let sacredInstance = new ethers.Contract(utils.getSacredInstanceAddress(utils.getNetId(), 'eth', instances[i]), ethSacredAbi, wallet)
+    let sacredInstance = new ethers.Contract(utils.getSacredInstanceAddress(utils.getNetId(), 'eth', instances[i]), ethSacredAbi.abi, wallet)
     const receipt = await (await sacredInstance.setAaveInterestsProxy(ensToAddr(config.aaveInterestsProxy.address))).wait()
     const _gasUsed = BigInt(receipt.cumulativeGasUsed) * BigInt(receipt.effectiveGasPrice);
     gasUsed = gasUsed + _gasUsed

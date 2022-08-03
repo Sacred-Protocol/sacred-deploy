@@ -1,14 +1,14 @@
 require('dotenv').config()
-const utils = require('../lib/utils')
-const fs = require('fs');
+const fs = require('fs')
+const utils = require('../sacred-contracts-eth/lib/utils')
 const { updateAddressTable} = require('../lib/deployUtils')
 const instancesInfo = require('../config.json')
 const addressTable = require('../address.json')
-const ethSacredAbi = require('../abi/ethSacred.json')
+const ethSacredAbi = require('./sacred-contracts/artifacts/contracts/ETHSacred.sol/ETHSacred.json')
 const erc20Abi = require('../abi/erc20.abi.json')
 const erc20SacredAbi = require('../artifacts/contracts/ERC20Sacred.sol/ERC20Sacred.json')
-const withdrawCircuit = require('../lib/sacred-eth-build/circuits/withdraw.json')
-const withdrawProvidingKey = fs.readFileSync('lib/sacred-eth-build/circuits/withdraw_proving_key.bin').buffer
+const withdrawCircuit = require('../sacred-contracts-eth/build/circuits/withdraw.json')
+const withdrawProvidingKey = fs.readFileSync('sacred-contracts-etc/build/circuits/withdraw_proving_key.bin').buffer
 
 const {  RPC_URL } = process.env
 
@@ -19,7 +19,7 @@ async function main() {
   const signers = await ethers.getSigners();
   owner = signers[0];
   await utils.setup({
-    ethSacredAbi, 
+    ethSacredAbi: ethSacredAbi.abi, 
     erc20SacredAbi, 
     withdrawCircuit,
     withdrawProvidingKey
