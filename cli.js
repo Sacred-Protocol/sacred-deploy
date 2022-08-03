@@ -6,9 +6,9 @@ require('dotenv').config()
 const { ethers } = require("hardhat")
 const utils = require('./sacred-contracts-eth/lib/utils')
 const instancesInfo = require('./config.json')
-const { ensToAddr } = require('./lib/deployUtils')
+const { ensToAddr,updateAddressTable } = require('./lib/deployUtils')
 const ethSacredAbi = require('./abi/ETHSacred.json')
-const erc20SacredAbi = require('./abi/Erc20Sacred.json')
+const erc20SacredAbi = require('./abi/ERC20Sacred.json')
 const erc20Abi = require('./abi/erc20.abi.json')
 const rootUpdaterEvents = require('./lib/root-updater/events')
 const { updateTree } = require('./lib/root-updater/update')
@@ -27,23 +27,23 @@ const buildGroth16 = require('websnark/src/groth16')
 const { getEncryptionPublicKey } = require('eth-sig-util');
 const fs = require('fs')
 const program = require('commander')
-const { util } = require('chai')
 const levels = 20
 const { PRIVATE_KEY, NETWORK, SACRED_TOKEN, RPC_URL } = process.env
-const addressTable = require('./'+NETWORK+'/address.json')
+//const addressTable = require('./'+NETWORK+'/address.json')
+const addressTable = require('./address.json')
 
 const provingKeys = {
-  sacredEthWithdrawCircuit: require('../sacred-contracts-eth/build/circuits/withdraw.json'),
+  sacredEthWithdrawCircuit: require('./sacred-contracts-eth/build/circuits/withdraw.json'),
   rewardCircuit: require('./sacred-anonymity-mining/build/circuits/Reward.json'),
   withdrawCircuit: require('./sacred-anonymity-mining/build/circuits/Withdraw.json'),
   treeUpdateCircuit: require('./sacred-anonymity-mining/build/circuits/TreeUpdate.json'),
   rewardProvingKey: fs.readFileSync('./sacred-anonymity-mining/build/circuits/Reward_proving_key.bin').buffer,
   withdrawProvingKey: fs.readFileSync('./sacred-anonymity-mining/build/circuits/Withdraw_proving_key.bin').buffer,
   treeUpdateProvingKey: fs.readFileSync('./sacred-anonymity-mining/build/circuits/TreeUpdate_proving_key.bin').buffer,
-  sacredEthWithdrawProvidingKey: fs.readFileSync('sacred-contracts-eth/build/circuits/withdraw_proving_key.bin').buffer
+  sacredEthWithdrawProvidingKey: fs.readFileSync('./sacred-contracts-eth/build/circuits/withdraw_proving_key.bin').buffer
 }
 
-utils.updateAddressTable(addressTable)
+updateAddressTable(addressTable)
 
 let miner
 let sacred

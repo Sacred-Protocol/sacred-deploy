@@ -49,7 +49,7 @@ contract Miner is ReentrancyGuard{
   Hasher private hasher;
   address public aaveInterestsProxy;
   mapping(address => uint256) public rates;
-  mapping(uint => address ) private instances;
+  mapping(uint256 => address) public instances;
   mapping(address => uint256) public activeDeposits;
   mapping(bytes32 => uint256[2]) public totalShareSnapshots;
 
@@ -153,6 +153,7 @@ contract Miner is ReentrancyGuard{
 
     _setRates(_rates);
     // prettier-ignore
+
     _setVerifiers([
       IVerifier(_verifiers[0]),
       IVerifier(_verifiers[1]),
@@ -258,7 +259,7 @@ contract Miner is ReentrancyGuard{
     WithdrawArgs memory _args,
     bytes memory _treeUpdateProof,
     TreeUpdateArgs memory _treeUpdateArgs
-  ) public {
+  ) public nonReentrant {
     validateAccountUpdate(_args.account, _treeUpdateProof, _treeUpdateArgs);
     require(_args.extDataHash == keccak248(abi.encode(_args.extData)), "Incorrect external data hash");
     require(_args.apAmount < 2**248, "Amount value out of range");
