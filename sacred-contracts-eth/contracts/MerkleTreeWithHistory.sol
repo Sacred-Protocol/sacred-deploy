@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.9;
 
 library Hasher {
   function poseidon(bytes32[2] memory input) public pure returns (bytes32){}

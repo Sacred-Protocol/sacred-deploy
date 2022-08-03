@@ -45,9 +45,9 @@
     "hardhat": "^2.0.8",
     "solhint-plugin-prettier": "^0.0.4",
     "solidity-coverage": "^0.7.7",
-    "sacred-token": "link:../sacred-token",
-    "sacred-trees": "link:../sacred-trees",
-    "sacred-contracts-eth": "link:../sacred-contracts-eth"
+    "sacred-token": "file:../sacred-token",
+    "sacred-trees": "file:../sacred-trees",
+    "sacred-contracts-eth": "file:../sacred-contracts-eth"
   },
   "dependencies": {
     "circomlib": "git+https://github.com/tornadocash/circomlib.git#3b492f9801573eebcfe1b6c584afe8a3beecf2b4",

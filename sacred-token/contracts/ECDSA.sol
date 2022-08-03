@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.9;
 
 // A copy from https://github.com/OpenZeppelin/openzeppelin-contracts/pull/2237/files
 
