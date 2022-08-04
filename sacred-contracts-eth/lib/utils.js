@@ -3,7 +3,6 @@ const { ethers } = require("hardhat")
 const assert = require('assert')
 const MerkleTree = require('fixed-merkle-tree')
 const snarkjs = require('snarkjs')
-const bigInt = snarkjs.bigInt
 const buildGroth16 = require('websnark/src/groth16')
 const websnarkUtils = require('websnark/src/utils')
 const { fromWei, toWei, toBN, BN } = require('web3-utils')
@@ -182,7 +181,7 @@ async function printERC20Balance({ address, name, tokenAddress }) {
  * @param amount Deposit amount
  */
 async function deposit({ currency, amount }) {
-  const deposit = baseUtils.createDeposit({ nullifier: baseUtils.rbigint(31), secret: baseUtils.rbigint(31) })
+  const deposit = baseUtils.createDeposit({ nullifier: baseUtils.randomBN(31), secret: baseUtils.randomBN(31) })
   const note = baseUtils.toHex(deposit.preimage, 62)
   const noteString = `sacred-${currency}-${amount}-${netId}-${note}`
   console.log(`Your note: ${noteString}`)

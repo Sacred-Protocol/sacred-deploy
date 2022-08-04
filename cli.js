@@ -80,20 +80,19 @@ async function init(rpc) {
   await controller.init(rpc)
 }
 
-async function updateRoot(type) {
+async function updateRoot(sacredTrees, type) {
   const { committedEvents, pendingEvents } = await rootUpdaterEvents.getEvents(sacredTrees, type)
   await updateTree(sacredTrees, committedEvents, pendingEvents, type)
 }
 
-async function getBlockNumbers(type, noteString) {
-  const events = await rootUpdaterEvents.getSacredTreesEvents(type, 0, 'latest')
-  const { currency, amount, netId, deposit } = utils.parseNote(noteString)
-  const note = Note.fromString(noteString, utils.getSacredInstanceAddress(netId, currency, amount), 0, 0)
+async function getBlockNumbers(sacredTrees, type, noteString) {
+  const events = await rootUpdaterEvents.getSacredTreesEvents(sacredTrees, type, 0, 'latest')
+  const { deposit } = utils.baseUtils.parseNote(noteString)
   const item = events.find(function(x) {
     if(type === action.WITHDRAWAL) {
-      return x.hash === toFixedHex(note.nullifierHash)
+      return x.hash === toFixedHex(deposit.nullifierHash)
     } else if(type === action.DEPOSIT){
-      return x.hash === toFixedHex(note.commitment)
+      return x.hash === toFixedHex(deposit.commitment)
     } else {
       return false
     }
@@ -144,9 +143,9 @@ async function main() {
       await init(program.rpc || RPC_URL)
       operation = operation.toLowerCase()
       if (operation === "deposit") {
-        await updateRoot(action.DEPOSIT)
+        await updateRoot(sacredTrees, action.DEPOSIT)
       } else if (operation === "withdraw") {
-        await updateRoot(action.WITHDRAWAL)
+        await updateRoot(sacredTrees, action.WITHDRAWAL)
       } else {
         console.log('Please specify operation as deposit or withdraw')
       }
@@ -158,11 +157,11 @@ async function main() {
       await init(program.rpc || RPC_URL)
       operation = operation.toLowerCase()
       if (operation === "deposit") {
-        const { committedEvents, pendingEvents } = await rootUpdaterEvents.getEvents(action.DEPOSIT)
+        const { committedEvents, pendingEvents } = await rootUpdaterEvents.getEvents(sacredTrees, action.DEPOSIT)
         console.log("Committed Deposits:", committedEvents.length)
         console.log("Pending Deposits:", pendingEvents.length)
       } else if (operation === "withdraw") {
-        const { committedEvents, pendingEvents } = await rootUpdaterEvents.getEvents(action.WITHDRAWAL)
+        const { committedEvents, pendingEvents } = await rootUpdaterEvents.getEvents(sacredTrees, action.WITHDRAWAL)
         console.log("Committed Withdrawals:", committedEvents.length)
         console.log("Pending Withdrawals:", pendingEvents.length)
       } else {
@@ -174,8 +173,8 @@ async function main() {
     .description('Calculate AP amount.')
     .action(async (note) => {
       await init(program.rpc || RPC_URL)
-      const depositBlock = await getBlockNumbers(action.DEPOSIT, note)
-      const withdrawalBlock = await getBlockNumbers(action.WITHDRAWAL, note)
+      const depositBlock = await getBlockNumbers(sacredTrees, action.DEPOSIT, note)
+      const withdrawalBlock = await getBlockNumbers(sacredTrees, action.WITHDRAWAL, note)
       if(depositBlock < 0) {
         console.log("The note isn't included in deposit transactions")
       }
@@ -195,8 +194,8 @@ async function main() {
     .action(async (note) => {
       await init(program.rpc || RPC_URL)
       const zeroAccount = new Account()
-      const depositBlock = await getBlockNumbers(action.DEPOSIT, note)
-      const withdrawalBlock = await getBlockNumbers(action.WITHDRAWAL, note)
+      const depositBlock = await getBlockNumbers(sacredTrees, action.DEPOSIT, note)
+      const withdrawalBlock = await getBlockNumbers(sacredTrees, action.WITHDRAWAL, note)
       if(depositBlock < 0) {
         console.log("The note isn't included in deposit transactions")
       }
@@ -206,8 +205,8 @@ async function main() {
       if(depositBlock > 0 && withdrawalBlock > 0) {
         const { currency, amount, netId, deposit } = utils.baseUtils.parseNote(note)
         const _note = Note.fromString(note, utils.getSacredInstanceAddress(netId, currency, amount), depositBlock, withdrawalBlock)
-        const eventsDeposit = await rootUpdaterEvents.getEvents(action.DEPOSIT)
-        const eventsWithdraw = await rootUpdaterEvents.getEvents(action.WITHDRAWAL)
+        const eventsDeposit = await rootUpdaterEvents.getEvents(sacredTrees, action.DEPOSIT)
+        const eventsWithdraw = await rootUpdaterEvents.getEvents(sacredTrees, action.WITHDRAWAL)
         const publicKey = getEncryptionPublicKey(program.privateKey || PRIVATE_KEY)
         const result = await controller.reward({ account: zeroAccount, note: _note, publicKey, fee:0, relayer:program.relayer, accountCommitments: null, depositDataEvents: eventsDeposit.committedEvents, withdrawalDataEvents: eventsWithdraw.committedEvents})
         const account = result.account
