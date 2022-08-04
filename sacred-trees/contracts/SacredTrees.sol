@@ -3,11 +3,11 @@ pragma solidity 0.8.9;
 
 import "./interfaces/IBatchTreeUpdateVerifier.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "sacred-contracts-eth/contracts/TwoStepOwnerShipMgr.sol";
 
 /// @dev This contract holds a merkle tree of all sacred cash deposit and withdrawal events
-contract SacredTrees is Initializable, TwoStepOwnerShipMgr {
+contract SacredTrees is Initializable {
   address public immutable governance;
+  address private immutable owner;
   bytes32 public depositRoot;
   bytes32 public previousDepositRoot;
   bytes32 public withdrawalRoot;
@@ -51,10 +51,16 @@ contract SacredTrees is Initializable, TwoStepOwnerShipMgr {
     _;
   }
 
+  modifier onlyOwner() {
+    require(msg.sender == owner, "Not authorized");
+    _;
+  }
+
   constructor(
     address _owner,
     address _governance
-  ) TwoStepOwnerShipMgr(_owner) {
+  ) {
+    owner = _owner;
     governance = _governance;
   }
 

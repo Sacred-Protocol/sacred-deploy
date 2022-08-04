@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/ISacredInstance.sol";
 import "./interfaces/ISacredTrees.sol";
 import "./interfaces/IMiner.sol";
-import "sacred-contracts-eth/contracts/TwoStepOwnerShipMgr.sol";
 
 interface AToken {
   function balanceOf(address _user) external view returns (uint256);
@@ -16,8 +15,9 @@ interface AToken {
   function transfer(address receiver, uint256 amount) external returns (bool);
 }
 
-contract AaveInterestsProxy is TwoStepOwnerShipMgr{
+contract AaveInterestsProxy {
   address public miner;
+  address private immutable owner;
   bool private initialized = false;
 
   modifier onlyMiner() {
@@ -25,8 +25,13 @@ contract AaveInterestsProxy is TwoStepOwnerShipMgr{
     _;
   }
 
-  constructor(address _owner) TwoStepOwnerShipMgr(_owner){
-    
+  modifier onlyOwner() {
+    require(msg.sender == owner, "Not authorized");
+    _;
+  }
+
+  constructor(address _owner) {
+    owner = _owner;
   }
 
   fallback() external payable { }

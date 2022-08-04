@@ -31,7 +31,7 @@ async function deployContracts() {
     console.log(`Deploying ${action.contract} to ${action.domain} (${action.expectedAddress})`)
     const dep = deployer
     //const dep = action === actions.actions[0] ? deployer : deployerProxy
-    const tx = await dep.deploy(action.bytecode, actions.salt, {gasLimit: 5000000})
+    const tx = await dep.deploy(action.bytecode, actions.salt, {gasLimit: 20000000})
     console.log(`TX hash ${explorer}/tx/${tx.hash}`)
     try {
       const receipt = await tx.wait()
@@ -66,6 +66,7 @@ async function deployContracts() {
     }
   }
 
+  console.log("Initialization Done.")
   const instances = [0.1, 1, 10, 100]
   for(let i = 0; i < instances.length; i++) {
     let sacredInstance = new ethers.Contract(utils.getSacredInstanceAddress(utils.getNetId(), 'eth', instances[i]), ethSacredAbi.abi, wallet)

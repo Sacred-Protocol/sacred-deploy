@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./utils/FloatMath.sol";
-import "sacred-contracts-eth/contracts/TwoStepOwnerShipMgr.sol";
 
 /**
   Let's imagine we have 1M SACRED tokens for anonymity mining to distribute during 1 year (~31536000 seconds).
@@ -20,13 +19,14 @@ import "sacred-contracts-eth/contracts/TwoStepOwnerShipMgr.sol";
   tokens = BalanceBefore - BalanceAfter
 */
 
-contract RewardSwap is TwoStepOwnerShipMgr{
+contract RewardSwap {
   using SafeMath for uint256;
 
   uint256 public constant DURATION = 365 days;
 
   IERC20 public immutable sacred;
   address public miner;
+  address private immutable owner;
   uint256 public immutable startTimestamp;
   uint256 public immutable initialLiquidity;
   uint256 public immutable liquidity;
@@ -42,13 +42,19 @@ contract RewardSwap is TwoStepOwnerShipMgr{
     _;
   }
 
+  modifier onlyOwner() {
+    require(msg.sender == owner, "Not authorized");
+    _;
+  }
+
   constructor(
     address _owner,
     address _sacred,
     uint256 _miningCap,
     uint256 _initialLiquidity,
     uint256 _poolWeight
-  ) TwoStepOwnerShipMgr(_owner){
+  ) {
+    owner = _owner;
     sacred = IERC20(_sacred);
     require(_initialLiquidity <= _miningCap, "Initial liquidity should be lower than mining cap");
     

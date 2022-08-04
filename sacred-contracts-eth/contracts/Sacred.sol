@@ -2,14 +2,14 @@
 pragma solidity 0.8.9;
 
 import "./MerkleTreeWithHistory.sol";
-import "./TwoStepOwnerShipMgr.sol";
+import "./TwoStepOwnerable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 interface IVerifier {
   function verifyProof(bytes memory _proof, uint256[6] memory _input) external returns(bool);
 }
 
-abstract contract Sacred is MerkleTreeWithHistory, ReentrancyGuard, TwoStepOwnerShipMgr {
+abstract contract Sacred is MerkleTreeWithHistory, ReentrancyGuard, TwoStepOwnerable {
   uint256 public denomination;
   mapping(bytes32 => bool) public nullifierHashes;
   // we store all commitments just to prevent accidental deposits with the same commitment
@@ -36,7 +36,7 @@ abstract contract Sacred is MerkleTreeWithHistory, ReentrancyGuard, TwoStepOwner
     uint32 _merkleTreeHeight,
     address _owner,
     uint256 _fee
-  ) MerkleTreeWithHistory(_merkleTreeHeight) TwoStepOwnerShipMgr(_owner) {
+  ) MerkleTreeWithHistory(_merkleTreeHeight) TwoStepOwnerable(_owner) {
     require(_denomination > 0, "denomination should be greater than 0");
     verifier = _verifier;
     denomination = _denomination;

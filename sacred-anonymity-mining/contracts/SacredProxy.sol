@@ -8,9 +8,8 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/ISacredInstance.sol";
 import "./interfaces/ISacredTrees.sol";
 import "./interfaces/IMiner.sol";
-import "sacred-contracts-eth/contracts/TwoStepOwnerShipMgr.sol";
 
-contract SacredProxy is TwoStepOwnerShipMgr{
+contract SacredProxy {
   using SafeERC20 for IERC20;
 
   event EncryptedNote(address indexed sender, bytes encryptedNote);
@@ -37,6 +36,7 @@ contract SacredProxy is TwoStepOwnerShipMgr{
 
   ISacredTrees public sacredTrees;
   address public immutable governance;
+  address private immutable owner;
   address public miner;
   bool private initialized = false;
   mapping(ISacredInstance => Instance) public instances;
@@ -46,12 +46,18 @@ contract SacredProxy is TwoStepOwnerShipMgr{
     _;
   }
 
+  modifier onlyOwner() {
+    require(msg.sender == owner, "Not authorized");
+    _;
+  }
+
   constructor(
     address _owner,
     address _sacredTrees,
     address _governance,
     SacredParam[] memory _instances
-  ) TwoStepOwnerShipMgr(_owner) {
+  ) {
+    owner = _owner;
     sacredTrees = ISacredTrees(_sacredTrees);
     governance = _governance;
     for (uint256 i = 0; i < _instances.length; ++i) {
