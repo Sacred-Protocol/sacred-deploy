@@ -4,7 +4,7 @@ pragma solidity 0.8.9;
 
 import "./interfaces/IVerifier.sol";
 import "./interfaces/IRewardSwap.sol";
-import "sacred-trees/contracts/SacredTrees.sol";
+import "./interfaces/ISacredTrees.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -38,7 +38,7 @@ contract Miner is ReentrancyGuard{
   IRewardSwap public immutable rewardSwap;
   address public immutable governance;
   address public immutable sacredProxy;
-  SacredTrees public sacredTrees;
+  ISacredTrees public sacredTrees;
   ShareTrack public shareTrack;
 
   mapping(bytes32 => bool) public accountNullifiers;
@@ -143,7 +143,7 @@ contract Miner is ReentrancyGuard{
     rewardSwap = IRewardSwap(contracts.rewardSwap);
     governance = contracts.governance;
     sacredProxy = contracts.sacredProxy;
-    sacredTrees = SacredTrees(contracts.sacredTrees);
+    sacredTrees = ISacredTrees(contracts.sacredTrees);
     minimumInterests = _minimumInterests;
     aaveInterestFee = _aaveInterestFee;
     hasher = Hasher(_hasher);
@@ -327,7 +327,7 @@ contract Miner is ReentrancyGuard{
     _setVerifiers(_verifiers);
   }
 
-  function setSacredTreesContract(SacredTrees _sacredTrees) external onlyGovernance {
+  function setSacredTreesContract(ISacredTrees _sacredTrees) external onlyGovernance {
     require(address(_sacredTrees) != address(0), "_sacredTrees cannot be zero address");
     sacredTrees = _sacredTrees;
   }
