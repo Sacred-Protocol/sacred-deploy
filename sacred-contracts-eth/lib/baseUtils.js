@@ -1,10 +1,9 @@
 const { ethers } = require("hardhat");
-const { poseidon } = require('circomlib')
-const fs = require('fs')
 const { bigInt } = require('snarkjs')
 const crypto = require('crypto')
 const circomlib = require('circomlib')
-const { fromWei, toWei, toBN, BN } = require('web3-utils')
+const { fromWei, toWei, toBN } = require('web3-utils')
+const {BN} = require('bn.js') //Don't use BN of web3-utils, it has a bug with endianess
 let provider
 
 function bitsToNumber(bits) {
@@ -21,7 +20,7 @@ const randomBN = (nbytes = 31) => toBN(bigInt.leBuff2int(crypto.randomBytes(nbyt
 /** Compute pedersen hash */
 const pedersenHash = data => toBN(circomlib.babyJub.unpackPoint(circomlib.pedersenHash.hash(data))[0].toString())
 
-const poseidonHash = (items) => poseidon(items)
+const poseidonHash = (items) => toBN(circomlib.poseidon(items).toString())
 const poseidonHash2 = (a, b) => poseidonHash([a, b])
 
 /** BigNumber to hex string of specified length */
@@ -81,10 +80,11 @@ const getEvents = async (contract, options) => {
  */
 function createDeposit({ nullifier, secret }) {
   const deposit = { nullifier, secret }
-  deposit.preimage = Buffer.concat([deposit.nullifier.toBuffer('le', 31), deposit.secret.toBuffer('le', 31)])
+  const nullifierBuffer = deposit.nullifier.toBuffer('le', 31)
+  deposit.preimage = Buffer.concat([nullifierBuffer, deposit.secret.toBuffer('le', 31)])
   deposit.commitment = pedersenHash(deposit.preimage)
   deposit.commitmentHex = toHex(deposit.commitment)
-  deposit.nullifierHash = pedersenHash(deposit.nullifier.toBuffer('le', 31))
+  deposit.nullifierHash = pedersenHash(nullifierBuffer)
   deposit.nullifierHex = toHex(deposit.nullifierHash)
   return deposit
 }
@@ -101,8 +101,8 @@ function parseNote(noteString) {
   }
 
   const buf = Buffer.from(match.groups.note, 'hex')
-  const nullifier = new BN(buf.slice(0, 31), 16, 'le')
-  const secret = new BN(buf.slice(31, 62), 16, 'le')
+  const nullifier = new BN(buf.slice(0, 31), 'le')
+  const secret = new BN(buf.slice(31, 62), 'le')
   const deposit = createDeposit({ nullifier, secret })
   const netId = Number(match.groups.netId)
 
@@ -260,6 +260,7 @@ module.exports = {
   randomBN,
   toHex,
   pedersenHash,
+  poseidonHash,
   poseidonHash2,
   parseNote,
   createDeposit, 

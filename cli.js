@@ -22,7 +22,7 @@ const sacredProxyAbi = require('./sacred-anonymity-mining/artifacts/contracts/Sa
 const sacredTreesAbi = require('./sacred-trees/artifacts/contracts/SacredTrees.sol/SacredTrees.json')
 const sacredAbi = require('./sacred-token/artifacts/contracts/SACRED.sol/SACRED.json')
 const minerAbi = require('./sacred-anonymity-mining/artifacts/contracts/Miner.sol/Miner.json')
-const { toFixedHex, unpackEncryptedMessage } = require('./sacred-anonymity-mining/src/utils')
+const { unpackEncryptedMessage } = require('./sacred-anonymity-mining/src/utils')
 const buildGroth16 = require('websnark/src/groth16')
 const { getEncryptionPublicKey } = require('eth-sig-util');
 const fs = require('fs')
@@ -90,9 +90,9 @@ async function getBlockNumbers(sacredTrees, type, noteString) {
   const { deposit } = utils.baseUtils.parseNote(noteString)
   const item = events.find(function(x) {
     if(type === action.WITHDRAWAL) {
-      return x.hash === toFixedHex(deposit.nullifierHash)
+      return x.hash === utils.baseUtils.toHex(deposit.nullifierHash)
     } else if(type === action.DEPOSIT){
-      return x.hash === toFixedHex(deposit.commitment)
+      return x.hash === utils.baseUtils.toHex(deposit.commitment)
     } else {
       return false
     }

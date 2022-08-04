@@ -1,10 +1,8 @@
-const crypto = require('crypto')
 const Decimal = require('decimal.js')
-const { bigInt } = require('snarkjs')
 const { toBN, soliditySha3 } = require('web3-utils')
+const { toHex} = require('../../sacred-contracts-eth/lib/baseUtils')
 const Web3 = require('web3')
 const web3 = new Web3()
-const { babyJub, pedersenHash, mimcsponge, poseidon } = require('circomlib')
 
 const RewardExtData = {
   RewardExtData: {
@@ -44,26 +42,10 @@ const WithdrawExtData = {
   },
 }
 
-const pedersenHashBuffer = (buffer) => toBN(babyJub.unpackPoint(pedersenHash.hash(buffer))[0].toString())
-
-const mimcHash = (items) => toBN(mimcsponge.multiHash(items.map((item) => bigInt(item))).toString())
-
-const poseidonHash = (items) => toBN(poseidon(items).toString())
-
-const poseidonHash2 = (a, b) => poseidonHash([a, b])
-
-/** Generate random number of specified byte length */
-const randomBN = (nbytes = 31) => toBN(bigInt.leBuff2int(crypto.randomBytes(nbytes)).toString())
-
-/** BigNumber to hex string of specified length */
-const toFixedHex = (number, length = 32) =>
-  '0x' +
-  (number instanceof Buffer ? number.toString('hex') : bigInt(number).toString(16)).padStart(length * 2, '0')
-
 function getExtRewardArgsHash({ relayer, encryptedAccount }) {
   const encodedData = web3.eth.abi.encodeParameters(
     [RewardExtData],
-    [{ relayer: toFixedHex(relayer, 20), encryptedAccount }],
+    [{ relayer: toHex(relayer, 20), encryptedAccount }],
   )
   const hash = soliditySha3({ t: 'bytes', v: encodedData })
   return '0x00' + hash.slice(4) // cut last byte to make it 31 byte long to fit the snark field
@@ -74,9 +56,9 @@ function getExtWithdrawArgsHash({ fee, recipient, relayer, encryptedAccount }) {
     [WithdrawExtData],
     [
       {
-        fee: toFixedHex(fee, 32),
-        recipient: toFixedHex(recipient, 20),
-        relayer: toFixedHex(relayer, 20),
+        fee: toHex(fee, 32),
+        recipient: toHex(recipient, 20),
+        relayer: toHex(relayer, 20),
         encryptedAccount,
       },
     ],
@@ -115,14 +97,6 @@ function unpackEncryptedMessage(encryptedMessage) {
   }
 }
 
-function bitsToNumber(bits) {
-  let result = 0
-  for (const item of bits.slice().reverse()) {
-    result = (result << 1) + item
-  }
-  return result
-}
-
 // a = floor(10**18 * e^(-0.0000000001 * amount))
 // yield = BalBefore - (BalBefore * a)/10**18
 function sacredFormula({ balance, amount, poolWeight = 1e10 }) {
@@ -146,17 +120,10 @@ function reverseSacredFormula({ balance, tokens, poolWeight = 1e10 }) {
 }
 
 module.exports = {
-  randomBN,
-  pedersenHashBuffer,
-  bitsToNumber,
   getExtRewardArgsHash,
   getExtWithdrawArgsHash,
   packEncryptedMessage,
   unpackEncryptedMessage,
-  toFixedHex,
-  mimcHash,
-  poseidonHash,
-  poseidonHash2,
   sacredFormula,
   reverseSacredFormula,
   RewardArgs,

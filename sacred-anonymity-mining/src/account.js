@@ -1,6 +1,6 @@
 const { toBN } = require('web3-utils')
 const { encrypt, decrypt } = require('eth-sig-util')
-const { randomBN, poseidonHash } = require('./utils')
+const {randomBN, poseidonHash} = require('../../sacred-contracts-eth/lib/baseUtils')
 
 class Account {
   constructor({ apAmount, aaveInterestAmount, secret, nullifier } = {}) {

@@ -1,15 +1,15 @@
-const { toBN, BN } = require('web3-utils')
-const { randomBN, pedersenHashBuffer, poseidonHash } = require('./utils')
+const { toBN } = require('web3-utils')
+const {parseNote, randomBN, pedersenHash, poseidonHash} = require('../../sacred-contracts-eth/lib/baseUtils')
 
 class Note {
   constructor({ secret, nullifier, netId, amount, currency, depositBlock, withdrawalBlock, instance } = {}) {
     this.secret = secret ? toBN(secret) : randomBN(31)
     this.nullifier = nullifier ? toBN(nullifier) : randomBN(31)
 
-    this.commitment = pedersenHashBuffer(
+    this.commitment = pedersenHash(
       Buffer.concat([this.nullifier.toBuffer('le', 31), this.secret.toBuffer('le', 31)]),
     )
-    this.nullifierHash = pedersenHashBuffer(this.nullifier.toBuffer('le', 31))
+    this.nullifierHash = pedersenHash(this.nullifier.toBuffer('le', 31))
     this.rewardNullifier = poseidonHash([this.nullifierHash])
 
     this.netId = netId
@@ -25,13 +25,10 @@ class Note {
   }
 
   static fromString(note, instance, depositBlock, withdrawalBlock) {
-    const [, currency, amount, netId, noteHex] = note.split('-')
-    const noteBuff = Buffer.from(noteHex.slice(2), 'hex')
-    const nullifier = new BN(noteBuff.slice(0, 31), 16, 'le')
-    const secret = new BN(noteBuff.slice(31), 16, 'le')
+    const {currency, amount, netId, deposit} = parseNote(note)
     return new Note({
-      secret,
-      nullifier,
+      secret: deposit.secret,
+      nullifier: deposit.nullifier,
       netId,
       amount,
       currency,

@@ -1,14 +1,13 @@
 const { toBN } = require('web3-utils')
 const {
-  bitsToNumber,
-  toFixedHex,
-  poseidonHash,
-  poseidonHash2,
   getExtRewardArgsHash,
   getExtWithdrawArgsHash,
   packEncryptedMessage,
   RewardArgs,
 } = require('./utils')
+
+const {poseidonHash, poseidonHash2, bitsToNumber, toHex} = require('../../sacred-contracts-eth/lib/baseUtils')
+
 const Account = require('./account')
 const MerkleTree = require('fixed-merkle-tree')
 const websnarkUtils = require('websnark/src/utils')
@@ -120,8 +119,8 @@ class Controller {
     return events
       .sort((a, b) => a.returnValues.index - b.returnValues.index)
       .map((e) => ({
-        instance: toFixedHex(e.returnValues.instance, 20),
-        hash: toFixedHex(e.returnValues.hash),
+        instance: toHex(e.returnValues.instance, 20),
+        hash: toHex(e.returnValues.hash),
         block: Number(e.returnValues.block),
         index: Number(e.returnValues.index),
       }))
@@ -192,7 +191,7 @@ class Controller {
     const apAmount = toBN(rate).mul(toBN(note.withdrawalBlock).sub(toBN(note.depositBlock)))
     const newApAmount = account.apAmount.add(apAmount.sub(toBN(fee)))
 
-    const tx = await (await this.minerContract.getAaveInterestsAmount(toFixedHex(note.rewardNullifier), toFixedHex(apAmount.toString()))).wait();
+    const tx = await (await this.minerContract.getAaveInterestsAmount(toHex(note.rewardNullifier), toHex(apAmount.toString()))).wait();
     const amountEvent = tx.events.find(item => item.event === 'AaveInterestsAmount')
     let aaveInterestAmount = toBN(amountEvent.args.amount.toString());
     let newAaveInterestAmount = account.aaveInterestAmount.add(aaveInterestAmount);
@@ -209,7 +208,7 @@ class Controller {
     })
 
     const depositTree = new MerkleTree(this.merkleTreeHeight, depositLeaves, { hashFunction: poseidonHash2 })
-    const depositItem = depositDataEvents.filter((x) => x.hash === toFixedHex(note.commitment))
+    const depositItem = depositDataEvents.filter((x) => x.hash === toHex(note.commitment))
     if (depositItem.length === 0) {
       throw new Error('The deposits tree does not contain such note commitment')
     }
@@ -224,7 +223,7 @@ class Controller {
       return poseidonHash([x.instance, x.hash, x.block])
     })
     const withdrawalTree = new MerkleTree(this.merkleTreeHeight, withdrawalLeaves, { hashFunction: poseidonHash2 })
-    const withdrawalItem = withdrawalDataEvents.filter((x) => x.hash === toFixedHex(note.nullifierHash))
+    const withdrawalItem = withdrawalDataEvents.filter((x) => x.hash === toHex(note.nullifierHash))
     if (withdrawalItem.length === 0) {
       throw new Error('The withdrawals tree does not contain such note nullifier')
     }
@@ -298,25 +297,25 @@ class Controller {
     const { proof } = websnarkUtils.toSolidityInput(proofData)
 
     const args = {
-      rate: toFixedHex(input.rate),
-      fee: toFixedHex(input.fee),
-      instance: toFixedHex(input.instance, 20),
-      apAmount: toFixedHex(input.apAmount.toString()),
-      aaveInterestAmount: toFixedHex(input.aaveInterestAmount.toString()),
-      rewardNullifier: toFixedHex(input.rewardNullifier),
-      extDataHash: toFixedHex(input.extDataHash),
-      depositRoot: toFixedHex(input.depositRoot),
-      withdrawalRoot: toFixedHex(input.withdrawalRoot),
+      rate: toHex(input.rate),
+      fee: toHex(input.fee),
+      instance: toHex(input.instance, 20),
+      apAmount: toHex(input.apAmount.toString()),
+      aaveInterestAmount: toHex(input.aaveInterestAmount.toString()),
+      rewardNullifier: toHex(input.rewardNullifier),
+      extDataHash: toHex(input.extDataHash),
+      depositRoot: toHex(input.depositRoot),
+      withdrawalRoot: toHex(input.withdrawalRoot),
       extData: {
-        relayer: toFixedHex(relayer, 20),
+        relayer: toHex(relayer, 20),
         encryptedAccount,
       },
       account: {
-        inputRoot: toFixedHex(input.inputRoot),
-        inputNullifierHash: toFixedHex(input.inputNullifierHash),
-        outputRoot: toFixedHex(input.outputRoot),
-        outputPathIndices: toFixedHex(input.outputPathIndices),
-        outputCommitment: toFixedHex(input.outputCommitment),
+        inputRoot: toHex(input.inputRoot),
+        inputNullifierHash: toHex(input.inputNullifierHash),
+        outputRoot: toHex(input.outputRoot),
+        outputPathIndices: toHex(input.outputPathIndices),
+        outputCommitment: toHex(input.outputCommitment),
       },
     }
 
@@ -379,21 +378,21 @@ class Controller {
     const { proof } = websnarkUtils.toSolidityInput(proofData)
 
     const args = {
-      apAmount: toFixedHex(input.apAmount),
-      aaveInterestAmount: toFixedHex(input.aaveInterestAmount),
-      extDataHash: toFixedHex(input.extDataHash),
+      apAmount: toHex(input.apAmount),
+      aaveInterestAmount: toHex(input.aaveInterestAmount),
+      extDataHash: toHex(input.extDataHash),
       extData: {
-        fee: toFixedHex(fee),
-        recipient: toFixedHex(recipient, 20),
-        relayer: toFixedHex(relayer, 20),
+        fee: toHex(fee),
+        recipient: toHex(recipient, 20),
+        relayer: toHex(relayer, 20),
         encryptedAccount,
       },
       account: {
-        inputRoot: toFixedHex(input.inputRoot),
-        inputNullifierHash: toFixedHex(input.inputNullifierHash),
-        outputRoot: toFixedHex(input.outputRoot),
-        outputPathIndices: toFixedHex(input.outputPathIndices),
-        outputCommitment: toFixedHex(input.outputCommitment),
+        inputRoot: toHex(input.inputRoot),
+        inputNullifierHash: toHex(input.inputNullifierHash),
+        outputRoot: toHex(input.outputRoot),
+        outputPathIndices: toHex(input.outputPathIndices),
+        outputCommitment: toHex(input.outputCommitment),
       },
     }
 
@@ -430,10 +429,10 @@ class Controller {
     const { proof } = websnarkUtils.toSolidityInput(proofData)
 
     const args = {
-      oldRoot: toFixedHex(input.oldRoot),
-      newRoot: toFixedHex(input.newRoot),
-      leaf: toFixedHex(input.leaf),
-      pathIndices: toFixedHex(input.pathIndices),
+      oldRoot: toHex(input.oldRoot),
+      newRoot: toHex(input.newRoot),
+      leaf: toHex(input.leaf),
+      pathIndices: toHex(input.pathIndices),
     }
 
     return {

@@ -16,7 +16,8 @@ const Note = require('../sacred-anonymity-mining/src/note')
 const { updateAddressTable} = require('../lib/deployUtils')
 const { ensToAddr } = require('../lib/deployUtils')
 const utils = require('../sacred-contracts-eth/lib/utils')
-const { toFixedHex, randomBN, packEncryptedMessage, unpackEncryptedMessage } = require('../sacred-anonymity-mining/src/utils')
+const { packEncryptedMessage, unpackEncryptedMessage } = require('../sacred-anonymity-mining/src/utils')
+const { toHex, randomBN} = require('../sacred-contracts-eth/lib/baseUtils')
 const sacredProxyAbi = require('../sacred-anonymity-mining/artifacts/contracts/SacredProxy.sol/SacredProxy.json')
 const sacredEchoerAbi = require('../sacred-anonymity-mining/artifacts/contracts/utils/Echoer.sol/Echoer.json')
 const aaveInterestsProxyAbi = require('../sacred-anonymity-mining/artifacts/contracts/AaveInterestsProxy.sol/AaveInterestsProxy.json')
@@ -48,15 +49,14 @@ async function updateRoot(sacredTrees, type) {
   await updateTree(sacredTrees, committedEvents, pendingEvents, type)
 }
 
-async function getBlockNumbers(type, noteString) {
-  const events = await rootUpdaterEvents.getSacredTreesEvents(sacredTree, type, 0, 'latest')
-  const { currency, amount, netId, deposit } = utils.baseUtils.parseNote(noteString)
-  const note = Note.fromString(noteString, utils.getSacredInstanceAddress(netId, currency, amount), 0, 0)
+async function getBlockNumbers(sacredTrees, type, noteString) {
+  const events = await rootUpdaterEvents.getSacredTreesEvents(sacredTrees, type, 0, 'latest')
+  const { deposit } = utils.baseUtils.parseNote(noteString)
   const item = events.find(function(x) {
     if(type === action.WITHDRAWAL) {
-      return x.hash === toFixedHex(note.nullifierHash)
+      return x.hash === toHex(deposit.nullifierHash)
     } else if(type === action.DEPOSIT){
-      return x.hash === toFixedHex(note.commitment)
+      return x.hash === toHex(deposit.commitment)
     } else {
       return false
     }
@@ -191,21 +191,21 @@ describe('Testing SacredAnanomityMining', () => {
       const accountCount = await miner.accountCount()
       expect(zeroAccount.apAmount.toString()).to.equal("0")
 
-      //noteString = "sacred-eth-0.1-4-0x972bc50762e104fab8970831442cb7e1d53244b03940be5d7d840323c7ff635b67b61a8620afe1f187714f1b9e7aa0d5fe5bb7ca7e95ecc9919c0ee814e5"
+      //noteString = "sacred-eth-0.1-4-0x702dea4c5b3aaefb219b9d5d066bd6f37467391bec008ab03408c9d7b7560e1d69a9d59df9364c4b9485b3c0e58ea0a52f22bc22e947a1fc0f2c72adc343"
       console.log("Note: ", noteString)
-      depositBlockNum = await getBlockNumbers(action.DEPOSIT, noteString)
-      withdrawBlockNum = await getBlockNumbers(action.WITHDRAWAL, noteString)
+      depositBlockNum = await getBlockNumbers(sacredTrees, action.DEPOSIT, noteString)
+      withdrawBlockNum = await getBlockNumbers(sacredTrees, action.WITHDRAWAL, noteString)
       console.log("depositBlockNumber:", depositBlockNum)
       console.log("withdrawBlockNumber:", withdrawBlockNum)
       const note = Note.fromString(noteString, utils.getSacredInstanceAddress(utils.getNetId(), 'eth', 0.1), depositBlockNum, withdrawBlockNum)
       const shareTracks = await miner.shareTrack()
-      const totalShares = await miner.totalShareSnapshots(toFixedHex(note.rewardNullifier), 0)
-      const interests = await miner.totalShareSnapshots(toFixedHex(note.rewardNullifier), 1)
+      const totalShares = await miner.totalShareSnapshots(toHex(note.rewardNullifier), 0)
+      const interests = await miner.totalShareSnapshots(toHex(note.rewardNullifier), 1)
       expect(totalShares.gt(BigNumber.from(0))).to.equal(true)
       expect(interests.gt(BigNumber.from(0))).to.equal(true)
       expect(shareTracks.totalShares.gte(totalShares)).to.equal(true)
-      const eventsDeposit = await rootUpdaterEvents.getEvents(action.DEPOSIT)
-      const eventsWithdraw = await rootUpdaterEvents.getEvents(action.WITHDRAWAL)
+      const eventsDeposit = await rootUpdaterEvents.getEvents(sacredTrees, action.DEPOSIT)
+      const eventsWithdraw = await rootUpdaterEvents.getEvents(sacredTrees, action.WITHDRAWAL)
       const result = await controller.reward({ account: zeroAccount, note, publicKey, fee:0, relayer:0, accountCommitments: null, depositDataEvents: eventsDeposit.committedEvents, withdrawalDataEvents: eventsWithdraw.committedEvents})
       proof = result.proof
       args = result.args
@@ -214,9 +214,9 @@ describe('Testing SacredAnanomityMining', () => {
       const newAccountEvent = tx.events.find(item => item.event === 'NewAccount')
 
       expect(newAccountEvent.event).to.equal('NewAccount')
-      expect(newAccountEvent.args.commitment).to.equal(toFixedHex(account.commitment))
+      expect(newAccountEvent.args.commitment).to.equal(toHex(account.commitment))
       expect(newAccountEvent.args.index).to.equal(accountCount)
-      expect(newAccountEvent.args.nullifier).to.equal(toFixedHex(zeroAccount.nullifierHash))
+      expect(newAccountEvent.args.nullifier).to.equal(toHex(zeroAccount.nullifierHash))
 
       const encryptedAccount = newAccountEvent.args.encryptedAccount
       const account2 = Account.decrypt(privateKey, unpackEncryptedMessage(encryptedAccount))
@@ -230,9 +230,9 @@ describe('Testing SacredAnanomityMining', () => {
       expect(accountCountAfter).to.equal(accountCount.add(BigNumber.from(1)))
       const rootAfter = await miner.getLastAccountRoot()
       expect(rootAfter).to.equal(args.account.outputRoot)
-      const rewardNullifierAfter = await miner.rewardNullifiers(toFixedHex(note.rewardNullifier))
+      const rewardNullifierAfter = await miner.rewardNullifiers(toHex(note.rewardNullifier))
       expect(rewardNullifierAfter).to.equal(true)
-      const accountNullifierAfter = await miner.accountNullifiers(toFixedHex(zeroAccount.nullifierHash))
+      const accountNullifierAfter = await miner.accountNullifiers(toHex(zeroAccount.nullifierHash))
       expect(accountNullifierAfter).to.equal(true)
 
       expect(account.apAmount.toString()).to.equal(BigNumber.from(note.withdrawalBlock - note.depositBlock).mul(RATE).toString())
@@ -242,7 +242,7 @@ describe('Testing SacredAnanomityMining', () => {
 
   describe('#withdraw', () => {
     it('should work', async () => {
-      const accountNullifierBefore = await miner.accountNullifiers(toFixedHex(account.nullifierHash))
+      const accountNullifierBefore = await miner.accountNullifiers(toHex(account.nullifierHash))
       expect(accountNullifierBefore).to.equal(false)
 
       const recipient = wallet.address
@@ -267,8 +267,8 @@ describe('Testing SacredAnanomityMining', () => {
 
       const newAccountEvent = tx.events.find(item => item.event === 'NewAccount')
       expect(newAccountEvent.event).to.equal('NewAccount')
-      expect(newAccountEvent.args.commitment).to.equal(toFixedHex(withdrawSnark.account.commitment))
-      expect(newAccountEvent.args.nullifier).to.equal(toFixedHex(account.nullifierHash))
+      expect(newAccountEvent.args.commitment).to.equal(toHex(withdrawSnark.account.commitment))
+      expect(newAccountEvent.args.nullifier).to.equal(toHex(account.nullifierHash))
       const encryptedAccount = newAccountEvent.args.encryptedAccount
       const account2 = Account.decrypt(privateKey, unpackEncryptedMessage(encryptedAccount))
       expect(withdrawSnark.account.apAmount.toString()).to.equal(account2.apAmount.toString())
@@ -306,7 +306,7 @@ describe('Testing SacredAnanomityMining', () => {
 
       const nullifier = randomBN(31)
       await expect(
-        miner.updateShares(ethers.constants.AddressZero, true, toFixedHex(nullifier))
+        miner.updateShares(ethers.constants.AddressZero, true, toHex(nullifier))
       ).to.be.revertedWith('Not authorized');
 
       await expect(
@@ -368,11 +368,11 @@ describe('Testing SacredAnanomityMining', () => {
       //sacredTrees
       const instanceAddr = utils.getSacredInstanceAddress(utils.getNetId(), 'eth', 0.1)
       await expect(
-        sacredTrees.registerDeposit(instanceAddr, toFixedHex(randomBN(31)))
+        sacredTrees.registerDeposit(instanceAddr, toHex(randomBN(31)))
       ).to.be.revertedWith('Not authorized');
 
       await expect(
-        sacredTrees.registerWithdrawal(instanceAddr, toFixedHex(randomBN(31)))
+        sacredTrees.registerWithdrawal(instanceAddr, toHex(randomBN(31)))
       ).to.be.revertedWith('Not authorized');
 
       await expect(
