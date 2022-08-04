@@ -49,7 +49,7 @@ async function updateRoot(sacredTrees, type) {
 }
 
 async function getBlockNumbers(type, noteString) {
-  const events = await rootUpdaterEvents.getSacredTreesEvents(type, 0, 'latest')
+  const events = await rootUpdaterEvents.getSacredTreesEvents(sacredTree, type, 0, 'latest')
   const { currency, amount, netId, deposit } = utils.baseUtils.parseNote(noteString)
   const note = Note.fromString(noteString, utils.getSacredInstanceAddress(netId, currency, amount), 0, 0)
   const item = events.find(function(x) {
