@@ -135,9 +135,9 @@ async function main() {
       await init(program.rpc || RPC_URL)
       currency = currency.toLowerCase()
       const { noteString, } = await utils.deposit({ currency, amount });
-      const { _netId, deposit } = utils.baseUtils.parseNote(noteString)
+      const { deposit } = utils.baseUtils.parseNote(noteString)
       const refund = '0'
-      await utils.withdraw({ netId, deposit, currency, amount, recipient, relayerURL: program.relayer, refund });
+      await utils.withdraw({ deposit, currency, amount, recipient, relayerURL: program.relayer, refund });
     })
   program
     .command('updatetree <operation>')
