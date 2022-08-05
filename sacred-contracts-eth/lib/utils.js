@@ -6,6 +6,7 @@ const buildGroth16 = require('websnark/src/groth16')
 const websnarkUtils = require('websnark/src/utils')
 const { fromWei, toWei, toBN, BN } = require('web3-utils')
 const baseUtils = require("./baseUtils")
+const { BigNumber } = require('ethers')
 
 const { PRIVATE_KEY, HARDHAT_CHAINID } = process.env
 let web3, circuit, proving_key, groth16
@@ -264,7 +265,7 @@ async function withdraw({ deposit, currency, amount, recipient, relayerURL, refu
     console.log('Relay address: ', relayerAddress)
 
     const decimals = isLocalRPC ? 18 : config.pools[`${netId}`][currency].decimals
-    const fee = calculateFee({ gasPrices, currency, amount, refund, ethPrices, relayerServiceFee, decimals })
+    const fee = baseUtils.calculateFee({ gasPrices, currency, amount, refund, ethPrices, relayerServiceFee, decimals })
     if (fee.gt(fromDecimals({ amount, decimals }))) {
       throw new Error('Too high refund')
     }
@@ -338,23 +339,27 @@ async function getPastEvents(start, end, data) {
   }
 }
 
-async function loadDepositData({ deposit }) {
+async function loadDepositData({ currency, amount, deposit }) {
   try {
-    const eventWhenHappened = await sacred.getPastEvents('Deposit', {
-      filter: {
-        commitment: deposit.commitmentHex
-      },
-      fromBlock: 0,
-      toBlock: 'latest'
+    const sacred = contracts[currency + amount]
+    if (!sacred) {
+      console.log("SacredInstance was not setup properly!")
+      return
+    }
+
+    const events = await baseUtils.getEvents(sacred, { eventName: "Deposit", fromBlock: 0, toBlock: 'latest' })
+    const eventWhenHappened = events.filter(event => {
+      return event.values["commitment"] == deposit.commitmentHex
     })
+
     if (eventWhenHappened.length === 0) {
       throw new Error('There is no related deposit, the note is invalid')
     }
 
     const { timestamp } = eventWhenHappened[0].returnValues
     const txHash = eventWhenHappened[0].transactionHash
-    const isSpent = await sacred.isSpent(deposit.nullifierHex).call()
-    const receipt = await web3.eth.getTransactionReceipt(txHash)
+    const isSpent = await sacred.isSpent(deposit.nullifierHex)
+    const receipt = await provider.getTransactionReceipt(txHash)
 
     return { timestamp, txHash, isSpent, from: receipt.from, commitment: deposit.commitmentHex }
   } catch (e) {
@@ -366,28 +371,33 @@ async function loadDepositData({ deposit }) {
 
 async function loadWithdrawalData({ amount, currency, deposit }) {
   try {
-    const events = await await sacred.getPastEvents('Withdrawal', {
-      fromBlock: 0,
-      toBlock: 'latest'
+    const sacred = contracts[currency + amount]
+    if (!sacred) {
+      console.log("SacredInstance was not setup properly!")
+      return
+    }
+
+    const events = await baseUtils.getEvents(sacred, { eventName: "Withdrawal", fromBlock: 0, toBlock: 'latest' })
+    const eventWhenHappened = events.filter(event => {
+      return event.values["nullifierHash"] == deposit.nullifierHex
     })
 
-    const withdrawEvent = events.filter((event) => {
-      return event.returnValues.nullifierHash === deposit.nullifierHex
-    })[0]
+    if (eventWhenHappened.length === 0) {
+      throw new Error('There is no related withdraw, the note is invalid')
+    }
 
+    const withdrawEvent = eventWhenHappened[0]
     const fee = withdrawEvent.returnValues.fee
     const decimals = config.pools[`${netId}`][currency].decimals
-    const withdrawalAmount = toBN(fromDecimals({ amount, decimals })).sub(
-      toBN(fee)
-    )
-    const { timestamp } = await web3.eth.getBlock(withdrawEvent.blockHash)
+    const withdrawalAmount = ethers.utils.parseUnits("" + amount, decimals).sub(fee)
+    const { timestamp } = await provider.getBlock(withdrawEvent.blockHash)
     return {
-      amount: toDecimals(withdrawalAmount, decimals, 9),
+      amount: ethers.utils.formatUnits(withdrawalAmount, decimals),
       txHash: withdrawEvent.transactionHash,
       to: withdrawEvent.returnValues.to,
       timestamp,
       nullifier: deposit.nullifierHex,
-      fee: toDecimals(fee, decimals, 9)
+      fee: ethers.utils.formatUnits(fee, decimals)
     }
   } catch (e) {
     console.error('loadWithdrawalData', e)
@@ -443,6 +453,7 @@ module.exports = {
   printETHBalance,
   printERC20Balance,
   loadDepositData,
+  loadWithdrawalData,
   zeroMerkleRoot,
   baseUtils,
 }

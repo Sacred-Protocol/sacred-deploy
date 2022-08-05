@@ -94,7 +94,7 @@ async function main() {
         withdrawCircuit, 
         withdrawProvidingKey
       });
-      const depositInfo = await utils.loadDepositData({ deposit })
+      const depositInfo = await utils.loadDepositData({ currency, amount, deposit })
       const depositDate = new Date(depositInfo.timestamp * 1000)
       console.log('\n=============Deposit=================')
       console.log('Deposit     :', amount, currency)
