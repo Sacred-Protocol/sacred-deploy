@@ -1,6 +1,6 @@
 {
   "pools": {
-    "netId1": {
+    "1": {
       "eth": {
         "instanceAddress": {
           "1": "",
@@ -12,20 +12,20 @@
         "decimals": 18
       }
     },
-    "netId4": {
+    "4": {
       "eth": {
         "instanceAddress": {
-          "1": "0x63cA86E0BBCeECbE7E243977356E736b859bEcD1",
-          "10": "0x5b684D6e4F0dBbF0282DfC242c2d6cC19bED57c2",
-          "100": "0x2529439Fc3763497b04bAD3464f86befFA1B87dd",
-          "0.1": "0x81E12720E9827d170f04E7476c8A489527dB7817"
+          "1": "0xc900a4815444cEE1C24f5dd46bb11035b7fA31E5",
+          "10": "0xf5Df40A7f02d9De073Eb2172d8b932B42672b93e",
+          "100": "0xCd9B2c1434aB7ea5F2aa1eE4ee95F45f2c11b6Eb",
+          "0.1": "0xbE488DCFA33F5FC1cF8De48f607E6e9B2D03a779"
         },
         "symbol": "ETH",
         "decimals": 18,
         "blockExplorer": "https://rinkeby.etherscan.com/"
       }
     },
-    "netId42": {
+    "42": {
       "eth": {
         "instanceAddress": {
           "1": "0x147A4B5a098d71E457030E2F0631a00e62680102",
@@ -38,7 +38,7 @@
         "blockExplorer": "https://kovan.etherscan.com/"
       }
     },
-    "netId80001": {
+    "80001": {
       "matic": {
         "instanceAddress": {
           "1": "0x1731094433BE73250707bDF94FdB4B1bf0BDbAca",
@@ -51,10 +51,10 @@
         "blockExplorer": "https://polygonscan.com/"
       }
     }
-  }, 
+  },
   "sacredToken": {
     "1": "",
-    "42": "",
-    "4": ""
+    "4": "0x55fa578E88a3d82dFF73BF535ce5D8727A0588E1",
+    "42": ""
   }
 }

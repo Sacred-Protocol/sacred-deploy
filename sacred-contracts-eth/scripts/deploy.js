@@ -2,7 +2,7 @@ require('dotenv').config({ path: '../.env' })
 const { ethers } = require("hardhat")
 const fs = require('fs')
 const baseUtils = require('../lib/baseUtils')
-const config = require('../config.json')
+const config = require('../../config.json')
 const { MERKLE_TREE_HEIGHT, ETH_AMOUNTS, OPERATOR_FEE, LENDING_POOL_ADDRESS_PROVIDER, WETH_GATEWAY, WETH_TOKEN } = process.env
 const { PRIVATE_KEY, RPC_URL } = process.env
 
