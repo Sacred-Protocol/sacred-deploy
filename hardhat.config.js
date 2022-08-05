@@ -47,7 +47,7 @@ if (process.env.NETWORK) {
         url: process.env.RPC_URL,
         timeout: 120000000000,
       },
-      blockGasLimit: 30000000,
+      blockGasLimit: 20000000000,
     }
   }
 }

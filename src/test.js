@@ -341,10 +341,9 @@ describe('Testing SacredAnanomityMining', () => {
 
     it('SacredProxy', async () => {
       //SacredProxy
-      const oldMinerAddress = await sacredProxy.miner();
-      await (await sacredProxy.initialize(ethers.constants.AddressZero)).wait();
-      const newMinerAddress = await sacredProxy.miner();
-      expect(oldMinerAddress).to.equal(newMinerAddress);
+      await expect(
+        sacredProxy.initialize(ethers.constants.AddressZero)
+      ).to.be.revertedWith('Not authorized');
 
       const instances = config.miningV2.rates.map((rate) => ({
         addr: ensToAddr(rate.instance),
