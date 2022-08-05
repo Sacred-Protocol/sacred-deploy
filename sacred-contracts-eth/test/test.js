@@ -6,11 +6,13 @@ const erc20Abi = require('../artifacts/contracts/ERC20Sacred.sol/ERC20Sacred.jso
 const config = require('../config.json')
 const ethSacredAbi = require('../artifacts/contracts/ETHSacred.sol/ETHSacred.json')
 const erc20SacredAbi = require('../artifacts/contracts/ERC20Sacred.sol/ERC20Sacred.json')
-const withdrawCircuit = require('../build/circuits/withdraw.json')
+const withdrawCircuit = require('../build/circuits/withdraw.json');
+const { ethers } = require("hardhat");
 const withdrawProvidingKey = fs.readFileSync('./build/circuits/withdraw_proving_key.bin').buffer
 
 const { RPC_URL, MERKLE_TREE_HEIGHT, LENDING_POOL_ADDRESS_PROVIDER, WETH_GATEWAY, WETH_TOKEN, OPERATOR_FEE } = process.env
 let owner;
+let deployedSacred;
 
 describe('Test Sacred Contracts', () => {
   // Deploy and setup the contracts
@@ -21,48 +23,54 @@ describe('Test Sacred Contracts', () => {
     await utils.init({instancesInfo:config, erc20Contract: erc20Abi.abi, rpc: RPC_URL})
   });
 
-  // describe('Test Deploy', () => {
-  //   //Deploy Verifier Contract
-  //   const Verifier = await ethers.getContractFactory('Verifier');
-  //   const verifier = await (await Verifier.deploy()).deployed();
+  describe('Test Deploy And Check Accecibility', () => {
+    it('Deploy Contracts', async () => {
+      //Deploy Verifier Contract
+      const Verifier = await ethers.getContractFactory('Verifier');
+      const verifier = await (await Verifier.deploy()).deployed();
+      //Deploy Hasher Contract
+      const Hasher = await ethers.getContractFactory('Hasher');
+      const hasher = await (await Hasher.deploy()).deployed();
+      const ETHSacred = await ethers.getContractFactory(
+        "ETHSacred",
+        {
+          libraries: {
+            Hasher: hasher.address
+          }
+        }
+      );
+      //Deploy SacredInstances(ETH)
+      deployedSacred = await (await ETHSacred
+      .deploy(verifier.address, ethers.utils.parseEther("0.1"), MERKLE_TREE_HEIGHT, LENDING_POOL_ADDRESS_PROVIDER, WETH_GATEWAY, WETH_TOKEN, owner.address, OPERATOR_FEE))
+      .deployed();
+    })
 
-  //   //Deploy Hasher Contract
-  //   const Hasher = await ethers.getContractFactory('Hasher');
-  //   const hasher = await (await Hasher.deploy()).deployed();
-  //   const ETHSacred = await ethers.getContractFactory(
-  //     "ETHSacred",
-  //     {
-  //       libraries: {
-  //         Hasher: hasher.address
-  //       }
-  //     }
-  //   );
+    it('Privilege Check', async () => {
+      let fee = await deployedSacred.fee()
+      expect(fee).to.equal(OPERATOR_FEE)
+  
+      await(await deployedSacred.setFee(0)).wait()
+      fee = await deployedSacred.fee()
+      expect(fee).to.equal(0)
+      await(await deployedSacred.setAaveInterestsProxy(ethers.constants.AddressZero)).wait()
+      const aaveInterestsProxy = await deployedSacred.aaveInterestsProxy()
+      expect(aaveInterestsProxy).to.equal(ethers.constants.AddressZero)
+  
+      await expect(
+        deployedSacred.transferOwnership(ethers.constants.AddressZero)
+      ).to.be.revertedWith('owner cannot be zero address');
 
-  //   //Deploy SacredInstances(ETH)
-  //   const sacred = await (await ETHSacred
-  //     .deploy(verifier.address, 100000000000000000, MERKLE_TREE_HEIGHT, LENDING_POOL_ADDRESS_PROVIDER, WETH_GATEWAY, WETH_TOKEN, owner.address, OPERATOR_FEE))
-  //     .deployed();
-  //   let fee = await sacred.fee()
-  //   expect(fee).to.equal(OPERATOR_FEE)
-
-  //   await(await sacred.setFee(0)).wait()
-  //   fee = await sacred.fee()
-  //   expect(fee).to.equal(0)
-
-  //   await(await sacred.setAaveInterestsProxy(ethers.constants.AddressZero)).wait()
-  //   const aaveInterestsProxy = await sacred.aaveInterestsProxy()
-  //   expect(aaveInterestsProxy).to.equal(ethers.constants.AddressZero)
-
-  //   await(await sacred.transferOwnership(ethers.constants.AddressZero)).wait()
-  //   await(await sacred.setAaveInterestsProxy(ethers.constants.AddressZero)).wait()
-  //   await(await sacred.renounceOwnership()).wait()
-
-  //   await expect(sacred.setAaveInterestsProxy(ethers.constants.AddressZero))
-  //       .to.be.revertedWith('Not authorized');
-
-  //   await expect(sacred.setFee(0))
-  //       .to.be.revertedWith('Not authorized');
-  // });
+      await(await deployedSacred.renounceOwnership()).wait()
+   
+      await expect(
+        deployedSacred.setAaveInterestsProxy(ethers.constants.AddressZero)
+      ).to.be.revertedWith('Not authorized');
+  
+      await expect(
+        deployedSacred.setFee(0)
+      ).to.be.revertedWith('Not authorized');
+    });
+  });
 
   describe('Test Deposit, Withdraw', () => {
     // we'll always need the user ETH balance to be greater than 3 ETH, because we use 2 ETH as the base amount for token conversions e.t.c

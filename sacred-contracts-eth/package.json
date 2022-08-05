@@ -9,7 +9,7 @@
     "build:browserify": "npx browserify cli.js -o index.js --exclude worker_threads",
     "build": "npm run build:circuit && npm run build:contract && npx ./compileHasher.js",
     "browserify": "npm run build:browserify",
-    "test": "npx hardhat test test/hardhatTest.js",
+    "test": "npx hardhat test test/test.js",
     "deploy": "npx hardhat run scripts/deploy.js",
     "eslint": "npx eslint --ignore-path .gitignore .",
     "flat": "npx truffle-flattener contracts/ETHSacred.sol > ETHSacred_flat.sol && npx truffle-flattener contracts/ERC20Sacred.sol > ERC20Sacred_flat.sol",
