@@ -19,7 +19,7 @@ async function main() {
   } else {
     wallet = new ethers.Wallet(PRIVATE_KEY, provider)
   }
-  
+
   //Deploy Verifier Contract
   const Verifier = await ethers.getContractFactory('Verifier');
   const verifier = await (await Verifier.deploy()).deployed();
@@ -41,7 +41,7 @@ async function main() {
   //Deploy SacredInstances(ETH)
   const ethAmounts = ETH_AMOUNTS.split(",");
   let addresses = []
-  for(var i = 0; i < ethAmounts.length; i++) {
+  for (var i = 0; i < ethAmounts.length; i++) {
     let amount = ethAmounts[i];
     console.log("Deploying ETHSacred instance: ", ethers.utils.formatEther(amount))
     const sacred = await (await ETHSacred
@@ -50,15 +50,15 @@ async function main() {
     addresses[i] = sacred.address
   }
 
-  for(var i = 0; i < ethAmounts.length; i++) {
+  for (var i = 0; i < ethAmounts.length; i++) {
     let amount = ethAmounts[i];
     let currencyAmount = ethers.utils.formatEther(amount)
     let amountKey = "" + parseFloat(currencyAmount)
-    config.deployments["netId" + chainId]["eth"].instanceAddress[amountKey] = addresses[i]
+    config.pools["" + chainId]["eth"].instanceAddress[amountKey] = addresses[i]
     console.log('' + currencyAmount + ' - ETHSacred\'s address ', addresses[i])
   }
 
-  await fs.writeFileSync('./config.json', JSON.stringify(config, null, '  '))
+  await fs.writeFileSync('../config.json', JSON.stringify(config, null, '  '))
   console.log("Deployed Contract's addresses are saved into config.json!")
 }
 

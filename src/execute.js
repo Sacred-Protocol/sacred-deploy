@@ -1,5 +1,5 @@
 require('dotenv').config()
-const { ensToAddr, updateAddressTable} = require('../lib/deployUtils')
+const { ensToAddr, updateAddressTable } = require('../lib/deployUtils')
 const utils = require('../sacred-contracts-eth/lib/utils')
 const actions = require('../actions.json')
 const abi = require('../abi/deployer.abi.json')
@@ -12,7 +12,7 @@ const { PRIVATE_KEY, RPC_URL } = process.env
 
 async function deployContracts() {
   const privateKey = PRIVATE_KEY
-  await utils.init({instancesInfo, erc20Contract: erc20Abi, RPC_URL})
+  await utils.init({ instancesInfo, erc20Contract: erc20Abi, RPC_URL })
   const explorer = `https://${utils.getCurrentNetworkName()}etherscan.io`
 
   let provider = utils.getProvider()
@@ -31,7 +31,7 @@ async function deployContracts() {
     console.log(`Deploying ${action.contract} to ${action.domain} (${action.expectedAddress})`)
     const dep = deployer
     //const dep = action === actions.actions[0] ? deployer : deployerProxy
-    const tx = await dep.deploy(action.bytecode, actions.salt, {gasLimit: 20000000})
+    const tx = await dep.deploy(action.bytecode, actions.salt, { gasLimit: 20000000 })
     console.log(`TX hash ${explorer}/tx/${tx.hash}`)
     try {
       const receipt = await tx.wait()
@@ -68,7 +68,7 @@ async function deployContracts() {
 
   console.log("Initialization Done.")
   const instances = [0.1, 1, 10, 100]
-  for(let i = 0; i < instances.length; i++) {
+  for (let i = 0; i < instances.length; i++) {
     let sacredInstance = new ethers.Contract(utils.getSacredInstanceAddress(utils.getNetId(), 'eth', instances[i]), ethSacredAbi.abi, wallet)
     const receipt = await (await sacredInstance.setAaveInterestsProxy(ensToAddr(config.aaveInterestsProxy.address))).wait()
     const _gasUsed = BigInt(receipt.cumulativeGasUsed) * BigInt(receipt.effectiveGasPrice);

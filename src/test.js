@@ -13,11 +13,11 @@ const config = require('../sacred-token/config')
 const Controller = require('../sacred-anonymity-mining/src/controller')
 const Account = require('../sacred-anonymity-mining/src/account')
 const Note = require('../sacred-anonymity-mining/src/note')
-const { updateAddressTable} = require('../lib/deployUtils')
+const { updateAddressTable } = require('../lib/deployUtils')
 const { ensToAddr } = require('../lib/deployUtils')
 const utils = require('../sacred-contracts-eth/lib/utils')
 const { packEncryptedMessage, unpackEncryptedMessage } = require('../sacred-anonymity-mining/src/utils')
-const { toHex, randomBN} = require('../sacred-contracts-eth/lib/baseUtils')
+const { toHex, randomBN } = require('../sacred-contracts-eth/lib/baseUtils')
 const sacredProxyAbi = require('../sacred-anonymity-mining/artifacts/contracts/SacredProxy.sol/SacredProxy.json')
 const sacredEchoerAbi = require('../sacred-anonymity-mining/artifacts/contracts/utils/Echoer.sol/Echoer.json')
 const aaveInterestsProxyAbi = require('../sacred-anonymity-mining/artifacts/contracts/AaveInterestsProxy.sol/AaveInterestsProxy.json')
@@ -42,7 +42,7 @@ const provingKeys = {
   sacredEthWithdrawProvidingKey: fs.readFileSync('sacred-contracts-eth/build/circuits/withdraw_proving_key.bin').buffer
 }
 
-const { PRIVATE_KEY, RPC_URL, MINIMUM_INTERESTS, SACRED_TOKEN} = process.env
+const { PRIVATE_KEY, RPC_URL, MINIMUM_INTERESTS } = process.env
 
 async function updateRoot(sacredTrees, type) {
   const { committedEvents, pendingEvents } = await rootUpdaterEvents.getEvents(sacredTrees, type)
@@ -52,17 +52,17 @@ async function updateRoot(sacredTrees, type) {
 async function getBlockNumbers(sacredTrees, type, noteString) {
   const events = await rootUpdaterEvents.getSacredTreesEvents(sacredTrees, type, 0, 'latest')
   const { deposit } = utils.baseUtils.parseNote(noteString)
-  const item = events.find(function(x) {
-    if(type === action.WITHDRAWAL) {
+  const item = events.find(function (x) {
+    if (type === action.WITHDRAWAL) {
       return x.hash === toHex(deposit.nullifierHash)
-    } else if(type === action.DEPOSIT){
+    } else if (type === action.DEPOSIT) {
       return x.hash === toHex(deposit.commitment)
     } else {
       return false
     }
   })
   let blockNum = -1
-  if(item) {
+  if (item) {
     blockNum = item.block
   }
   return blockNum
@@ -78,13 +78,14 @@ describe('Testing SacredAnanomityMining', () => {
   let sacredTrees
   let sacredProxy
   let sacredEchoer
-    
+
   let controller
   let wallet
 
   let noteString
-  let depositBlockNum;
-  let withdrawBlockNum;
+  let depositBlockNum
+  let withdrawBlockNum
+  let sacredTokenAddress
 
   let proof, args, account
 
@@ -92,22 +93,24 @@ describe('Testing SacredAnanomityMining', () => {
   const publicKey = getEncryptionPublicKey(privateKey)
 
   before(async () => {
-    await utils.init({instancesInfo, erc20Contract: erc20Abi, RPC_URL})
+    await utils.init({ instancesInfo, erc20Contract: erc20Abi, RPC_URL })
     updateAddressTable(addressTable)
     wallet = utils.getWalllet()
+
+    sacredTokenAddress = instancesInfo.sacredToken["" + utils.getNetId()]
 
     sacredTrees = new ethers.Contract(ensToAddr(config.sacredTrees.address), sacredTreesAbi.abi, wallet)
     sacredProxy = new ethers.Contract(ensToAddr(config.sacredProxy.address), sacredProxyAbi.abi, wallet)
     sacredEchoer = new ethers.Contract(ensToAddr(config.sacredEchoer.address), sacredEchoerAbi.abi, wallet)
-    sacred = new ethers.Contract(SACRED_TOKEN, sacredAbi.abi, wallet)
+    sacred = new ethers.Contract(sacredTokenAddress, sacredAbi.abi, wallet)
     rewardSwap = new ethers.Contract(ensToAddr(config.rewardSwap.address), rewardSwapAbi.abi, wallet)
     miner = new ethers.Contract(ensToAddr(config.miningV2.address), minerAbi.abi, wallet)
-    
+
     await utils.setup({
-      ethSacredAbi: ethSacredAbi.abi, 
-      erc20SacredAbi:erc20SacredAbi.abi, 
+      ethSacredAbi: ethSacredAbi.abi,
+      erc20SacredAbi: erc20SacredAbi.abi,
       sacredProxyContract: sacredProxy,
-      withdrawCircuit: provingKeys.sacredEthWithdrawCircuit, 
+      withdrawCircuit: provingKeys.sacredEthWithdrawCircuit,
       withdrawProvidingKey: provingKeys.sacredEthWithdrawProvidingKey
     });
 
@@ -158,19 +161,19 @@ describe('Testing SacredAnanomityMining', () => {
 
   describe('#Deposit And Withdraw', () => {
     it('should work', async () => {
-      for(let i = 0; i < 2; i++) {
+      for (let i = 0; i < 2; i++) {
         let ethbalance = Number(ethers.utils.formatEther(await wallet.getBalance()));
         console.log('Before Deposit: User ETH balance is ', ethbalance);
         //Deposit
-        const result = await utils.deposit({currency:'eth', amount:0.1});
+        const result = await utils.deposit({ currency: 'eth', amount: 0.1 });
         noteString = result.noteString;
         depositBlockNum = result.blockNumber;
         console.log('Deposit block number is ', depositBlockNum);
         ethbalance = Number(ethers.utils.formatEther(await wallet.getBalance()));
         console.log('After Deposit: User ETH balance is ', ethbalance);
         //Withdraw
-        const {deposit, currency, amount} = utils.baseUtils.parseNote(noteString);
-        withdrawBlockNum = await utils.withdraw({deposit, currency, amount, recipient: wallet.address, relayerURL: null });
+        const { deposit, currency, amount } = utils.baseUtils.parseNote(noteString);
+        withdrawBlockNum = await utils.withdraw({ deposit, currency, amount, recipient: wallet.address, relayerURL: null });
         console.log('Withdraw block number is ', withdrawBlockNum);
         ethbalance = Number(ethers.utils.formatEther(await wallet.getBalance()));
         console.log('After Withdraw: User ETH balance is ', ethbalance);
@@ -206,11 +209,11 @@ describe('Testing SacredAnanomityMining', () => {
       expect(shareTracks.totalShares.gte(totalShares)).to.equal(true)
       const eventsDeposit = await rootUpdaterEvents.getEvents(sacredTrees, action.DEPOSIT)
       const eventsWithdraw = await rootUpdaterEvents.getEvents(sacredTrees, action.WITHDRAWAL)
-      const result = await controller.reward({ account: zeroAccount, note, publicKey, fee:0, relayer:0, accountCommitments: null, depositDataEvents: eventsDeposit.committedEvents, withdrawalDataEvents: eventsWithdraw.committedEvents})
+      const result = await controller.reward({ account: zeroAccount, note, publicKey, fee: 0, relayer: 0, accountCommitments: null, depositDataEvents: eventsDeposit.committedEvents, withdrawalDataEvents: eventsWithdraw.committedEvents })
       proof = result.proof
       args = result.args
       account = result.account
-      const tx = await (await miner['reward(bytes,(uint256,uint256,address,uint256,uint256,bytes32,bytes32,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](proof, args, {gasLimit: 500000000})).wait();
+      const tx = await (await miner['reward(bytes,(uint256,uint256,address,uint256,uint256,bytes32,bytes32,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](proof, args, { gasLimit: 500000000 })).wait();
       const newAccountEvent = tx.events.find(item => item.event === 'NewAccount')
 
       expect(newAccountEvent.event).to.equal('NewAccount')
@@ -250,18 +253,18 @@ describe('Testing SacredAnanomityMining', () => {
       const withdrawSnark = await controller.withdraw({ account, apAmount: account.apAmount, aaveInterestAmount: account.aaveInterestAmount, recipient, publicKey })
       const balanceBefore = await sacred.balanceOf(recipient)
       const tx = await (await miner['withdraw(bytes,(uint256,uint256,bytes32,(uint256,address,address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](withdrawSnark.proof, withdrawSnark.args)).wait()
-      
+
       const gasUsed = BigInt(tx.cumulativeGasUsed) * BigInt(tx.effectiveGasPrice);
 
       const balanceAfter = await sacred.balanceOf(recipient)
       const increasedBalance = balanceAfter.sub(balanceBefore)
       console.log("Received SacredTokens:", increasedBalance)
       expect(increasedBalance.gt(0)).to.equal(true)
-      
+
       const ethBalance = await ethers.provider.getBalance(recipient);
       const receivedAaveInterests = ethBalance.add(gasUsed).sub(preETHBalance)
       console.log("Received ETH", receivedAaveInterests)
-      if(account.aaveInterestAmount.gt(toBN(MINIMUM_INTERESTS))) {
+      if (account.aaveInterestAmount.gt(toBN(MINIMUM_INTERESTS))) {
         expect(receivedAaveInterests.gt(0)).to.equal(true)
       }
 
@@ -285,7 +288,7 @@ describe('Testing SacredAnanomityMining', () => {
       await expect(
         aaveInterestProxy.withdraw(10, wallet.address)
       ).to.be.revertedWith('Not authorized');
-      })
+    })
 
     it('RewardSwap', async () => {
       //RewardSwap
@@ -312,7 +315,7 @@ describe('Testing SacredAnanomityMining', () => {
       await expect(
         miner.setAaveInterestFee(0)
       ).to.be.revertedWith('Only governance can perform this action');
-      
+
       const rates = config.miningV2.rates.map((rate) => ({
         instance: ensToAddr(rate.instance),
         value: rate.value,
@@ -329,7 +332,7 @@ describe('Testing SacredAnanomityMining', () => {
           ensToAddr(config.treeUpdateVerifier.address),
         ])
       ).to.be.revertedWith('Only governance can perform this action');
-      
+
       await expect(
         miner.setSacredTreesContract(ethers.constants.AddressZero)
       ).to.be.revertedWith('Only governance can perform this action');
@@ -360,9 +363,9 @@ describe('Testing SacredAnanomityMining', () => {
       await expect(
         sacredProxy.rescueTokens(ethers.constants.AddressZero, wallet.address, 10)
       ).to.be.revertedWith('Not authorized');
-    
+
     })
-    
+
     it('sacredTrees', async () => {
       //sacredTrees
       const instanceAddr = utils.getSacredInstanceAddress(utils.getNetId(), 'eth', 0.1)

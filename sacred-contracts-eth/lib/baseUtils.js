@@ -3,7 +3,7 @@ const { bigInt } = require('snarkjs')
 const crypto = require('crypto')
 const circomlib = require('circomlib')
 const { fromWei, toWei, toBN } = require('web3-utils')
-const {BN} = require('bn.js') //Don't use BN of web3-utils, it has a bug with endianess
+const { BN } = require('bn.js') //Don't use BN of web3-utils, it has a bug with endianess
 let provider
 
 function bitsToNumber(bits) {
@@ -44,7 +44,7 @@ function toHex(number, length = 32) {
 const getEvents = async (contract, options) => {
   const { eventName, fromBlock = 0, toBlock = 'latest', topics } = options;
   const parsedTopic = topics ? ethers.utils.id(contract.interface.events[topics].signature) : null;
-  if(!provider) {
+  if (!provider) {
     console.log("BaseUtils isn't initialized!")
   }
   const events = await provider.getLogs({
@@ -69,7 +69,7 @@ const getEvents = async (contract, options) => {
       returnValues: event.values,
     };
   });
-  output = output.filter(function(event){
+  output = output.filter(function (event) {
     return event.name === eventName
   })
   return output;
@@ -223,11 +223,11 @@ function calculateFee({ gasPrices, currency, amount, refund, ethPrices, relayerS
 }
 
 async function getProvider(rpc) {
-  if(!provider) {
-    if(ethers.provider && typeof hre !== 'undefined') {
+  if (!provider) {
+    if (ethers.provider && typeof hre !== 'undefined') {
       provider = ethers.provider
     } else {
-      if(!rpc) {
+      if (!rpc) {
         console.log("Please provide RPC url!")
         return null
       }
@@ -263,7 +263,7 @@ module.exports = {
   poseidonHash,
   poseidonHash2,
   parseNote,
-  createDeposit, 
+  createDeposit,
   calculateFee,
   fromDecimals,
   toDecimals,

@@ -6,7 +6,7 @@ const instancesInfo = require('../config.json')
 const erc20Abi = require('../abi/erc20.abi.json')
 const utils = require('../sacred-contracts-eth/lib/utils')
 const { deploy, getContractData, ensToAddr, getAddressTable, setAddress, initAddressTable } = require('../lib/deployUtils')
-const { DEPLOYER, SALT, MINIMUM_INTERESTS, INTERESTS_FEE, SACRED_TOKEN, REWARDSWAP_MINING_CAP } = process.env
+const { DEPLOYER, SALT, MINIMUM_INTERESTS, INTERESTS_FEE, REWARDSWAP_MINING_CAP } = process.env
 
 const governance = getContractData('../sacred-governance/artifacts/contracts/Governance.sol/Governance.json')
 const governanceProxy = getContractData('../sacred-governance/artifacts/contracts/LoopbackProxy.sol/LoopbackProxy.json')
@@ -23,11 +23,13 @@ const withdrawVerifier = getContractData('../sacred-anonymity-mining/artifacts/c
 const treeUpdateVerifier = getContractData('../sacred-anonymity-mining/artifacts/contracts/verifiers/TreeUpdateVerifier.sol/TreeUpdateVerifier.json')
 const poseidonHasher = getContractData('../sacred-anonymity-mining/build/contracts/Hasher.json')
 const actions = []
-const {  RPC_URL } = process.env
+const { RPC_URL } = process.env
+
+let sacredTokenAddress
 
 async function main() {
 
-  await utils.init({instancesInfo, erc20Contract: erc20Abi, rpc: RPC_URL})
+  await utils.init({ instancesInfo, erc20Contract: erc20Abi, rpc: RPC_URL })
   let wallet = utils.getWalllet()
   const netId = utils.getNetId()
   console.log("owner address: ", wallet.address)
@@ -36,6 +38,8 @@ async function main() {
   setAddress('eth-1.sacredcash.eth', utils.getSacredInstanceAddress(netId, "eth", 1))
   setAddress('eth-10.sacredcash.eth', utils.getSacredInstanceAddress(netId, "eth", 10))
   setAddress('eth-100.sacredcash.eth', utils.getSacredInstanceAddress(netId, "eth", 100))
+
+  sacredTokenAddress = instancesInfo.sacredToken["" + netId]
   // Deploy Governance implementation
   actions.push(
     deploy({
@@ -48,7 +52,7 @@ async function main() {
 
   // Deploy Governance proxy
   const governanceContract = new ethers.utils.Interface(governance.abi)
-  const initData = governanceContract.encodeFunctionData('initialize', [SACRED_TOKEN])
+  const initData = governanceContract.encodeFunctionData('initialize', [sacredTokenAddress])
   actions.push(
     deploy({
       domain: config.governance.address,
@@ -104,7 +108,7 @@ async function main() {
       contract: rewardSwap,
       args: [
         wallet.address,
-        SACRED_TOKEN,
+        sacredTokenAddress,
         toWei(REWARDSWAP_MINING_CAP),
         config.miningV2.initialBalance,
         config.rewardSwap.poolWeight
@@ -187,9 +191,9 @@ async function main() {
       domain: config.sacredProxy.address,
       contract: sacredProxy,
       args: [
-        wallet.address, 
-        ensToAddr(config.sacredTrees.address), 
-        ensToAddr(config.governance.address), 
+        wallet.address,
+        ensToAddr(config.sacredTrees.address),
+        ensToAddr(config.governance.address),
         instances],
       title: 'SacredCash Proxy',
       description:

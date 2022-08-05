@@ -15,7 +15,7 @@ let netId, netName, config, wallet
 let erc20Abi
 let provider
 
-async function init({ instancesInfo, erc20Contract, rpc}) {
+async function init({ instancesInfo, erc20Contract, rpc }) {
   await baseUtils.init(rpc)
   provider = await baseUtils.getProvider()
   const { chainId, name } = await provider.getNetwork()
@@ -27,7 +27,7 @@ async function init({ instancesInfo, erc20Contract, rpc}) {
     const accounts = await ethers.getSigners();
     wallet = accounts[0];
     netId = "" + HARDHAT_CHAINID
-    if(!netId) {
+    if (!netId) {
       console.log("Please specifiy original chainId of forked network in .env")
     }
   } else {
@@ -38,19 +38,19 @@ async function init({ instancesInfo, erc20Contract, rpc}) {
   erc20Abi = erc20Contract
 }
 
-async function setup ({ethSacredAbi, erc20SacredAbi, sacredProxyContract, withdrawCircuit, withdrawProvidingKey}) {
+async function setup({ ethSacredAbi, erc20SacredAbi, sacredProxyContract, withdrawCircuit, withdrawProvidingKey }) {
   circuit = withdrawCircuit
   proving_key = withdrawProvidingKey
   MERKLE_TREE_HEIGHT = process.env.MERKLE_TREE_HEIGHT || 20
   groth16 = await buildGroth16()
   sacredProxy = sacredProxyContract
 
-  const netkeys = Object.keys(config.deployments)
+  const netkeys = Object.keys(config.pools)
   netkeys.forEach(netKey => {
-    if(netKey !== "netId" + netId) {
+    if (netKey !== "" + netId) {
       return
     }
-    const infos = config.deployments[netKey]
+    const infos = config.pools[netKey]
     const currencies = Object.keys(infos)
     currencies.forEach(currency => {
       const addressInfo = infos[currency].instanceAddress
@@ -58,7 +58,7 @@ async function setup ({ethSacredAbi, erc20SacredAbi, sacredProxyContract, withdr
       amounts.forEach(amount => {
         const key = currency + amount
         const address = addressInfo[amount]
-        if(address) {
+        if (address) {
           contracts[key] = new ethers.Contract(address, currency === "eth" ? ethSacredAbi : erc20SacredAbi, wallet)
         }
       })
@@ -99,10 +99,10 @@ async function printERC20Balance({ address, name, tokenAddress }) {
  * in it and generates merkle proof
  * @param deposit Deposit object
  */
- async function generateMerkleProof(sacredInstance, deposit) {
+async function generateMerkleProof(sacredInstance, deposit) {
   // Get all deposit events from smart contract and assemble merkle tree from them
   console.log('Getting current state from sacred contract')
-  const events = await baseUtils.getEvents(sacredInstance, {eventName:"Deposit", fromBlock: 0, toBlock: 'latest' })
+  const events = await baseUtils.getEvents(sacredInstance, { eventName: "Deposit", fromBlock: 0, toBlock: 'latest' })
   const leaves = events
     .sort((a, b) => a.returnValues.leafIndex - b.returnValues.leafIndex) // Sort events in chronological order
     .map(e => e.returnValues.commitment)
@@ -120,7 +120,7 @@ async function printERC20Balance({ address, name, tokenAddress }) {
   assert(isSpent === false, 'The note is already spent')
   assert(leafIndex >= 0, 'The deposit is not found in the tree')
 
-  const path = tree.path(leafIndex) 
+  const path = tree.path(leafIndex)
   return {
     root: root,
     path_elements: path.pathElements,
@@ -136,7 +136,7 @@ async function printERC20Balance({ address, name, tokenAddress }) {
  * @param fee Relayer fee
  * @param refund Receive ether for exchanged tokens
  */
- async function generateProof({ sacredInstance, deposit, recipient, relayerAddress = 0, fee = 0, refund = 0 }) {
+async function generateProof({ sacredInstance, deposit, recipient, relayerAddress = 0, fee = 0, refund = 0 }) {
   // Compute merkle proof of our commitment
   const { root, path_elements, path_index } = await generateMerkleProof(sacredInstance, deposit)
   // Prepare circuit input
@@ -186,7 +186,7 @@ async function deposit({ currency, amount }) {
   console.log(`Your note: ${noteString}`)
   let blockNumber = 0
   const sacredInstance = contracts[currency + amount]
-  if(!sacredInstance) {
+  if (!sacredInstance) {
     console.log("SacredInstance was not setup properly!")
   }
   const senderAccount = wallet.address
@@ -197,10 +197,10 @@ async function deposit({ currency, amount }) {
     console.log('Submitting deposit transaction')
     console.log(value.toString())
     let overrides = { value, from: senderAccount, gasLimit: 20000000 }
-    if(sacredProxy) {
+    if (sacredProxy) {
       const instance = getSacredInstanceAddress(netId, currency, amount)
       const tx = await (await sacredProxy.deposit(instance, baseUtils.toHex(deposit.commitment), note, overrides)).wait()
-      blockNumber = tx.blockNumber  
+      blockNumber = tx.blockNumber
     } else {
       const tx = await (await sacredInstance.deposit(baseUtils.toHex(deposit.commitment), overrides)).wait()
       blockNumber = tx.blockNumber
@@ -211,7 +211,7 @@ async function deposit({ currency, amount }) {
   } else { // a token
     // await printERC20Balance({ address: sacredInstance.address, name: 'Sacred' })
     // await printERC20Balance({ address: senderAccount, name: 'Sender account' })
-    // const decimals = isLocalRPC ? 18 : config.deployments[`netId${netId}`][currency].decimals
+    // const decimals = isLocalRPC ? 18 : config.pools[`${netId}`][currency].decimals
     // const tokenAmount = isLocalRPC ? TOKEN_AMOUNT : fromDecimals({ amount, decimals })
     // if (isLocalRPC) {
     //   console.log('Minting some test tokens to deposit')
@@ -242,13 +242,13 @@ async function deposit({ currency, amount }) {
  * @param noteString Note to withdraw
  * @param recipient Recipient address
  */
- async function withdraw({ deposit, currency, amount, recipient, relayerURL, refund = '0' }) {
+async function withdraw({ deposit, currency, amount, recipient, relayerURL, refund = '0' }) {
   if (currency === 'eth' && refund !== '0') {
     throw new Error('The ETH purchase is supposted to be 0 for ETH withdrawals')
   }
   refund = toWei(refund)
   const sacredInstance = contracts[currency + amount]
-  if(!sacredInstance) {
+  if (!sacredInstance) {
     console.log("SacredInstance was not setup properly!")
     return
   }
@@ -263,7 +263,7 @@ async function deposit({ currency, amount }) {
     assert(netId === await web3.eth.net.getId() || netId === '*', 'This relay is for different network')
     console.log('Relay address: ', relayerAddress)
 
-    const decimals = isLocalRPC ? 18 : config.deployments[`netId${netId}`][currency].decimals
+    const decimals = isLocalRPC ? 18 : config.pools[`${netId}`][currency].decimals
     const fee = calculateFee({ gasPrices, currency, amount, refund, ethPrices, relayerServiceFee, decimals })
     if (fee.gt(fromDecimals({ amount, decimals }))) {
       throw new Error('Too high refund')
@@ -294,15 +294,15 @@ async function deposit({ currency, amount }) {
     console.log('Submitting withdraw transaction')
     let tx
     const senderAccount = wallet.address
-    if(sacredProxy) {
+    if (sacredProxy) {
       const instance = getSacredInstanceAddress(netId, currency, amount)
-      tx = await (await sacredProxy.withdraw(instance, proof, ...args, { from: senderAccount, value: refund.toString(), gasLimit: 20000000})).wait()
+      tx = await (await sacredProxy.withdraw(instance, proof, ...args, { from: senderAccount, value: refund.toString(), gasLimit: 20000000 })).wait()
     } else {
-      tx = await (await sacredInstance.withdraw(proof, ...args, { from: senderAccount, value: refund.toString(), gasLimit: 20000000})).wait()
+      tx = await (await sacredInstance.withdraw(proof, ...args, { from: senderAccount, value: refund.toString(), gasLimit: 20000000 })).wait()
     }
 
     blockNumber = tx.blockNumber
-    if(tx.status === 1) { //Success
+    if (tx.status === 1) { //Success
       if ([1, 42, 4].includes(parseInt(netId))) {
         console.log(`View transaction on etherscan https://${getCurrentNetworkName()}etherscan.io/tx/${tx.transactionHash}`)
       } else {
@@ -376,7 +376,7 @@ async function loadWithdrawalData({ amount, currency, deposit }) {
     })[0]
 
     const fee = withdrawEvent.returnValues.fee
-    const decimals = config.deployments[`netId${netId}`][currency].decimals
+    const decimals = config.pools[`${netId}`][currency].decimals
     const withdrawalAmount = toBN(fromDecimals({ amount, decimals })).sub(
       toBN(fee)
     )
@@ -400,7 +400,7 @@ async function loadWithdrawalData({ amount, currency, deposit }) {
  * @param attempts
  * @param delay
  */
- function waitForTxReceipt({ txHash, attempts = 60, delay = 1000 }) {
+function waitForTxReceipt({ txHash, attempts = 60, delay = 1000 }) {
   return new Promise((resolve, reject) => {
     const checkForTx = async (txHash, retryAttempt = 0) => {
       const result = await web3.eth.getTransactionReceipt(txHash)
@@ -419,7 +419,7 @@ async function loadWithdrawalData({ amount, currency, deposit }) {
 }
 
 function getSacredInstanceAddress(netId, currency, amount) {
-  return config.deployments["netId" + netId][currency].instanceAddress['' + amount]
+  return config.pools["" + netId][currency].instanceAddress['' + amount]
 }
 
 const tree = new MerkleTree(20, [], { hashFunction: baseUtils.poseidonHash2 })
@@ -433,7 +433,7 @@ const zeroMerkleRoot =
 module.exports = {
   getSacredInstanceAddress,
   deposit,
-  withdraw, 
+  withdraw,
   init,
   setup,
   getNetId,
