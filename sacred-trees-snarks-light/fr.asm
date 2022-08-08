@@ -11,6 +11,8 @@
         global Fr_bor
         global Fr_bxor
         global Fr_bnot
+        global Fr_shl
+        global Fr_shr
         global Fr_eq
         global Fr_neq
         global Fr_lt
@@ -29,6 +31,7 @@
         global Fr_R3
 
         global Fr_rawCopy
+        global Fr_rawZero
         global Fr_rawSwap
         global Fr_rawAdd
         global Fr_rawSub
@@ -116,6 +119,30 @@ Fr_rawCopy:
         mov     [rdi + 16], rax
 
         mov     rax, [rsi + 24]
+        mov     [rdi + 24], rax
+
+        ret
+
+
+;;;;;;;;;;;;;;;;;;;;;;
+; rawZero
+;;;;;;;;;;;;;;;;;;;;;;
+; Copies
+; Params:
+;   rsi <= the src
+;
+; Nidified registers:
+;   rax
+;;;;;;;;;;;;;;;;;;;;;;;
+Fr_rawZero:
+        xor     rax, rax
+
+        mov     [rdi + 0], rax
+
+        mov     [rdi + 8], rax
+
+        mov     [rdi + 16], rax
+
         mov     [rdi + 24], rax
 
         ret
@@ -2667,6 +2694,7 @@ mul_l1ml2m:
         sub rsi, 8
 
         ret
+
 
 
 
@@ -6502,6 +6530,880 @@ tmp_107:
 
 
 
+;;;;;;;;;;;;;;;;;;;;;;
+; rawShr
+;;;;;;;;;;;;;;;;;;;;;;
+; Adds two elements of any kind
+; Params:
+;   rsi <= Pointer to element 1
+;   rdx <= how much is shifted
+;   rdi <= Pointer to result
+; Modified Registers:
+;    r8, r9, 10, r11, rax, rcx
+;;;;;;;;;;;;;;;;;;;;;;
+rawShr:
+        cmp rdx, 0
+        je Fr_rawCopy
+
+        cmp rdx, 254
+        jae Fr_rawZero
+
+rawShr_nz:
+        mov r8, rdx
+        shr r8,6
+        mov rcx, rdx
+        and rcx, 0x3F
+        jz rawShr_aligned
+        mov ch, 64
+        sub ch, cl
+
+        mov r9, 1
+        rol cx, 8
+        shl r9, cl
+        rol cx, 8
+        sub r9, 1
+        mov r10, r9
+        not r10
+
+
+        cmp r8, 3
+        jae rawShr_if2_0
+
+        mov rax, [rsi + r8*8 + 0 ]
+        shr rax, cl
+        and rax, r9
+        mov r11, [rsi + r8*8 + 8 ]
+        rol cx, 8
+        shl r11, cl
+        rol cx, 8
+        and r11, r10
+        or rax, r11
+        mov [rdi + 0], rax
+
+        jmp rawShr_endif_0
+rawShr_if2_0:
+        jne rawShr_else_0
+
+        mov rax, [rsi + r8*8 + 0 ]
+        shr rax, cl
+        and rax, r9
+        mov [rdi + 0], rax
+
+        jmp rawShr_endif_0
+rawShr_else_0:
+        xor  rax, rax
+        mov [rdi + 0], rax
+rawShr_endif_0:
+
+        cmp r8, 2
+        jae rawShr_if2_1
+
+        mov rax, [rsi + r8*8 + 8 ]
+        shr rax, cl
+        and rax, r9
+        mov r11, [rsi + r8*8 + 16 ]
+        rol cx, 8
+        shl r11, cl
+        rol cx, 8
+        and r11, r10
+        or rax, r11
+        mov [rdi + 8], rax
+
+        jmp rawShr_endif_1
+rawShr_if2_1:
+        jne rawShr_else_1
+
+        mov rax, [rsi + r8*8 + 8 ]
+        shr rax, cl
+        and rax, r9
+        mov [rdi + 8], rax
+
+        jmp rawShr_endif_1
+rawShr_else_1:
+        xor  rax, rax
+        mov [rdi + 8], rax
+rawShr_endif_1:
+
+        cmp r8, 1
+        jae rawShr_if2_2
+
+        mov rax, [rsi + r8*8 + 16 ]
+        shr rax, cl
+        and rax, r9
+        mov r11, [rsi + r8*8 + 24 ]
+        rol cx, 8
+        shl r11, cl
+        rol cx, 8
+        and r11, r10
+        or rax, r11
+        mov [rdi + 16], rax
+
+        jmp rawShr_endif_2
+rawShr_if2_2:
+        jne rawShr_else_2
+
+        mov rax, [rsi + r8*8 + 16 ]
+        shr rax, cl
+        and rax, r9
+        mov [rdi + 16], rax
+
+        jmp rawShr_endif_2
+rawShr_else_2:
+        xor  rax, rax
+        mov [rdi + 16], rax
+rawShr_endif_2:
+
+        cmp r8, 0
+        jae rawShr_if2_3
+
+        mov rax, [rsi + r8*8 + 24 ]
+        shr rax, cl
+        and rax, r9
+        mov r11, [rsi + r8*8 + 32 ]
+        rol cx, 8
+        shl r11, cl
+        rol cx, 8
+        and r11, r10
+        or rax, r11
+        mov [rdi + 24], rax
+
+        jmp rawShr_endif_3
+rawShr_if2_3:
+        jne rawShr_else_3
+
+        mov rax, [rsi + r8*8 + 24 ]
+        shr rax, cl
+        and rax, r9
+        mov [rdi + 24], rax
+
+        jmp rawShr_endif_3
+rawShr_else_3:
+        xor  rax, rax
+        mov [rdi + 24], rax
+rawShr_endif_3:
+
+
+        ret
+
+rawShr_aligned:
+
+        cmp r8, 3
+        ja rawShr_if3_0
+        mov rax, [rsi + r8*8 + 0 ]
+        mov [rdi + 0], rax
+        jmp rawShr_endif3_0
+rawShr_if3_0:
+        xor rax, rax
+        mov [rdi + 0], rax
+rawShr_endif3_0:
+
+        cmp r8, 2
+        ja rawShr_if3_1
+        mov rax, [rsi + r8*8 + 8 ]
+        mov [rdi + 8], rax
+        jmp rawShr_endif3_1
+rawShr_if3_1:
+        xor rax, rax
+        mov [rdi + 8], rax
+rawShr_endif3_1:
+
+        cmp r8, 1
+        ja rawShr_if3_2
+        mov rax, [rsi + r8*8 + 16 ]
+        mov [rdi + 16], rax
+        jmp rawShr_endif3_2
+rawShr_if3_2:
+        xor rax, rax
+        mov [rdi + 16], rax
+rawShr_endif3_2:
+
+        cmp r8, 0
+        ja rawShr_if3_3
+        mov rax, [rsi + r8*8 + 24 ]
+        mov [rdi + 24], rax
+        jmp rawShr_endif3_3
+rawShr_if3_3:
+        xor rax, rax
+        mov [rdi + 24], rax
+rawShr_endif3_3:
+
+        ret
+
+
+;;;;;;;;;;;;;;;;;;;;;;
+; rawShl
+;;;;;;;;;;;;;;;;;;;;;;
+; Adds two elements of any kind
+; Params:
+;   rsi <= Pointer to element 1
+;   rdx <= how much is shifted
+;   rdi <= Pointer to result
+; Modified Registers:
+;    r8, r9, 10, r11, rax, rcx
+;;;;;;;;;;;;;;;;;;;;;;
+rawShl:
+        cmp rdx, 0
+        je Fr_rawCopy
+        
+        cmp rdx, 254
+        jae Fr_rawZero
+
+        mov r8, rdx
+        shr r8,6
+        mov rcx, rdx
+        and rcx, 0x3F
+        jz rawShl_aligned
+        mov ch, 64
+        sub ch, cl
+
+
+        mov r10, 1
+        shl r10, cl
+        sub r10, 1
+        mov r9, r10
+        not r9
+
+        mov rdx, rsi
+        mov rax, r8
+        shl rax, 3
+        sub rdx, rax
+
+
+        cmp r8, 3
+        jae rawShl_if2_3
+
+        mov rax, [rdx + 24 ]
+        shl rax, cl
+        and rax, r9
+        mov r11, [rdx + 16 ]
+        rol cx, 8
+        shr r11, cl
+        rol cx, 8
+        and r11, r10
+        or rax, r11
+
+        and rax, [lboMask]
+
+        
+        mov [rdi + 24], rax
+
+        jmp rawShl_endif_3
+rawShl_if2_3:
+        jne rawShl_else_3
+
+        mov rax, [rdx + 24 ]
+        shl rax, cl
+        and rax, r9
+
+        and rax, [lboMask]
+
+        
+        mov [rdi + 24], rax
+
+        jmp rawShl_endif_3
+rawShl_else_3:
+        xor rax, rax
+        mov [rdi + 24], rax
+rawShl_endif_3:
+
+        cmp r8, 2
+        jae rawShl_if2_2
+
+        mov rax, [rdx + 16 ]
+        shl rax, cl
+        and rax, r9
+        mov r11, [rdx + 8 ]
+        rol cx, 8
+        shr r11, cl
+        rol cx, 8
+        and r11, r10
+        or rax, r11
+
+        
+        mov [rdi + 16], rax
+
+        jmp rawShl_endif_2
+rawShl_if2_2:
+        jne rawShl_else_2
+
+        mov rax, [rdx + 16 ]
+        shl rax, cl
+        and rax, r9
+
+        
+        mov [rdi + 16], rax
+
+        jmp rawShl_endif_2
+rawShl_else_2:
+        xor rax, rax
+        mov [rdi + 16], rax
+rawShl_endif_2:
+
+        cmp r8, 1
+        jae rawShl_if2_1
+
+        mov rax, [rdx + 8 ]
+        shl rax, cl
+        and rax, r9
+        mov r11, [rdx + 0 ]
+        rol cx, 8
+        shr r11, cl
+        rol cx, 8
+        and r11, r10
+        or rax, r11
+
+        
+        mov [rdi + 8], rax
+
+        jmp rawShl_endif_1
+rawShl_if2_1:
+        jne rawShl_else_1
+
+        mov rax, [rdx + 8 ]
+        shl rax, cl
+        and rax, r9
+
+        
+        mov [rdi + 8], rax
+
+        jmp rawShl_endif_1
+rawShl_else_1:
+        xor rax, rax
+        mov [rdi + 8], rax
+rawShl_endif_1:
+
+        cmp r8, 0
+        jae rawShl_if2_0
+
+        mov rax, [rdx + 0 ]
+        shl rax, cl
+        and rax, r9
+        mov r11, [rdx + -8 ]
+        rol cx, 8
+        shr r11, cl
+        rol cx, 8
+        and r11, r10
+        or rax, r11
+
+        
+        mov [rdi + 0], rax
+
+        jmp rawShl_endif_0
+rawShl_if2_0:
+        jne rawShl_else_0
+
+        mov rax, [rdx + 0 ]
+        shl rax, cl
+        and rax, r9
+
+        
+        mov [rdi + 0], rax
+
+        jmp rawShl_endif_0
+rawShl_else_0:
+        xor rax, rax
+        mov [rdi + 0], rax
+rawShl_endif_0:
+
+
+
+        
+        
+
+        ; Compare with q
+
+        mov rax, [rdi + 24]
+        cmp rax, [q + 24]
+        jc tmp_109        ; q is bigget so done.
+        jnz tmp_108         ; q is lower
+
+        mov rax, [rdi + 16]
+        cmp rax, [q + 16]
+        jc tmp_109        ; q is bigget so done.
+        jnz tmp_108         ; q is lower
+
+        mov rax, [rdi + 8]
+        cmp rax, [q + 8]
+        jc tmp_109        ; q is bigget so done.
+        jnz tmp_108         ; q is lower
+
+        mov rax, [rdi + 0]
+        cmp rax, [q + 0]
+        jc tmp_109        ; q is bigget so done.
+        jnz tmp_108         ; q is lower
+
+        ; If equal substract q
+tmp_108:
+
+        mov rax, [q + 0]
+        sub [rdi + 0], rax
+
+        mov rax, [q + 8]
+        sbb [rdi + 8], rax
+
+        mov rax, [q + 16]
+        sbb [rdi + 16], rax
+
+        mov rax, [q + 24]
+        sbb [rdi + 24], rax
+
+tmp_109:
+
+        ret;
+
+rawShl_aligned:
+        mov rdx, rsi
+        mov rax, r8
+        shl rax, 3
+        sub rdx, rax
+
+
+        cmp r8, 3
+        ja rawShl_if3_3
+        mov rax, [rdx + 24 ]
+
+        and rax, [lboMask]
+        
+        mov [rdi + 24], rax
+        jmp rawShl_endif3_3
+rawShl_if3_3:
+        xor rax, rax 
+        mov [rdi + 24], rax
+rawShl_endif3_3:
+
+        cmp r8, 2
+        ja rawShl_if3_2
+        mov rax, [rdx + 16 ]
+        
+        mov [rdi + 16], rax
+        jmp rawShl_endif3_2
+rawShl_if3_2:
+        xor rax, rax 
+        mov [rdi + 16], rax
+rawShl_endif3_2:
+
+        cmp r8, 1
+        ja rawShl_if3_1
+        mov rax, [rdx + 8 ]
+        
+        mov [rdi + 8], rax
+        jmp rawShl_endif3_1
+rawShl_if3_1:
+        xor rax, rax 
+        mov [rdi + 8], rax
+rawShl_endif3_1:
+
+        cmp r8, 0
+        ja rawShl_if3_0
+        mov rax, [rdx + 0 ]
+        
+        mov [rdi + 0], rax
+        jmp rawShl_endif3_0
+rawShl_if3_0:
+        xor rax, rax 
+        mov [rdi + 0], rax
+rawShl_endif3_0:
+
+
+        
+        
+
+        ; Compare with q
+
+        mov rax, [rdi + 24]
+        cmp rax, [q + 24]
+        jc tmp_111        ; q is bigget so done.
+        jnz tmp_110         ; q is lower
+
+        mov rax, [rdi + 16]
+        cmp rax, [q + 16]
+        jc tmp_111        ; q is bigget so done.
+        jnz tmp_110         ; q is lower
+
+        mov rax, [rdi + 8]
+        cmp rax, [q + 8]
+        jc tmp_111        ; q is bigget so done.
+        jnz tmp_110         ; q is lower
+
+        mov rax, [rdi + 0]
+        cmp rax, [q + 0]
+        jc tmp_111        ; q is bigget so done.
+        jnz tmp_110         ; q is lower
+
+        ; If equal substract q
+tmp_110:
+
+        mov rax, [q + 0]
+        sub [rdi + 0], rax
+
+        mov rax, [q + 8]
+        sbb [rdi + 8], rax
+
+        mov rax, [q + 16]
+        sbb [rdi + 16], rax
+
+        mov rax, [q + 24]
+        sbb [rdi + 24], rax
+
+tmp_111:
+
+        ret
+        
+
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;
+; shr
+;;;;;;;;;;;;;;;;;;;;;;
+; Adds two elements of any kind
+; Params:
+;   rsi <= Pointer to element 1
+;   rdx <= Pointer to element 2
+;   rdi <= Pointer to result
+; Modified Registers:
+;    r8, r9, 10, r11, rax, rcx
+;;;;;;;;;;;;;;;;;;;;;;
+Fr_shr:
+        push   rbp
+        push   rsi
+        push   rdi
+        push   rdx
+        mov    rbp, rsp
+
+
+        
+        
+        
+        
+        mov    rcx, [rdx]
+        bt     rcx, 63          ; Check if is short second operand
+        jnc     tmp_112
+
+        ; long 2
+        bt     rcx, 62          ; Check if is montgomery second operand
+        jnc     tmp_113
+
+        mov  r8, rdi
+        sub  rsp, 40
+        mov  rdi, rsp
+        push rsi
+        mov  rsi, rdx
+        push r8
+        call Fr_toNormal
+        mov  rdx, rdi
+        pop  rdi
+        pop  rsi
+
+tmp_113:
+        mov rcx, [rdx + 8]
+        cmp rcx, 254
+        jae  tmp_114
+        xor rax, rax
+        
+        cmp [rdx + 16], rax
+        jnz tmp_114
+        
+        cmp [rdx + 24], rax
+        jnz tmp_114
+        
+        cmp [rdx + 32], rax
+        jnz tmp_114
+        
+        mov rdx, rcx
+        jmp do_shr
+
+tmp_114:
+        mov rcx, [q]
+        sub rcx, [rdx+8]
+        cmp rcx, 254
+        jae  setzero
+        mov rax, [q]
+        sub rax, [rdx+8]
+        
+        mov rax, [q+ 8] 
+        sbb rax, [rdx + 16]
+        jnz setzero
+        
+        mov rax, [q+ 16] 
+        sbb rax, [rdx + 24]
+        jnz setzero
+        
+        mov rax, [q+ 24] 
+        sbb rax, [rdx + 32]
+        jnz setzero
+        
+        mov rdx, rcx
+        jmp do_shl
+
+tmp_112:
+        cmp ecx, 0
+        jl  tmp_115
+        cmp ecx, 254
+        jae  setzero
+        movsx rdx, ecx 
+        jmp do_shr
+tmp_115:
+        neg ecx
+        cmp ecx, 254
+        jae  setzero
+        movsx rdx, ecx 
+        jmp do_shl
+
+
+        
+
+;;;;;;;;;;;;;;;;;;;;;;
+; shl
+;;;;;;;;;;;;;;;;;;;;;;
+; Adds two elements of any kind
+; Params:
+;   rsi <= Pointer to element 1
+;   rdx <= Pointer to element 2
+;   rdi <= Pointer to result
+; Modified Registers:
+;    r8, r9, 10, r11, rax, rcx
+;;;;;;;;;;;;;;;;;;;;;;
+Fr_shl:
+        push   rbp
+        push   rsi
+        push   rdi
+        push   rdx
+        mov    rbp, rsp
+
+        
+        
+        
+        
+        mov    rcx, [rdx]
+        bt     rcx, 63          ; Check if is short second operand
+        jnc     tmp_116
+
+        ; long 2
+        bt     rcx, 62          ; Check if is montgomery second operand
+        jnc     tmp_117
+
+        mov  r8, rdi
+        sub  rsp, 40
+        mov  rdi, rsp
+        push rsi
+        mov  rsi, rdx
+        push r8
+        call Fr_toNormal
+        mov  rdx, rdi
+        pop  rdi
+        pop  rsi
+
+tmp_117:
+        mov rcx, [rdx + 8]
+        cmp rcx, 254
+        jae  tmp_118
+        xor rax, rax
+        
+        cmp [rdx + 16], rax
+        jnz tmp_118
+        
+        cmp [rdx + 24], rax
+        jnz tmp_118
+        
+        cmp [rdx + 32], rax
+        jnz tmp_118
+        
+        mov rdx, rcx
+        jmp do_shl
+
+tmp_118:
+        mov rcx, [q]
+        sub rcx, [rdx+8]
+        cmp rcx, 254
+        jae  setzero
+        mov rax, [q]
+        sub rax, [rdx+8]
+        
+        mov rax, [q+ 8] 
+        sbb rax, [rdx + 16]
+        jnz setzero
+        
+        mov rax, [q+ 16] 
+        sbb rax, [rdx + 24]
+        jnz setzero
+        
+        mov rax, [q+ 24] 
+        sbb rax, [rdx + 32]
+        jnz setzero
+        
+        mov rdx, rcx
+        jmp do_shr
+
+tmp_116:
+        cmp ecx, 0
+        jl  tmp_119
+        cmp ecx, 254
+        jae  setzero
+        movsx rdx, ecx 
+        jmp do_shl
+tmp_119:
+        neg ecx
+        cmp ecx, 254
+        jae  setzero
+        movsx rdx, ecx 
+        jmp do_shr
+
+
+
+;;;;;;;;;;
+;;; doShl
+;;;;;;;;;;
+do_shl: 
+        mov    rcx, [rsi]
+        bt     rcx, 63          ; Check if is short second operand
+        jc     do_shll
+do_shls:
+
+        movsx rax, ecx
+        cmp rax, 0
+        jz  setzero;
+        jl  do_shlcl
+
+        cmp rdx, 31
+        jae do_shlcl
+
+        mov cl, dl 
+        shl rax, cl
+        mov rcx, rax
+        shr rcx, 31
+        jnz do_shlcl
+        mov [rdi], rax
+        mov rsp, rbp
+        pop   rdx
+        pop   rdi
+        pop   rsi
+        pop   rbp
+        ret
+
+do_shlcl:
+
+        mov  r8, rdi
+        sub  rsp, 40
+        mov  rdi, rsp
+        push rdx
+        push r8
+        call Fr_toLongNormal
+        mov  rsi, rdi
+        pop  rdi
+        pop  rdx
+
+        jmp do_shlln
+
+do_shll:
+        bt      rcx, 62          ; Check if is short second operand
+        jnc     do_shlln
+
+        mov  r8, rdi
+        sub  rsp, 40
+        mov  rdi, rsp
+        push rdx
+        push r8
+        call Fr_toNormal
+        mov  rsi, rdi
+        pop  rdi
+        pop  rdx
+
+do_shlln:
+        mov r11b, 0x80
+        shl r11d, 24
+        mov [rdi+4], r11d
+        add     rdi, 8
+        add     rsi, 8
+        call    rawShl
+        mov rsp, rbp
+        pop   rdx
+        pop   rdi
+        pop   rsi
+        pop   rbp
+        ret
+
+
+;;;;;;;;;;
+;;; doShr
+;;;;;;;;;;
+do_shr: 
+        mov    rcx, [rsi]
+        bt     rcx, 63          ; Check if is short second operand
+        jc     do_shrl
+do_shrs:
+        movsx rax, ecx
+        cmp rax, 0
+        jz  setzero;
+        jl  do_shrcl
+
+        cmp rdx, 31
+        jae setzero
+
+        mov cl, dl 
+        shr rax, cl
+        mov [rdi], rax
+        mov rsp, rbp
+        pop   rdx
+        pop   rdi
+        pop   rsi
+        pop   rbp
+        ret
+
+do_shrcl:
+
+        mov  r8, rdi
+        sub  rsp, 40
+        mov  rdi, rsp
+        push rdx
+        push r8
+        call Fr_toLongNormal
+        mov  rsi, rdi
+        pop  rdi
+        pop  rdx
+
+
+do_shrl:
+        bt      rcx, 62          ; Check if is short second operand
+        jnc     do_shrln
+
+        mov  r8, rdi
+        sub  rsp, 40
+        mov  rdi, rsp
+        push rdx
+        push r8
+        call Fr_toNormal
+        mov  rsi, rdi
+        pop  rdi
+        pop  rdx
+
+do_shrln:
+        mov r11b, 0x80
+        shl r11d, 24
+        mov [rdi+4], r11d
+        add     rdi, 8
+        add     rsi, 8
+        call    rawShr
+        mov rsp, rbp
+        pop   rdx
+        pop   rdi
+        pop   rsi
+        pop   rbp
+        ret
+
+setzero:
+        xor rax, rax
+        mov [rdi], rax
+        mov rsp, rbp
+        pop   rdx
+        pop   rdi
+        pop   rsi
+        pop   rbp
+        ret
+
+
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;
@@ -7569,39 +8471,39 @@ Fr_land:
 
     mov     rax, [rsi]
     bt      rax, 63
-    jc      tmp_108
+    jc      tmp_120
 
     test    eax, eax
-    jz      retZero_110
-    jmp     retOne_109
+    jz      retZero_122
+    jmp     retOne_121
 
-tmp_108:
+tmp_120:
 
     mov     rax, [rsi + 8]
     test    rax, rax
-    jnz     retOne_109
+    jnz     retOne_121
 
     mov     rax, [rsi + 16]
     test    rax, rax
-    jnz     retOne_109
+    jnz     retOne_121
 
     mov     rax, [rsi + 24]
     test    rax, rax
-    jnz     retOne_109
+    jnz     retOne_121
 
     mov     rax, [rsi + 32]
     test    rax, rax
-    jnz     retOne_109
+    jnz     retOne_121
 
 
-retZero_110:
+retZero_122:
     mov     qword r8, 0
-    jmp     done_111
+    jmp     done_123
 
-retOne_109:
+retOne_121:
     mov     qword r8, 1
 
-done_111:
+done_123:
 
 
 
@@ -7611,39 +8513,39 @@ done_111:
 
     mov     rax, [rdx]
     bt      rax, 63
-    jc      tmp_112
+    jc      tmp_124
 
     test    eax, eax
-    jz      retZero_114
-    jmp     retOne_113
+    jz      retZero_126
+    jmp     retOne_125
 
-tmp_112:
+tmp_124:
 
     mov     rax, [rdx + 8]
     test    rax, rax
-    jnz     retOne_113
+    jnz     retOne_125
 
     mov     rax, [rdx + 16]
     test    rax, rax
-    jnz     retOne_113
+    jnz     retOne_125
 
     mov     rax, [rdx + 24]
     test    rax, rax
-    jnz     retOne_113
+    jnz     retOne_125
 
     mov     rax, [rdx + 32]
     test    rax, rax
-    jnz     retOne_113
+    jnz     retOne_125
 
 
-retZero_114:
+retZero_126:
     mov     qword rcx, 0
-    jmp     done_115
+    jmp     done_127
 
-retOne_113:
+retOne_125:
     mov     qword rcx, 1
 
-done_115:
+done_127:
 
         and rcx, r8
         mov [rdi], rcx
@@ -7670,39 +8572,39 @@ Fr_lor:
 
     mov     rax, [rsi]
     bt      rax, 63
-    jc      tmp_116
+    jc      tmp_128
 
     test    eax, eax
-    jz      retZero_118
-    jmp     retOne_117
+    jz      retZero_130
+    jmp     retOne_129
 
-tmp_116:
+tmp_128:
 
     mov     rax, [rsi + 8]
     test    rax, rax
-    jnz     retOne_117
+    jnz     retOne_129
 
     mov     rax, [rsi + 16]
     test    rax, rax
-    jnz     retOne_117
+    jnz     retOne_129
 
     mov     rax, [rsi + 24]
     test    rax, rax
-    jnz     retOne_117
+    jnz     retOne_129
 
     mov     rax, [rsi + 32]
     test    rax, rax
-    jnz     retOne_117
+    jnz     retOne_129
 
 
-retZero_118:
+retZero_130:
     mov     qword r8, 0
-    jmp     done_119
+    jmp     done_131
 
-retOne_117:
+retOne_129:
     mov     qword r8, 1
 
-done_119:
+done_131:
 
 
 
@@ -7712,39 +8614,39 @@ done_119:
 
     mov     rax, [rdx]
     bt      rax, 63
-    jc      tmp_120
+    jc      tmp_132
 
     test    eax, eax
-    jz      retZero_122
-    jmp     retOne_121
+    jz      retZero_134
+    jmp     retOne_133
 
-tmp_120:
+tmp_132:
 
     mov     rax, [rdx + 8]
     test    rax, rax
-    jnz     retOne_121
+    jnz     retOne_133
 
     mov     rax, [rdx + 16]
     test    rax, rax
-    jnz     retOne_121
+    jnz     retOne_133
 
     mov     rax, [rdx + 24]
     test    rax, rax
-    jnz     retOne_121
+    jnz     retOne_133
 
     mov     rax, [rdx + 32]
     test    rax, rax
-    jnz     retOne_121
+    jnz     retOne_133
 
 
-retZero_122:
+retZero_134:
     mov     qword rcx, 0
-    jmp     done_123
+    jmp     done_135
 
-retOne_121:
+retOne_133:
     mov     qword rcx, 1
 
-done_123:
+done_135:
 
         or rcx, r8
         mov [rdi], rcx
@@ -7770,39 +8672,39 @@ Fr_lnot:
 
     mov     rax, [rsi]
     bt      rax, 63
-    jc      tmp_124
+    jc      tmp_136
 
     test    eax, eax
-    jz      retZero_126
-    jmp     retOne_125
+    jz      retZero_138
+    jmp     retOne_137
 
-tmp_124:
+tmp_136:
 
     mov     rax, [rsi + 8]
     test    rax, rax
-    jnz     retOne_125
+    jnz     retOne_137
 
     mov     rax, [rsi + 16]
     test    rax, rax
-    jnz     retOne_125
+    jnz     retOne_137
 
     mov     rax, [rsi + 24]
     test    rax, rax
-    jnz     retOne_125
+    jnz     retOne_137
 
     mov     rax, [rsi + 32]
     test    rax, rax
-    jnz     retOne_125
+    jnz     retOne_137
 
 
-retZero_126:
+retZero_138:
     mov     qword rcx, 0
-    jmp     done_127
+    jmp     done_139
 
-retOne_125:
+retOne_137:
     mov     qword rcx, 1
 
-done_127:
+done_139:
 
         test rcx, rcx
 
@@ -7833,39 +8735,39 @@ Fr_isTrue:
 
     mov     rax, [rdi]
     bt      rax, 63
-    jc      tmp_128
+    jc      tmp_140
 
     test    eax, eax
-    jz      retZero_130
-    jmp     retOne_129
+    jz      retZero_142
+    jmp     retOne_141
 
-tmp_128:
+tmp_140:
 
     mov     rax, [rdi + 8]
     test    rax, rax
-    jnz     retOne_129
+    jnz     retOne_141
 
     mov     rax, [rdi + 16]
     test    rax, rax
-    jnz     retOne_129
+    jnz     retOne_141
 
     mov     rax, [rdi + 24]
     test    rax, rax
-    jnz     retOne_129
+    jnz     retOne_141
 
     mov     rax, [rdi + 32]
     test    rax, rax
-    jnz     retOne_129
+    jnz     retOne_141
 
 
-retZero_130:
+retZero_142:
     mov     qword rax, 0
-    jmp     done_131
+    jmp     done_143
 
-retOne_129:
+retOne_141:
     mov     qword rax, 1
 
-done_131:
+done_143:
 
         ret
 

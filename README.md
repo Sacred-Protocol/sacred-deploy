@@ -5,13 +5,13 @@
 3. zkutil (`brew install rust && cargo install zkutil`) (needed only for circuit compilation and setup)
 4. libgmp-dev, nlohmann-json3-dev, nasm  
 
-#  How to deploy it
+#  How to deploy it  
 
 ## Setup .env  
-Please copy .env.example to .env by executing the following command.
+Please copy .env.example to .env by executing the following command.  
 `cp .env.example .env`
 
-### For the deploy process
+### For the deploy process  
 - `NETWORK`  
 It's required to specify network where contracts are deployed.  
 For example,   
@@ -123,7 +123,7 @@ Please download it and copy it into sacred-trees-snarks.
 
 ## What you will get as a result of the deploy process  
 - config.json  
-It has addresses of the deployed Sacred Pools and Sacred Token per network  
+It has addresses of the deployed Sacred Pools and Sacred Token per network.  
 - address.json  
 It's a map structure in which addresses of all contractsare saved, and they're pairing with ENS style names as a key.  
 
