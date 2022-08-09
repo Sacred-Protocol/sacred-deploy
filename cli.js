@@ -29,7 +29,6 @@ const fs = require('fs')
 const program = require('commander')
 const levels = 20
 const { PRIVATE_KEY, NETWORK, RPC_URL } = process.env
-//const addressTable = require('./'+NETWORK+'/address.json')
 const addressTable = require('./address.json')
 
 const provingKeys = {

@@ -17,23 +17,28 @@ function load_envs() {
 }
 
 load_envs
-mkdir -p "./cli-tool/${envs["NETWORK"]}"
+mkdir -p ./cli-tool
 
 if [ ! -f "./address.json" ]; then
     echo "Contracts were not deployed!, Please excute yarn deploy first."
 fi
 
-cp address.json "./cli-tool/${envs["NETWORK"]}"
+cp address.json ./cli-tool/
 cp cli-package.json ./cli-tool/package.json
 cp cli-setup.sh ./cli-tool/setup.sh
-mkdir -p ./cli-tool/src
-cp ./src/utils.js ./cli-tool/src
 cp -r ./abi ./cli-tool
 cp -r ./lib ./cli-tool
 
 cp cli.js ./cli-tool
 chmod +x ./cli-tool/cli.js
-cp config.js ./cli-tool
+cp config.json ./cli-tool
+
+mkdir -p ./cli-tool/sacred-contracts-eth/artifacts
+cp -r ./sacred-contracts-eth/artifacts/contracts ./cli-tool/sacred-contracts-eth/artifacts
+mkdir -p ./cli-tool/sacred-contracts-eth/lib
+cp -r ./sacred-contracts-eth/lib ./cli-tool/sacred-contracts-eth
+mkdir -p ./cli-tool/sacred-contracts-eth/build/
+cp -r ./sacred-contracts-eth/build/circuits ./cli-tool/sacred-contracts-eth/build
 
 mkdir -p ./cli-tool/sacred-anonymity-mining/artifacts
 cp -r ./sacred-anonymity-mining/artifacts/contracts ./cli-tool/sacred-anonymity-mining/artifacts
@@ -51,5 +56,7 @@ cp -r ./sacred-trees/src ./cli-tool/sacred-trees
 
 mkdir -p ./cli-tool/sacred-trees-snarks-light
 cp -r ./sacred-trees-snarks-light ./cli-tool
+
+cp ./.env.example ./cli-tool
 
 echo "Done!"

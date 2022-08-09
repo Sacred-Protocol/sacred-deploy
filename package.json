@@ -21,7 +21,6 @@
     "lint": "yarn eslint && yarn prettier:check"
   },
   "keywords": [],
-  "author": "Roman Semenov <semenov.roma@gmail.com>",
   "license": "ISC",
   "dependencies": {
     "@ethersproject/address": "^5.0.4",
