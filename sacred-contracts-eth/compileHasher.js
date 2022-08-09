@@ -2,15 +2,15 @@
 // mechanism
 const path = require('path')
 const fs = require('fs')
-const genContract = require('circomlib/src/poseidon_gencontract.js')
+const {poseidonContract} = require('circomlibjs')
 const outputPath = path.join(__dirname, 'artifacts/contracts/MerkleTreeWithHistory.sol', 'Hasher.json')
 
 function main () {
   const data = fs.readFileSync(outputPath)
   let contract = JSON.parse(data);
-  contract.bytecode = genContract.createCode(2);
-  contract.abi = genContract.generateABI(2);
-  fs.writeFileSync(outputPath, JSON.stringify(contract))
+  contract.bytecode = poseidonContract.createCode(2);
+  contract.abi = poseidonContract.generateABI(2);
+  fs.writeFileSync(outputPath, JSON.stringify(contract, null, 2))
 }
 
 main()

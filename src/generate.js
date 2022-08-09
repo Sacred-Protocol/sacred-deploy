@@ -244,7 +244,7 @@ async function main() {
           ensToAddr(config.treeUpdateVerifier.address),
         ],
         ensToAddr(config.poseidonHasher1.address),
-        utils.zeroMerkleRoot,
+        utils.getZeroMerkleRoot(),
         rates,
         MINIMUM_INTERESTS,
         INTERESTS_FEE

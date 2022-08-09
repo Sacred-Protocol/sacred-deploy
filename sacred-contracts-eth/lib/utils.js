@@ -2,16 +2,15 @@ const axios = require('axios')
 const { ethers } = require("hardhat")
 const assert = require('assert')
 const MerkleTree = require('fixed-merkle-tree')
-const buildGroth16 = require('websnark/src/groth16')
-const websnarkUtils = require('websnark/src/utils')
-const { fromWei, toWei, toBN, BN } = require('web3-utils')
+const { groth16 } = require('snarkjs')
+const { toWei} = require('web3-utils')
 const baseUtils = require("./baseUtils")
-const { BigNumber } = require('ethers')
 
 const { PRIVATE_KEY, HARDHAT_CHAINID } = process.env
-let web3, circuit, proving_key, groth16
+let web3, circuit, proving_key
 let sacredProxy, contracts = {}
 let MERKLE_TREE_HEIGHT
+let zeroMerkleRoot
 let netId, netName, config, wallet
 let erc20Abi
 let provider
@@ -37,13 +36,15 @@ async function init({ instancesInfo, erc20Contract, rpc }) {
 
   config = instancesInfo
   erc20Abi = erc20Contract
+
+  const tree = new MerkleTree(20, [], { hashFunction: baseUtils.poseidonHash2 })
+  zeroMerkleRoot = '0x' + tree.root().toString(16).padStart(32 * 2, '0')
 }
 
 async function setup({ ethSacredAbi, erc20SacredAbi, sacredProxyContract, withdrawCircuit, withdrawProvidingKey }) {
   circuit = withdrawCircuit
   proving_key = withdrawProvidingKey
   MERKLE_TREE_HEIGHT = process.env.MERKLE_TREE_HEIGHT || 20
-  groth16 = await buildGroth16()
   sacredProxy = sacredProxyContract
 
   const netkeys = Object.keys(config.pools)
@@ -83,6 +84,10 @@ function getWalllet() {
   return wallet
 }
 
+function getZeroMerkleRoot() {
+  return zeroMerkleRoot
+}
+
 /** Display ETH account balance */
 async function printETHBalance({ address, name }) {
   console.log(`${name} ETH balance is`, ethers.utils.formatEther(await provider.getBalance(address)))
@@ -92,6 +97,18 @@ async function printETHBalance({ address, name }) {
 async function printERC20Balance({ address, name, tokenAddress }) {
   const erc20 = new ethers.Contract(tokenAddress, erc20Abi, wallet)
   console.log(`${name} Token Balance is`, ethers.utils.formatEther(await erc20.balanceOf(address)))
+}
+
+async function generateGroth16Proof(input, wasmFile, zkeyFileName) {
+  const { proof: _proof, publicSignals: _publicSignals } = await groth16.fullProve(input, wasmFile, zkeyFileName);
+  const editedPublicSignals = baseUtils.unstringifyBigInts(_publicSignals);
+  const editedProof = baseUtils.unstringifyBigInts(_proof);
+  const calldata = await groth16.exportSolidityCallData(editedProof, editedPublicSignals);
+  const argv = calldata.replace(/["[\]\s]/g, "").split(',').map(x => BigInt(x).toString());
+  const a = [argv[0], argv[1]];
+  const b = [[argv[2], argv[3]], [argv[4], argv[5]]];
+  const c = [argv[6], argv[7]];
+  return {a, b, c}
 }
 
 /**
@@ -107,7 +124,6 @@ async function generateMerkleProof(sacredInstance, deposit) {
   const leaves = events
     .sort((a, b) => a.returnValues.leafIndex - b.returnValues.leafIndex) // Sort events in chronological order
     .map(e => e.returnValues.commitment)
-
   const tree = new MerkleTree(MERKLE_TREE_HEIGHT, leaves, { hashFunction: baseUtils.poseidonHash2 })
 
   // Find current commitment in the tree
@@ -140,39 +156,36 @@ async function generateMerkleProof(sacredInstance, deposit) {
 async function generateProof({ sacredInstance, deposit, recipient, relayerAddress = 0, fee = 0, refund = 0 }) {
   // Compute merkle proof of our commitment
   const { root, path_elements, path_index } = await generateMerkleProof(sacredInstance, deposit)
+  const pathElements = path_elements.map(item => baseUtils.toHex(item))
   // Prepare circuit input
   const input = {
     // Public snark inputs
-    root: root,
-    nullifierHash: deposit.nullifierHash,
-    recipient: toBN(recipient),
-    relayer: toBN(relayerAddress),
-    fee: fee,
-    refund: refund,
+    root: baseUtils.toHex(root),
+    nullifierHash: baseUtils.toHex(deposit.nullifierHash),
+    recipient: baseUtils.toHex(recipient),
+    relayer: baseUtils.toHex(relayerAddress),
+    fee: baseUtils.toHex(fee),
+    refund: baseUtils.toHex(refund),
 
     // Private snark inputs
-    nullifier: deposit.nullifier,
-    secret: deposit.secret,
-    pathElements: path_elements,
+    nullifier: baseUtils.toHex(deposit.nullifier),
+    secret: baseUtils.toHex(deposit.secret),
+    pathElements: pathElements,
     pathIndices: path_index,
   }
 
   console.log('Generating SNARK proof')
-  console.time('Proof time')
-  const proofData = await websnarkUtils.genWitnessAndProve(groth16, input, circuit, proving_key)
-  const { proof } = websnarkUtils.toSolidityInput(proofData)
-  console.timeEnd('Proof time')
-
+  const {a, b, c} = await generateGroth16Proof(input, "build/circuits/withdraw_js/withdraw.wasm", "build/circuits/withdraw_0001.zkey");
   const args = [
-    baseUtils.toHex(input.root),
-    baseUtils.toHex(input.nullifierHash),
+    input.root,
+    input.nullifierHash,
     baseUtils.toHex(input.recipient, 20),
     baseUtils.toHex(input.relayer, 20),
-    baseUtils.toHex(input.fee),
-    baseUtils.toHex(input.refund)
+    input.fee,
+    input.refund
   ]
-
-  return { proof, args }
+  console.time('Proof time')
+  return { a, b, c, args }
 }
 
 /**
@@ -432,14 +445,6 @@ function getSacredInstanceAddress(netId, currency, amount) {
   return config.pools["" + netId][currency].instanceAddress['' + amount]
 }
 
-const tree = new MerkleTree(20, [], { hashFunction: baseUtils.poseidonHash2 })
-const zeroMerkleRoot =
-  '0x' +
-  tree
-    .root()
-    .toString(16)
-    .padStart(32 * 2, '0')
-
 module.exports = {
   getSacredInstanceAddress,
   deposit,
@@ -454,6 +459,6 @@ module.exports = {
   printERC20Balance,
   loadDepositData,
   loadWithdrawalData,
-  zeroMerkleRoot,
+  getZeroMerkleRoot,
   baseUtils,
 }

@@ -1,10 +1,11 @@
 const { ethers } = require("hardhat");
-const { bigInt } = require('snarkjs')
+const {toBigIntLE, toBufferLE, toBigIntBE, toBufferBE} = require('bigint-buffer')
 const crypto = require('crypto')
-const circomlib = require('circomlib')
-const { fromWei, toWei, toBN } = require('web3-utils')
-const { BN } = require('bn.js') //Don't use BN of web3-utils, it has a bug with endianess
+const { toWei, toBN } = require('web3-utils')
+const circomlib = require('circomlibjs');
+
 let provider
+let babyJub, pedersen, poseidon
 
 function bitsToNumber(bits) {
   let result = 0
@@ -15,17 +16,60 @@ function bitsToNumber(bits) {
 }
 
 /** Generate random number of specified byte length */
-const randomBN = (nbytes = 31) => toBN(bigInt.leBuff2int(crypto.randomBytes(nbytes)).toString())
+const randomBN = (nbytes = 31) => toBN(toBigIntLE(crypto.randomBytes(nbytes)).toString())
 
 /** Compute pedersen hash */
-const pedersenHash = data => toBN(circomlib.babyJub.unpackPoint(circomlib.pedersenHash.hash(data))[0].toString())
-
-const poseidonHash = (items) => toBN(circomlib.poseidon(items).toString())
+const pedersenHash = data => toBN(babyJub.F.toString(babyJub.unpackPoint(pedersen.hash(data))[0]))
+const poseidonHash = (items) => toBN(poseidon.F.toString(poseidon(items)))
 const poseidonHash2 = (a, b) => poseidonHash([a, b])
+
+function numToBuffer(number, size, endianess) {
+  if(endianess === "le") {
+    //return toBufferLE(number, size)
+    return number.toBuffer('le', 31)
+  } else if(endianess === "be") {
+    //return toBufferBE(number, size)
+    return number.toBuffer('be', 31)
+  } else {
+    console.log("endianess has to be 'le' or 'be'")
+    return ""
+  }
+}
+
+function bufferToNum(buf, endianess) {
+  if(endianess === "le") {
+    return toBN(toBigIntLE(buf).toString())
+  } else if(endianess === "be") {
+    return toBN(toBigIntBE(buf).toString())
+  } else {
+    console.log("endianess has to be 'le' or 'be'")
+    return 0
+  }
+}
+
+function unstringifyBigInts(o) {
+  if ((typeof(o) == "string") && (/^[0-9]+$/.test(o) ))  {
+      return BigInt(o);
+  } else if ((typeof(o) == "string") && (/^0x[0-9a-fA-F]+$/.test(o) ))  {
+      return BigInt(o);
+  } else if (Array.isArray(o)) {
+      return o.map(unstringifyBigInts);
+  } else if (typeof o == "object") {
+      if (o===null) return null;
+      const res = {};
+      const keys = Object.keys(o);
+      keys.forEach( (k) => {
+          res[k] = unstringifyBigInts(o[k]);
+      });
+      return res;
+  } else {
+      return o;
+  }
+}
 
 /** BigNumber to hex string of specified length */
 function toHex(number, length = 32) {
-  const str = number instanceof Buffer ? number.toString('hex') : bigInt(number).toString(16)
+  const str = number instanceof Buffer ? number.toString('hex') : BigInt(number).toString(16)
   return '0x' + str.padStart(length * 2, '0')
 }
 
@@ -80,8 +124,8 @@ const getEvents = async (contract, options) => {
  */
 function createDeposit({ nullifier, secret }) {
   const deposit = { nullifier, secret }
-  const nullifierBuffer = deposit.nullifier.toBuffer('le', 31)
-  deposit.preimage = Buffer.concat([nullifierBuffer, deposit.secret.toBuffer('le', 31)])
+  const nullifierBuffer = numToBuffer(deposit.nullifier, 31, 'le')
+  deposit.preimage = Buffer.concat([nullifierBuffer, numToBuffer(deposit.secret, 31, 'le')])
   deposit.commitment = pedersenHash(deposit.preimage)
   deposit.commitmentHex = toHex(deposit.commitment)
   deposit.nullifierHash = pedersenHash(nullifierBuffer)
@@ -101,8 +145,8 @@ function parseNote(noteString) {
   }
 
   const buf = Buffer.from(match.groups.note, 'hex')
-  const nullifier = new BN(buf.slice(0, 31), 'le')
-  const secret = new BN(buf.slice(31, 62), 'le')
+  const nullifier = bufferToNum(buf.slice(0, 31), 'le')
+  const secret = bufferToNum(buf.slice(31, 62), 'le')
   const deposit = createDeposit({ nullifier, secret })
   const netId = Number(match.groups.netId)
 
@@ -163,6 +207,9 @@ function getNetworkName(netId) {
 }
 
 async function init(rpc) {
+  babyJub = await circomlib.buildBabyjub()
+  pedersen = await circomlib.buildPedersenHash();
+  poseidon = await circomlib.buildPoseidon();
   await getProvider(rpc)
 }
 
@@ -179,5 +226,6 @@ module.exports = {
   calculateFee,
   getEvents,
   getProvider,
-  getNetworkName
+  getNetworkName,
+  unstringifyBigInts
 }

@@ -6,7 +6,10 @@ import "./TwoStepOwnerable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 interface IVerifier {
-  function verifyProof(bytes memory _proof, uint256[6] memory _input) external returns(bool);
+  function verifyProof(uint[2] memory a,
+            uint[2][2] memory b,
+            uint[2] memory c,
+            uint[6] memory input) external returns(bool);
 }
 
 abstract contract Sacred is MerkleTreeWithHistory, ReentrancyGuard, TwoStepOwnerable {
@@ -77,11 +80,11 @@ abstract contract Sacred is MerkleTreeWithHistory, ReentrancyGuard, TwoStepOwner
       - the recipient of funds
       - optional fee that goes to the transaction sender (usually a relay)
   */
-  function withdraw(bytes calldata _proof, bytes32 _root, bytes32 _nullifierHash, address payable _recipient, address payable _relayer, uint256 _fee, uint256 _refund) external payable nonReentrant {
+  function withdraw(uint[2] memory a, uint[2][2] memory b, uint[2] memory c,  bytes32 _root, bytes32 _nullifierHash, address payable _recipient, address payable _relayer, uint256 _fee, uint256 _refund) external payable nonReentrant {
     require(_fee <= denomination, "Fee exceeds transfer value");
     require(!nullifierHashes[_nullifierHash], "The note has been already spent");
     require(isKnownRoot(_root), "Cannot find your merkle root"); // Make sure to use a recent one
-    require(verifier.verifyProof(_proof, [uint256(_root), uint256(_nullifierHash), uint256(uint160(address(_recipient))), uint256(uint160(address(_relayer))), _fee, _refund]), "Invalid withdraw proof");
+    require(verifier.verifyProof(a, b, c, [uint256(_root), uint256(_nullifierHash), uint256(uint160(address(_recipient))), uint256(uint160(address(_relayer))), _fee, _refund]), "Invalid withdraw proof");
 
     nullifierHashes[_nullifierHash] = true;
     _processWithdraw(_recipient, _relayer, _fee, _refund);
