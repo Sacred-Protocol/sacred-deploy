@@ -2,7 +2,7 @@ require("dotenv").config({ path: '../.env' });
 const { expect } = require('chai');
 const fs = require('fs')
 const utils = require('../lib/utils')
-const erc20Abi = require('../artifacts/contracts/ERC20Sacred.sol/ERC20Sacred.json')
+const erc20Abi = require('../../abi/erc20.abi.json')
 const config = require('../../config.json')
 const ethSacredAbi = require('../artifacts/contracts/ETHSacred.sol/ETHSacred.json')
 const erc20SacredAbi = require('../artifacts/contracts/ERC20Sacred.sol/ERC20Sacred.json')
@@ -20,7 +20,7 @@ describe('Test Sacred Contracts', () => {
     // get the signers
     const signers = await ethers.getSigners();
     owner = signers[0];
-    await utils.init({instancesInfo:config, erc20Contract: erc20Abi.abi, rpc: RPC_URL})
+    await utils.init({instancesInfo:config, erc20Contract: erc20Abi, rpc: RPC_URL})
   });
 
   /* describe('Test Deploy And Check Accecibility', () => {

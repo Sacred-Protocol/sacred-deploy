@@ -3,7 +3,6 @@ const { expect } = require('chai');
 const { ethers } = require("hardhat");
 const fs = require('fs')
 const { BigNumber } = require('ethers')
-const { toBN } = require('web3-utils')
 const { encrypt, decrypt, getEncryptionPublicKey } = require('eth-sig-util')
 const instancesInfo = require('../config.json')
 const rootUpdaterEvents = require('../lib/root-updater/events')
@@ -32,14 +31,12 @@ const buildGroth16 = require('websnark/src/groth16')
 const addressTable = require('../address.json')
 
 const provingKeys = {
-  sacredEthWithdrawCircuit: require('../sacred-contracts-eth/build/circuits/withdraw.json'),
-  rewardCircuit: require('../sacred-anonymity-mining/build/circuits/Reward.json'),
-  withdrawCircuit: require('../sacred-anonymity-mining/build/circuits/Withdraw.json'),
-  treeUpdateCircuit: require('../sacred-anonymity-mining/build/circuits/TreeUpdate.json'),
-  rewardProvingKey: fs.readFileSync('./sacred-anonymity-mining/build/circuits/Reward_proving_key.bin').buffer,
-  withdrawProvingKey: fs.readFileSync('./sacred-anonymity-mining/build/circuits/Withdraw_proving_key.bin').buffer,
-  treeUpdateProvingKey: fs.readFileSync('./sacred-anonymity-mining/build/circuits/TreeUpdate_proving_key.bin').buffer,
-  sacredEthWithdrawProvidingKey: fs.readFileSync('sacred-contracts-eth/build/circuits/withdraw_proving_key.bin').buffer
+  wasmPath: "./sacred-contracts-eth/build/circuits/withdraw_js/withdraw.wasm",
+  zkeyFilePath: "./sacred-contracts-eth/build/circuits/withdraw_0001.zkey",
+  rewardWasmPath: "./sacred-anonymity-mining/build/circuits/Reward_js/Reward.wasm",
+  rewardZkeyFilePath: "./sacred-anonymity-mining/build/circuits/Reward_0001.zkey",
+  withdrawWasmPath: "./sacred-anonymity-mining/build/circuits/Withdraw_js/Withdraw.wasm",
+  withdrawZkeyFilePath: "./sacred-anonymity-mining/build/circuits/Withdraw_0001.zkey",
 }
 
 const { PRIVATE_KEY, RPC_URL, MINIMUM_INTERESTS } = process.env
@@ -110,8 +107,8 @@ describe('Testing SacredAnanomityMining', () => {
       ethSacredAbi: ethSacredAbi.abi,
       erc20SacredAbi: erc20SacredAbi.abi,
       sacredProxyContract: sacredProxy,
-      withdrawCircuit: provingKeys.sacredEthWithdrawCircuit,
-      withdrawProvidingKey: provingKeys.sacredEthWithdrawProvidingKey
+      wasmPath: provingKeys.wasmPath,
+      zkeyFilePath: provingKeys.zkeyFilePath
     });
 
     let groth16 = await buildGroth16()
@@ -264,7 +261,7 @@ describe('Testing SacredAnanomityMining', () => {
       const ethBalance = await ethers.provider.getBalance(recipient);
       const receivedAaveInterests = ethBalance.add(gasUsed).sub(preETHBalance)
       console.log("Received ETH", receivedAaveInterests)
-      if (account.aaveInterestAmount.gt(toBN(MINIMUM_INTERESTS))) {
+      if (account.aaveInterestAmount.gt(BigInt(MINIMUM_INTERESTS))) {
         expect(receivedAaveInterests.gt(0)).to.equal(true)
       }
 

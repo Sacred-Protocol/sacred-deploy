@@ -3,7 +3,7 @@ const { ethers } = require("hardhat")
 const fs = require('fs')
 const baseUtils = require('../lib/baseUtils')
 const config = require('../../config.json')
-const { MERKLE_TREE_HEIGHT, ETH_AMOUNTS, OPERATOR_FEE, LENDING_POOL_ADDRESS_PROVIDER, WETH_GATEWAY, WETH_TOKEN } = process.env
+const { MERKLE_TREE_HEIGHT, ETH_AMOUNTS, OPERATOR_FEE, LENDING_POOL_ADDRESS_PROVIDER, WETH_GATEWAY } = process.env
 const { PRIVATE_KEY, RPC_URL } = process.env
 
 async function main() {
@@ -48,46 +48,44 @@ async function main() {
   );
 
   //Deploy SacredInstances(ETH)
-  const currencies = config.pools["" + chainId]["eth"].keys()
-  currencies.forEach(currency => {
-    console.log("Deploying Pools for ", currency.toUpperCase())
+  const currencies = Object.keys(config.pools["" + chainId])
+  for(const currency of currencies) {
+    console.log("Deploying Pools for", currency.toUpperCase())
     let info = config.pools["" + chainId][currency]
-    if(!info.aToken) {
-      console.log("Missing aToken address for ", currency)
+    if (!info.aToken) {
+      console.log("Missing aToken address for", currency)
       return
     }
 
-    if(!info.decimals) {
-      console.log("Missing decimals for ", currency)
+    if (!info.decimals) {
+      console.log("Missing decimals for", currency)
       return
     }
-    const amounts = info.instanceAddress.keys()
-    if(currency == "eth") {
-      amounts.forEach(amount => {
-        console.log("Deploying ETHSacred instance: ", currency, amount)
+    const amounts = Object.keys(info.instanceAddress)
+    if (currency == "eth") {
+      for (const amount of amounts) {
         const weiAmount = ethers.utils.parseEther(amount)
-        console.log("#####", weiAmount, info.aToken)
-        const sacred = await (await ETHSacred
-          .deploy(verifier.address, amount, MERKLE_TREE_HEIGHT, LENDING_POOL_ADDRESS_PROVIDER, WETH_GATEWAY, info.aToken, wallet.address, OPERATOR_FEE))
+        const sacred = await(await ETHSacred
+          .deploy(verifier.address, weiAmount, MERKLE_TREE_HEIGHT, LENDING_POOL_ADDRESS_PROVIDER, WETH_GATEWAY, info.aToken, wallet.address, OPERATOR_FEE))
           .deployed();
         info.instanceAddress[amount] = sacred.address
-      })
+        console.log("ETHSacred instance deployed:", currency, amount, sacred.address)
+      }
     } else {
-      if(!info.token) {
-        console.log("Missing token address for ", currency)
+      if (!info.token) {
+        console.log("Missing token address for", currency)
         return
       }
-      amounts.forEach(amount => {
-        console.log("Deploying ERC20Sacred instance: ", currency, amount)
+      for (const amount of amounts) {
         const weiAmount = ethers.utils.parseUnits(amount, info.decimals)
-        console.log("#####", weiAmount, info.aToken)
-        const sacred = await (await ERC20Sacred
-          .deploy(verifier.address, amount, MERKLE_TREE_HEIGHT, LENDING_POOL_ADDRESS_PROVIDER, info.aToken, wallet.address, info.token, OPERATOR_FEE))
+        const sacred = await(await ERC20Sacred
+          .deploy(verifier.address, weiAmount, MERKLE_TREE_HEIGHT, LENDING_POOL_ADDRESS_PROVIDER, info.aToken, wallet.address, info.token, OPERATOR_FEE))
           .deployed();
         info.instanceAddress[amount] = sacred.address
-      })
+        console.log("ERC20Sacred instance deployed:", currency, amount, sacred.address)
+      }
     }
-  })
+  }
 
   await fs.writeFileSync('../config.json', JSON.stringify(config, null, '  '))
   console.log("Deployed Contract's addresses are saved into config.json!")

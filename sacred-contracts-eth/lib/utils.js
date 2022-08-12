@@ -96,7 +96,9 @@ async function printETHBalance({ address, name }) {
 /** Display ERC20 account balance */
 async function printERC20Balance({ address, name, tokenAddress }) {
   const erc20 = new ethers.Contract(tokenAddress, erc20Abi, wallet)
-  console.log(`${name} Token Balance is`, ethers.utils.formatEther(await erc20.balanceOf(address)))
+  const balance = await erc20.balanceOf(address)
+  const decimals = await erc20.decimals()
+  console.log(`${name} Token Balance is`, ethers.utils.formatUnits(balance, decimals))
 }
 
 async function generateGroth16Proof(input, wasmFile, zkeyFileName) {
@@ -202,6 +204,7 @@ async function deposit({ currency, amount }) {
   const sacredInstance = contracts[currency + amount]
   if (!sacredInstance) {
     console.log("SacredInstance was not setup properly!")
+    return
   }
   const senderAccount = wallet.address
   if (currency === 'eth') {
@@ -223,26 +226,23 @@ async function deposit({ currency, amount }) {
     await printETHBalance({ address: sacredInstance.address, name: 'Sacred' })
     await printETHBalance({ address: senderAccount, name: 'Sender account' })
   } else { // a token
-    // await printERC20Balance({ address: sacredInstance.address, name: 'Sacred' })
-    // await printERC20Balance({ address: senderAccount, name: 'Sender account' })
-    // const decimals = isLocalRPC ? 18 : config.pools[`${netId}`][currency].decimals
-    // const tokenAmount = isLocalRPC ? TOKEN_AMOUNT : fromDecimals({ amount, decimals })
-    // if (isLocalRPC) {
-    //   console.log('Minting some test tokens to deposit')
-    //   await erc20.methods.mint(senderAccount, tokenAmount).send({ from: senderAccount, gas: 2e6 })
-    // }
+    const tokenAddress = config.pools[`${netId}`][currency].token
+    const erc20 = new ethers.Contract(tokenAddress, erc20Abi, wallet)
+    await printERC20Balance({ address: sacredInstance.address, name: 'Sacred', tokenAddress })
+    await printERC20Balance({ address: senderAccount, name: 'Sender account', tokenAddress })
+    const decimals = config.pools[`${netId}`][currency].decimals
+    const tokenAmount = ethers.utils.parseUnits( amount, decimals )
+    const allowance = await erc20.allowance(senderAccount, sacredInstance.address, { from: senderAccount })
+    console.log('Current allowance is', ethers.utils.formatUnits(allowance, decimals))
+    if (BigInt(allowance) < BigInt(tokenAmount)) {
+      console.log('Approving tokens for deposit')
+      await erc20.approve(sacredInstance.address, tokenAmount, { from: senderAccount })
+    }
 
-    // const allowance = await erc20.methods.allowance(senderAccount, sacredInstance.address).call({ from: senderAccount })
-    // console.log('Current allowance is', fromWei(allowance))
-    // if (BigInt(allowance).lt(BigInt(tokenAmount))) {
-    //   console.log('Approving tokens for deposit')
-    //   await erc20.methods.approve(sacredInstance.address, tokenAmount).send({ from: senderAccount, gas: 1e6 })
-    // }
-
-    // console.log('Submitting deposit transaction')
-    // await sacredInstance.methods.deposit(toHex(deposit.commitment)).send({ from: senderAccount, gas: 2e6 })
-    // await printERC20Balance({ address: sacredInstance.address, name: 'Sacred' })
-    // await printERC20Balance({ address: senderAccount, name: 'Sender account' })
+    console.log('Submitting deposit transaction')
+    await sacredInstance.deposit(baseUtils.toHex(deposit.commitment), { from: senderAccount, gasLimit: 2e6 })
+    await printERC20Balance({ address: sacredInstance.address, name: 'Sacred', tokenAddress })
+    await printERC20Balance({ address: senderAccount, name: 'Sender account', tokenAddress })
   }
 
   return {
