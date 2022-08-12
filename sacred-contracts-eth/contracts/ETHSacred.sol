@@ -51,7 +51,7 @@ contract ETHSacred is Sacred {
 
     address lendingPool = AddressesProvider(lendingPoolAddressProvider).getPool();
     uint256 operatorFee = denomination * fee / 10000;
-    require(AToken(wETHToken).approve(wETHGateway, denomination), "aToken approval failed");
+    require(IERC20(wETHToken).approve(wETHGateway, denomination), "aToken approval failed");
     WETHGateway(wETHGateway).withdrawETH(lendingPool, denomination - operatorFee - _fee, _recipient);
 
     if (operatorFee > 0) {
@@ -70,10 +70,10 @@ contract ETHSacred is Sacred {
   }
 
   function collectAaveInterests() private {
-    uint256 interests = AToken(wETHToken).balanceOf(address(this)) - collateralAmount;
+    uint256 interests = IERC20(wETHToken).balanceOf(address(this)) - collateralAmount;
     if(interests > 0 && aaveInterestsProxy != address(0)) {
       address lendingPool = AddressesProvider(lendingPoolAddressProvider).getPool();
-      require(AToken(wETHToken).approve(wETHGateway, interests), "aToken approval failed");
+      require(IERC20(wETHToken).approve(wETHGateway, interests), "aToken approval failed");
       WETHGateway(wETHGateway).withdrawETH(lendingPool, interests, aaveInterestsProxy);
       totalAaveInterests += interests;
     }

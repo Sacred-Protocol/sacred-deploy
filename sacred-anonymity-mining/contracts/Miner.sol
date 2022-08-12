@@ -14,7 +14,7 @@ interface Hasher {
 }
 
 interface AaveInterestsProxy {
-  function withdraw(uint256 amount, address receiver) external;
+  function withdraw(address asset, uint256 amount, address receiver) external;
 }
 
 interface ETHSacred {
@@ -120,6 +120,7 @@ contract Miner is ReentrancyGuard{
     uint256 apAmount;
     uint256 aaveInterestAmount;
     bytes32 extDataHash;
+    uint256 symbolIndex;
     WithdrawExtData extData;
     AccountUpdate account;
   }
@@ -184,11 +185,11 @@ contract Miner is ReentrancyGuard{
       uint256 totalInterests = 0;
       if(currencyIndex == 0) {
         for(uint256 i = 0; i < instanceCount[currencyIndex]; ++i) {
-          totalInterests += ETHSacred(instances[i]).totalAaveInterests();
+          totalInterests += ETHSacred(instances[currencyIndex][i]).totalAaveInterests();
         }
       } else {
         for(uint256 i = 0; i < instanceCount[currencyIndex]; ++i) {
-          totalInterests += ERC20Sacred(instances[i]).totalAaveInterests();
+          totalInterests += ERC20Sacred(instances[currencyIndex][i]).totalAaveInterests();
         }
       }
       totalShareSnapshots[currencyIndex][key] = [shareTrack[currencyIndex].totalShares, totalInterests];
@@ -463,12 +464,14 @@ contract Miner is ReentrancyGuard{
   }
 
   function _setRates(Rate[] memory _rates) internal {
+    
     for (uint256 i = 0; i < _rates.length; ++i) {
       require(_rates[i].value < 2**128, "Incorrect rate");
       address instance = _rates[i].instance;
       rates[instance] = _rates[i].value;
-      currencies[indstance] = _rates[i].currencyIndex;
-      instances[_rates[i].currencyIndex].push(instance);
+      currencies[instance] = _rates[i].currencyIndex;
+      instances[_rates[i].currencyIndex][instanceCount[_rates[i].currencyIndex]] = instance;
+      instanceCount[_rates[i].currencyIndex]++;
       emit RateChanged(instance, _rates[i].value);
     }
   }

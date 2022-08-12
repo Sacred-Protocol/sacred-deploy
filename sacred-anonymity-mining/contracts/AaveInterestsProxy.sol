@@ -40,15 +40,15 @@ contract AaveInterestsProxy {
   function withdraw(
     address asset,
     uint256 amount,
-    address payable receiver
+    address payable recipient
   ) external payable onlyMiner {
     if(asset == address(0)) {
       require(address(this).balance >= amount, "Inadequate amount of interests to send");
-      (bool success, ) = receiver.call{value: amount}("");
+      (bool success, ) = recipient.call{value: amount}("");
       require(success, "Transfer failed");
     } else {
-      require(IERC20(asset).balanceOf(this) >= amount, "Inadequate amount of interests to send");
-      require(IERC20(asset).transfer(_recipient, amount), "transfer failed");
+      require(IERC20(asset).balanceOf(address(this)) >= amount, "Inadequate amount of interests to send");
+      require(IERC20(asset).transfer(recipient, amount), "transfer failed");
     }
   }
 }

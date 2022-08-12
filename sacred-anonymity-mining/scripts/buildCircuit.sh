@@ -26,3 +26,4 @@ snarkjs zkey export verificationkey $1_0001.zkey ${1}_verification_key.json
 snarkjs zkey export solidityverifier $1_0001.zkey ${1}Verifier.sol
 cd ../..
 sed -i.bak "s/contract Verifier/contract ${1}Verifier/g" build/circuits/${1}Verifier.sol
+cp ./build/circuits/${1}Verifier.sol ./contracts/verifiers/

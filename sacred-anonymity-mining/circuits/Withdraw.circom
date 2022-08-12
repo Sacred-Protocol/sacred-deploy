@@ -4,6 +4,7 @@ include "../node_modules/circomlib/circuits/bitify.circom";
 include "./Utils.circom";
 include "./MerkleTree.circom";
 include "./MerkleTreeUpdater.circom";
+include "./QuinSelector.circom";
 
 template Withdraw(levels, currencyCnt, zeroLeaf) {
   // fee is included into the `amount` input
@@ -47,9 +48,9 @@ template Withdraw(levels, currencyCnt, zeroLeaf) {
   // Check apAmount invariant
   inputApAmountsSelector.index <== symbolIndex;
   var inputApAmount = inputApAmountsSelector.out;
-  apAmount == inputApAmount
+  apAmount === inputApAmount;
   outputApAmountsSelector.index <== symbolIndex;
-  inputApAmount - apAmount == outputApAmountsSelector.out
+  (inputApAmount - apAmount) === outputApAmountsSelector.out;
 
   // Check aaveInterestAmount invariant
   inputAaveInterestAmountsSelector.index <== symbolIndex;
@@ -140,9 +141,10 @@ template Withdraw(levels, currencyCnt, zeroLeaf) {
 // zeroLeaf = keccak256("sacred") % FIELD_SIZE
 
 component main {public [
-  apAmounts,
-  aaveInterestAmounts,
+  apAmount,
+  aaveInterestAmount,
   extDataHash,
+  symbolIndex,
   inputRoot,
   inputNullifierHash,
   outputRoot,

@@ -3,6 +3,7 @@ pragma solidity 0.8.9;
 
 import "./MerkleTreeWithHistory.sol";
 import "./TwoStepOwnerable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 interface IVerifier {
@@ -17,12 +18,6 @@ interface AddressesProvider {
     external
     view
     returns (address);
-}
-
-interface AToken {
-  function balanceOf(address _user) external view returns (uint256);
-  function approve(address spender, uint256 amount) external returns (bool);
-  function transfer(address receiver, uint256 amount) external returns (bool);
 }
 
 abstract contract Sacred is MerkleTreeWithHistory, ReentrancyGuard, TwoStepOwnerable {

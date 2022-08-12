@@ -17,7 +17,9 @@ contract SacredProxyLight {
 
   function withdraw(
     ISacredInstance _sacred,
-    bytes calldata _proof,
+    uint[2] memory a, 
+    uint[2][2] memory b, 
+    uint[2] memory c,
     bytes32 _root,
     bytes32 _nullifierHash,
     address payable _recipient,
@@ -25,7 +27,7 @@ contract SacredProxyLight {
     uint256 _fee,
     uint256 _refund
   ) external payable {
-    _sacred.withdraw{ value: msg.value }(_proof, _root, _nullifierHash, _recipient, _relayer, _fee, _refund);
+    _sacred.withdraw{ value: msg.value }(a, b, c, _root, _nullifierHash, _recipient, _relayer, _fee, _refund);
   }
 
   function backupNotes(bytes[] calldata _encryptedNotes) external {
