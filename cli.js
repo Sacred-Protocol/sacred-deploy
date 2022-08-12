@@ -32,14 +32,12 @@ const { PRIVATE_KEY, NETWORK, RPC_URL } = process.env
 const addressTable = require('./address.json')
 
 const provingKeys = {
-  sacredEthWithdrawCircuit: require('./sacred-contracts-eth/build/circuits/withdraw.json'),
-  rewardCircuit: require('./sacred-anonymity-mining/build/circuits/Reward.json'),
-  withdrawCircuit: require('./sacred-anonymity-mining/build/circuits/Withdraw.json'),
-  treeUpdateCircuit: require('./sacred-anonymity-mining/build/circuits/TreeUpdate.json'),
-  rewardProvingKey: fs.readFileSync('./sacred-anonymity-mining/build/circuits/Reward_proving_key.bin').buffer,
-  withdrawProvingKey: fs.readFileSync('./sacred-anonymity-mining/build/circuits/Withdraw_proving_key.bin').buffer,
-  treeUpdateProvingKey: fs.readFileSync('./sacred-anonymity-mining/build/circuits/TreeUpdate_proving_key.bin').buffer,
-  sacredEthWithdrawProvidingKey: fs.readFileSync('./sacred-contracts-eth/build/circuits/withdraw_proving_key.bin').buffer
+  wasmPath: "./sacred-contracts-eth/build/circuits/withdraw_js/withdraw.wasm",
+  zkeyFilePath: "./sacred-contracts-eth/build/circuits/withdraw_0001.zkey",
+  rewardWasmPath: "./sacred-anonymity-mining/build/circuits/Reward_js/Reward.wasm",
+  rewardZkeyFilePath: "./sacred-anonymity-mining/build/circuits/Reward_0001.zkey",
+  withdrawWasmPath: "./sacred-anonymity-mining/build/circuits/Withdraw_js/Withdraw.wasm",
+  withdrawZkeyFilePath: "./sacred-anonymity-mining/build/circuits/Withdraw_0001.zkey",
 }
 
 updateAddressTable(addressTable)
@@ -61,22 +59,22 @@ async function init(rpc) {
   sacredProxy = new ethers.Contract(ensToAddr(config.sacredProxy.address), sacredProxyAbi.abi, wallet)
   sacred = new ethers.Contract(sacredTokenAddress, sacredAbi.abi, wallet)
   miner = new ethers.Contract(ensToAddr(config.miningV2.address), minerAbi.abi, wallet)
-  let groth16 = await buildGroth16()
-  controller = new Controller({
-    minerContract: miner,
-    sacredTreesContract: sacredTrees,
-    merkleTreeHeight: levels,
-    provingKeys,
-    groth16
-  })
 
   await utils.setup({
     ethSacredAbi: ethSacredAbi.abi,
     erc20SacredAbi: erc20SacredAbi.abi,
     sacredProxyContract: sacredProxy,
-    withdrawCircuit: provingKeys.sacredEthWithdrawCircuit,
-    withdrawProvidingKey: provingKeys.sacredEthWithdrawProvidingKey
+    wasmPath: provingKeys.wasmPath,
+    zkeyFilePath: provingKeys.zkeyFilePath
   });
+
+  controller = new Controller({
+    minerContract: miner,
+    sacredTreesContract: sacredTrees,
+    merkleTreeHeight: levels,
+    provingKeys,
+    utils
+  })
 
   rootUpdaterEvents.setProvider(utils.getProvider())
   await controller.init(rpc)
@@ -221,15 +219,15 @@ async function main() {
       }
     })
   program
-    .command('rewardswap <account> <recipient>')
+    .command('rewardswap <currency> <account> <recipient>')
     .description('It swaps your AP that is included in your account to ETH.')
-    .action(async (account, recipient) => {
+    .action(async (currency, account, recipient) => {
       await init(program.rpc || RPC_URL)
       const publicKey = getEncryptionPublicKey(program.privateKey || PRIVATE_KEY)
       const decryptedAccount = Account.decrypt(program.privateKey || PRIVATE_KEY, unpackEncryptedMessage(account))
       const apAmount = decryptedAccount.apAmount
       const aaveInterestAmount = decryptedAccount.aaveInterestAmount
-      const withdrawSnark = await controller.withdraw({ account: decryptedAccount, apAmount, aaveInterestAmount, recipient, publicKey })
+      const withdrawSnark = await controller.withdraw({ currency, account: decryptedAccount, apAmount, aaveInterestAmount, recipient, publicKey })
       const balanceBefore = await sacred.balanceOf(recipient)
       console.log("Balance Before RewardSwap:", balanceBefore)
       const tx = await (await miner['withdraw(bytes,(uint256,uint256,bytes32,(uint256,address,address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](withdrawSnark.proof, withdrawSnark.args)).wait()

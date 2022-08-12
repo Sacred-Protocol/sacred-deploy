@@ -1,10 +1,10 @@
-const { toBN } = require('web3-utils')
+
 const {parseNote, randomBN, pedersenHash, poseidonHash} = require('../../sacred-contracts-eth/lib/baseUtils')
 
 class Note {
   constructor({ secret, nullifier, netId, amount, currency, depositBlock, withdrawalBlock, instance } = {}) {
-    this.secret = secret ? toBN(secret) : randomBN(31)
-    this.nullifier = nullifier ? toBN(nullifier) : randomBN(31)
+    this.secret = secret ? BigInt(secret) : randomBN(31)
+    this.nullifier = nullifier ? BigInt(nullifier) : randomBN(31)
 
     this.commitment = pedersenHash(
       Buffer.concat([this.nullifier.toBuffer('le', 31), this.secret.toBuffer('le', 31)]),
@@ -15,8 +15,8 @@ class Note {
     this.netId = netId
     this.amount = amount
     this.currency = currency
-    this.depositBlock = toBN(depositBlock)
-    this.withdrawalBlock = toBN(withdrawalBlock)
+    this.depositBlock = BigInt(depositBlock)
+    this.withdrawalBlock = BigInt(withdrawalBlock)
     this.instance = instance || Note.getInstance(currency, amount)
   }
 

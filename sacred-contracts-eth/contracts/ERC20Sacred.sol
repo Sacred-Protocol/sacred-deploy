@@ -1,40 +1,66 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./Sacred.sol";
+
+interface Pool {
+  function supply( address asset, uint256 amount, address onBehalfOf, uint16 referralCode) external;
+  function withdraw(address asset, uint256 amount, address to) external;
+}
 
 contract ERC20Sacred is Sacred {
   address public token;
-
+  address public lendingPoolAddressProvider;
+  address public aToken;
+  address public aaveInterestsProxy;
+  uint256 private collateralAmount;
+  uint256 public totalAaveInterests;
+  
   constructor(
     IVerifier _verifier,
     uint256 _denomination,
     uint32 _merkleTreeHeight,
+    address _lendingPoolAddressProvider,
+    address _aToken,
     address _owner,
     address _token,
     uint256 _fee
   ) Sacred(_verifier, _denomination, _merkleTreeHeight, _owner, _fee) {
     token = _token;
+    lendingPoolAddressProvider = _lendingPoolAddressProvider;
+    aToken = _aToken;
   }
 
   function _processDeposit() internal override {
     require(msg.value == 0, "ETH value is supposed to be 0 for ERC20 instance");
     _safeErc20TransferFrom(msg.sender, address(this), denomination);
+    address lendingPool = AddressesProvider(lendingPoolAddressProvider).getPool();
+    IERC20(token).approve(lendingPool, denomination);
+    Pool(lendingPool).supply(token, denomination, address(this), 0);
+    collateralAmount += denomination;
+    collectAaveInterests();
   }
 
   function _processWithdraw(address payable _recipient, address payable _relayer, uint256 _fee, uint256 _refund) internal override{
     require(msg.value == _refund, "Incorrect refund amount received by the contract");
 
+
+
+    address lendingPool = AddressesProvider(lendingPoolAddressProvider).getPool();
     uint256 operatorFee = denomination * fee / 10000;
-    _safeErc20Transfer(_recipient, denomination - operatorFee - _fee);
+    require(AToken(aToken).approve(lendingPool, denomination), "aToken approval failed");
+    Pool(lendingPool).withdraw(aToken, denomination - operatorFee - _fee, _recipient);
 
     if (operatorFee > 0) {
-      _safeErc20Transfer(owner, operatorFee);
+      Pool(lendingPool).withdraw(aToken, operatorFee, owner);
     }
 
     if (_fee > 0) {
-      _safeErc20Transfer(_relayer, _fee);
+      Pool(lendingPool).withdraw(aToken, _fee, _relayer);
     }
+    collateralAmount -= denomination;
+    collectAaveInterests();
 
     if (_refund > 0) {
       (bool success, ) = _recipient.call{value:_refund}("");
@@ -66,6 +92,16 @@ contract ERC20Sacred is Sacred {
       require(data.length == 32, "data length should be either 0 or 32 bytes");
       success = abi.decode(data, (bool));
       require(success, "not enough tokens. Token returns false.");
+    }
+  }
+
+  function collectAaveInterests() private {
+    uint256 interests = AToken(aToken).balanceOf(address(this)) - collateralAmount;
+    if(interests > 0 && aaveInterestsProxy != address(0)) {
+      address lendingPool = AddressesProvider(lendingPoolAddressProvider).getPool();
+      require(AToken(aToken).approve(lendingPool, interests), "aToken approval failed");
+      Pool(lendingPool).withdraw(aToken, interests, aaveInterestsProxy);
+      totalAaveInterests += interests;
     }
   }
 }

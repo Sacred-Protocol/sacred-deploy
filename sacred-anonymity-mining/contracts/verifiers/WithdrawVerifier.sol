@@ -1,1 +1,0 @@
-../../build/circuits/WithdrawVerifier.sol

@@ -15,14 +15,26 @@
     "4": {
       "eth": {
         "instanceAddress": {
-          "1": "0xc900a4815444cEE1C24f5dd46bb11035b7fA31E5",
-          "10": "0xf5Df40A7f02d9De073Eb2172d8b932B42672b93e",
-          "100": "0xCd9B2c1434aB7ea5F2aa1eE4ee95F45f2c11b6Eb",
-          "0.1": "0xbE488DCFA33F5FC1cF8De48f607E6e9B2D03a779"
+          "1": "0xb672f6D9cf13Cc322247042F4c7Fe91AB7D14f67",
+          "10": "0xc90Df373e646E8a8c689BaD0ADb1FC3cC7936e30",
+          "100": "0x55CA186dcE8990f7623Da2B8910978F74772EC1e",
+          "0.1": "0xF8FEEb982F9F7699a5247B133A3FfcBa1Dc7a853"
         },
         "symbol": "ETH",
         "decimals": 18,
-        "blockExplorer": "https://rinkeby.etherscan.com/"
+        "aToken": "0x608D11E704baFb68CfEB154bF7Fd641120e33aD4"
+      },
+      "dai": {
+        "instanceAddress": {
+          "1": "0xb672f6D9cf13Cc322247042F4c7Fe91AB7D14f67",
+          "10": "0xc90Df373e646E8a8c689BaD0ADb1FC3cC7936e30",
+          "100": "0x55CA186dcE8990f7623Da2B8910978F74772EC1e",
+          "0.1": "0xF8FEEb982F9F7699a5247B133A3FfcBa1Dc7a853"
+        },
+        "symbol": "ETH",
+        "decimals": 18,
+        "token": "0x4aAded56bd7c69861E8654719195fCA9C670EB45",
+        "aToken": "0x49866611AA7Dc30130Ac6A0DF29217D16FD87bc0"
       }
     },
     "42": {
@@ -34,8 +46,7 @@
           "0.1": "0x2202eBeAA83db32d2B6d6AEd49248bF446277a8d"
         },
         "symbol": "ETH",
-        "decimals": 18,
-        "blockExplorer": "https://kovan.etherscan.com/"
+        "decimals": 18
       }
     },
     "80001": {
@@ -47,14 +58,13 @@
           "0.1": "0x91CCB886d9E0A916c76eE17cD311A276d1a4C40f"
         },
         "symbol": "MATIC",
-        "decimals": 18,
-        "blockExplorer": "https://polygonscan.com/"
+        "decimals": 18
       }
     }
   },
   "sacredToken": {
     "1": "",
-    "4": "0x55fa578E88a3d82dFF73BF535ce5D8727A0588E1",
+    "4": "0x4B53db927Aca655b044F6F3F789531919F6B8EEe",
     "42": ""
   }
 }

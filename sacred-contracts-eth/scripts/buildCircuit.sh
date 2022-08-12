@@ -10,7 +10,7 @@ else
     # Start new "powers of tau" ceremony
     snarkjs powersoftau new bn128 17 pot12_0000.ptau -v
     # Contribute to the ceremony
-    snarkjs powersoftau contribute pot12_0000.ptau pot12_0001.ptau --name="First contribution" -v
+    snarkjs powersoftau contribute pot12_0000.ptau pot12_0001.ptau --name="First contribution" -v -e="SacredFinance"
     # Phase 2 (Circuit Specific)
     snarkjs powersoftau prepare phase2 pot12_0001.ptau pot12_final.ptau -v
 fi
@@ -18,7 +18,7 @@ fi
 # Generate a zkey file that will contain the proving and verification keys together with all phase 2 contributions
 snarkjs groth16 setup withdraw.r1cs pot12_final.ptau withdraw_0000.zkey
 # Contribute to phase 2 of the ceremony
-snarkjs zkey contribute withdraw_0000.zkey withdraw_0001.zkey --name="1st Contributor Name" -v
+snarkjs zkey contribute withdraw_0000.zkey withdraw_0001.zkey --name="1st Contributor Name" -v -e="SacredFinance"
 # Export the verification key
 snarkjs zkey export verificationkey withdraw_0001.zkey withdraw_verification_key.json
 

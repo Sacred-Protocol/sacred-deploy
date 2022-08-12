@@ -9,12 +9,6 @@ import "./interfaces/ISacredInstance.sol";
 import "./interfaces/ISacredTrees.sol";
 import "./interfaces/IMiner.sol";
 
-interface AToken {
-  function balanceOf(address _user) external view returns (uint256);
-  function approve(address spender, uint256 amount) external returns (bool);
-  function transfer(address receiver, uint256 amount) external returns (bool);
-}
-
 contract AaveInterestsProxy {
   address public miner;
   address private immutable owner;
@@ -44,11 +38,17 @@ contract AaveInterestsProxy {
   }
 
   function withdraw(
-    uint256 _amount,
-    address payable _receiver
+    address asset,
+    uint256 amount,
+    address payable receiver
   ) external payable onlyMiner {
-    require(address(this).balance >= _amount, "Inadequate amount of interests to send");
-    (bool success, ) = _receiver.call{value: _amount}("");
-    require(success, "Transfer failed");
+    if(asset == address(0)) {
+      require(address(this).balance >= amount, "Inadequate amount of interests to send");
+      (bool success, ) = receiver.call{value: amount}("");
+      require(success, "Transfer failed");
+    } else {
+      require(IERC20(asset).balanceOf(this) >= amount, "Inadequate amount of interests to send");
+      require(IERC20(asset).transfer(_recipient, amount), "transfer failed");
+    }
   }
 }

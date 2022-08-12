@@ -10,11 +10,10 @@ const erc20Abi = require('./artifacts/contracts/ERC20Sacred.sol/ERC20Sacred.json
 const config = require('../config.json')
 const ethSacredAbi = require('./artifacts/contracts/ETHSacred.sol/ETHSacred.json')
 const erc20SacredAbi = require('./artifacts/contracts/ERC20Sacred.sol/ERC20Sacred.json')
-const withdrawCircuit = require('./build/circuits/withdraw.json')
-const withdrawProvidingKey = fs.readFileSync('./build/circuits/withdraw_proving_key.bin').buffer
 
 const { PRIVATE_KEY, RPC_URL } = process.env
-
+const wasmPath = "build/circuits/withdraw_js/withdraw.wasm"
+const zkeyFilePath = "build/circuits/withdraw_0001.zkey"
 async function main() {
   program
     .option('-r, --rpc <URL>', 'The RPC, CLI should interact with', '')
@@ -28,8 +27,8 @@ async function main() {
       await utils.setup({
         ethSacredAbi: ethSacredAbi.abi, 
         erc20SacredAbi: erc20SacredAbi.abi, 
-        withdrawCircuit, 
-        withdrawProvidingKey
+        wasmPath, 
+        zkeyFilePath
       });
       await utils.deposit({currency, amount});
     })
@@ -43,8 +42,8 @@ async function main() {
         await utils.setup({
           ethSacredAbi: ethSacredAbi.abi, 
           erc20SacredAbi: erc20SacredAbi.abi, 
-          withdrawCircuit, 
-          withdrawProvidingKey
+          wasmPath, 
+          zkeyFilePath
         });
         await utils.withdraw({deposit, currency, amount, recipient, relayerURL: program.relayer, refund });
       } else {
@@ -60,8 +59,8 @@ async function main() {
       await utils.setup({
         ethSacredAbi: ethSacredAbi.abi, 
         erc20SacredAbi: erc20SacredAbi.abi, 
-        withdrawCircuit, 
-        withdrawProvidingKey
+        wasmPath, 
+        zkeyFilePath
       });
       const { noteString, } = await utils.deposit({currency, amount});
       const { netId, deposit } = utils.baseUtils.parseNote(noteString)
@@ -91,8 +90,8 @@ async function main() {
       await utils.setup({
         ethSacredAbi: ethSacredAbi.abi, 
         erc20SacredAbi: erc20SacredAbi.abi, 
-        withdrawCircuit, 
-        withdrawProvidingKey
+        wasmPath, 
+        zkeyFilePath
       });
       const depositInfo = await utils.loadDepositData({ currency, amount, deposit })
       const depositDate = new Date(depositInfo.timestamp * 1000)

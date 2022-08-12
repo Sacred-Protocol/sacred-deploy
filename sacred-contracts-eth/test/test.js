@@ -6,13 +6,13 @@ const erc20Abi = require('../artifacts/contracts/ERC20Sacred.sol/ERC20Sacred.jso
 const config = require('../../config.json')
 const ethSacredAbi = require('../artifacts/contracts/ETHSacred.sol/ETHSacred.json')
 const erc20SacredAbi = require('../artifacts/contracts/ERC20Sacred.sol/ERC20Sacred.json')
-const withdrawCircuit = require('../build/circuits/withdraw.json');
 const { ethers } = require("hardhat");
-const withdrawProvidingKey = fs.readFileSync('./build/circuits/withdraw_proving_key.bin').buffer
 
 const { RPC_URL, MERKLE_TREE_HEIGHT, LENDING_POOL_ADDRESS_PROVIDER, WETH_GATEWAY, WETH_TOKEN, OPERATOR_FEE } = process.env
 let owner;
 let deployedSacred;
+const wasmPath = "build/circuits/withdraw_js/withdraw.wasm"
+const zkeyFilePath = "build/circuits/withdraw_0001.zkey"
 
 describe('Test Sacred Contracts', () => {
   // Deploy and setup the contracts
@@ -23,7 +23,7 @@ describe('Test Sacred Contracts', () => {
     await utils.init({instancesInfo:config, erc20Contract: erc20Abi.abi, rpc: RPC_URL})
   });
 
-  describe('Test Deploy And Check Accecibility', () => {
+  /* describe('Test Deploy And Check Accecibility', () => {
     it('Deploy Contracts', async () => {
       //Deploy Verifier Contract
       const Verifier = await ethers.getContractFactory('Verifier');
@@ -71,6 +71,7 @@ describe('Test Sacred Contracts', () => {
       ).to.be.revertedWith('Not authorized');
     });
   });
+  */
 
   describe('Test Deposit, Withdraw', () => {
     // we'll always need the user ETH balance to be greater than 3 ETH, because we use 2 ETH as the base amount for token conversions e.t.c
@@ -83,8 +84,8 @@ describe('Test Sacred Contracts', () => {
       await utils.setup({
         ethSacredAbi: ethSacredAbi.abi, 
         erc20SacredAbi: erc20SacredAbi.abi, 
-        withdrawCircuit, 
-        withdrawProvidingKey
+        wasmPath, 
+        zkeyFilePath
       });
       const { noteString, } = await utils.deposit({currency, amount});
       const { netId, deposit } = utils.baseUtils.parseNote(noteString)

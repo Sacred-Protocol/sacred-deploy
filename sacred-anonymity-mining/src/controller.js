@@ -1,8 +1,8 @@
-const { toBN } = require('web3-utils')
 const {
   getExtRewardArgsHash,
   getExtWithdrawArgsHash,
   packEncryptedMessage,
+  generateGroth16Proof,
   RewardArgs,
 } = require('./utils')
 
@@ -78,12 +78,12 @@ async function getProvider(rpc) {
 };
 
 class Controller {
-  constructor({ minerContract, sacredTreesContract, merkleTreeHeight, provingKeys, groth16 }) {
+  constructor({ minerContract, sacredTreesContract, merkleTreeHeight, provingKeys, utils }) {
     this.merkleTreeHeight = Number(merkleTreeHeight)
     this.provingKeys = provingKeys
     this.minerContract = minerContract
     this.sacredTreesContract = sacredTreesContract
-    this.groth16 = groth16
+    this.utils = utils
   }
 
   async init(rpc) {
@@ -99,7 +99,7 @@ class Controller {
     // })
     return events
       .sort((a, b) => a.returnValues.index - b.returnValues.index)
-      .map((e) => toBN(e.returnValues.commitment))
+      .map((e) => BigInt(e.returnValues.commitment))
   }
 
   _fetchDepositDataEvents() {
@@ -188,15 +188,14 @@ class Controller {
       rate = await this.minerContract.rates(note.instance)
       rate = rate.toString()
     }
-    const apAmount = toBN(rate).mul(toBN(note.withdrawalBlock).sub(toBN(note.depositBlock)))
-    const newApAmount = account.apAmount.add(apAmount.sub(toBN(fee)))
-
+    const apAmount = BigInt(rate).mul(BigInt(note.withdrawalBlock).sub(BigInt(note.depositBlock)))
     const tx = await (await this.minerContract.getAaveInterestsAmount(toHex(note.rewardNullifier), toHex(apAmount.toString()))).wait();
     const amountEvent = tx.events.find(item => item.event === 'AaveInterestsAmount')
-    let aaveInterestAmount = toBN(amountEvent.args.amount.toString());
-    let newAaveInterestAmount = account.aaveInterestAmount.add(aaveInterestAmount);
-
-    const newAccount = new Account({ apAmount: newApAmount, aaveInterestAmount: newAaveInterestAmount })
+    let aaveInterestAmount = BigInt(amountEvent.args.amount.toString());
+    let amounts = Object.assign({}, account.amounts)
+    amounts[note.currency].aaveInterestAmount = amounts[note.currency].aaveInterestAmount.add(aaveInterestAmount);
+    amounts[note.currency].apAmount = amounts[note.currency].apAmount.add(apAmount.sub(BigInt(fee)));
+    const newAccount = new Account({ amounts })
 
     depositDataEvents = depositDataEvents || (await this._fetchDepositDataEvents())
     const depositLeaves = depositDataEvents.map((x) => {
@@ -240,102 +239,99 @@ class Controller {
       pathIndices: new Array(this.merkleTreeHeight).fill(0),
     }
 
-    const accountIndex = accountTree.indexOf(account.commitment, (a, b) => toBN(a).eq(toBN(b)))
+    const accountIndex = accountTree.indexOf(account.commitment, (a, b) => BigInt(a) === BigInt(b))
     const accountPath = accountIndex !== -1 ? accountTree.path(accountIndex) : zeroAccount
     const accountTreeUpdate = this._updateTree(accountTree, newAccount.commitment)
 
     const encryptedAccount = packEncryptedMessage(newAccount.encrypt(publicKey))
     const extDataHash = getExtRewardArgsHash({ relayer, encryptedAccount })
     const input = {
-      rate,
-      fee,
-      instance: note.instance,
-      rewardNullifier: note.rewardNullifier,
-      extDataHash,
-
-      noteSecret: note.secret,
-      noteNullifier: note.nullifier,
-      noteNullifierHash: note.nullifierHash,
-      apAmount: toBN(rate).mul(toBN(note.withdrawalBlock).sub(toBN(note.depositBlock))),
-      aaveInterestAmount: aaveInterestAmount,
-      inputApAmount: account.apAmount,
-      inputAaveInterestAmount: account.aaveInterestAmount,
-      inputSecret: account.secret,
-      inputNullifier: account.nullifier,
-      inputRoot: accountTreeUpdate.oldRoot,
+      /*Public*/
+      rate: toHex(rate),
+      fee: toHex(fee),
+      instance: toHex(note.instance),
+      apAmount: toHex(apAmount),
+      aaveInterestAmount: toHex(aaveInterestAmount),
+      rewardNullifier: toHex(note.rewardNullifier),
+      extDataHash: toHex(extDataHash),
+      symbolIndex: toHex(account.getSymbolIndex(note.currency)),
+      inputRoot: toHex(accountTreeUpdate.oldRoot),
+      inputNullifierHash: toHex(account.nullifierHash),
+      outputRoot: toHex(accountTreeUpdate.newRoot),
+      outputPathIndices: bitsToNumber(accountTreeUpdate.pathIndices),
+      outputCommitment: toHex(newAccount.commitment),
+      depositRoot: toHex(depositTree.root()),
+      withdrawalRoot: toHex(withdrawalTree.root()),
+      /*Private*/
+      noteSecret: toHex(note.secret),
+      noteNullifier: toHex(note.nullifier),
+      noteNullifierHash: toHex(note.nullifierHash),
+      inputApAmounts: account.getAmountsList(),
+      inputAaveInterestAmounts: account.getAaveInterestsList(),
+      inputSecret: toHex(account.secret),
+      inputNullifier: toHex(account.nullifier),
       inputPathElements: accountPath.pathElements,
       inputPathIndices: bitsToNumber(accountPath.pathIndices),
-      inputNullifierHash: account.nullifierHash,
-
-      outputApAmount: newAccount.apAmount,
-      outputAaveInterestAmount: newAccount.aaveInterestAmount,
-      outputSecret: newAccount.secret,
-      outputNullifier: newAccount.nullifier,
-      outputRoot: accountTreeUpdate.newRoot,
-      outputPathIndices: accountTreeUpdate.pathIndices,
+      outputApAmounts: newAccount.getAmountsList(),
+      outputAaveInterestAmount: newAccount.getAaveInterestsList(),
+      outputSecret: toHex(newAccount.secret),
+      outputNullifier: toHex(newAccount.nullifier),
       outputPathElements: accountTreeUpdate.pathElements,
-      outputCommitment: newAccount.commitment,
-
-      depositBlock: note.depositBlock,
-      depositRoot: depositTree.root(),
+      depositBlock: toHex(note.depositBlock),
       depositPathIndices: bitsToNumber(depositPath.pathIndices),
       depositPathElements: depositPath.pathElements,
-
-      withdrawalBlock: note.withdrawalBlock,
-      withdrawalRoot: withdrawalTree.root(),
+      withdrawalBlock: toHex(note.withdrawalBlock),
       withdrawalPathIndices: bitsToNumber(withdrawalPath.pathIndices),
       withdrawalPathElements: withdrawalPath.pathElements,
     }
 
-    const proofData = await websnarkUtils.genWitnessAndProve(
-      this.groth16,
-      input,
-      this.provingKeys.rewardCircuit,
-      this.provingKeys.rewardProvingKey,
-    )
-
-    const { proof } = websnarkUtils.toSolidityInput(proofData)
+    console.log('Generating SNARK proof')
+    const {a, b, c} = await generateGroth16Proof(input, this.provingKeys.rewardWasmFile, this.provingKeys.rewardZkeyFileName);
+    console.log('Submitting reward transaction')
 
     const args = {
-      rate: toHex(input.rate),
-      fee: toHex(input.fee),
+      rate: input.rate,
+      fee: input.fee,
       instance: toHex(input.instance, 20),
-      apAmount: toHex(input.apAmount.toString()),
-      aaveInterestAmount: toHex(input.aaveInterestAmount.toString()),
-      rewardNullifier: toHex(input.rewardNullifier),
-      extDataHash: toHex(input.extDataHash),
-      depositRoot: toHex(input.depositRoot),
-      withdrawalRoot: toHex(input.withdrawalRoot),
+      apAmount: input.apAmount,
+      aaveInterestAmount: input.aaveInterestAmount,
+      rewardNullifier: input.rewardNullifier,
+      extDataHash: input.extDataHash,
+      symbolIndex: input.symbolIndex,
+      depositRoot: input.depositRoot,
+      withdrawalRoot: input.withdrawalRoot,
       extData: {
         relayer: toHex(relayer, 20),
         encryptedAccount,
       },
       account: {
-        inputRoot: toHex(input.inputRoot),
-        inputNullifierHash: toHex(input.inputNullifierHash),
-        outputRoot: toHex(input.outputRoot),
-        outputPathIndices: toHex(input.outputPathIndices),
-        outputCommitment: toHex(input.outputCommitment),
+        inputRoot: input.inputRoot,
+        inputNullifierHash: input.inputNullifierHash,
+        outputRoot: input.outputRoot,
+        outputPathIndices: input.outputPathIndices,
+        outputCommitment: input.outputCommitment,
       },
     }
 
     return {
-      proof,
+      a,b,c,
       args,
       account: newAccount,
     }
   }
 
-  async withdraw({ account, apAmount, aaveInterestAmount, recipient, publicKey, fee = 0, relayer = 0, accountCommitments = null }) {
-    const newApAmount = account.apAmount.sub(toBN(apAmount)).sub(toBN(fee))
-    const newAaveInterestAmount = account.aaveInterestAmount.sub(toBN(aaveInterestAmount))
-    const newAccount = new Account({ apAmount: newApAmount, aaveInterestAmount: newAaveInterestAmount })
+  async withdraw({ currency, account, apAmount, aaveInterestAmount, recipient, publicKey, fee = 0, relayer = 0, accountCommitments = null }) {
+    const instance = utils.getSacredInstanceAddress(utils.getNetId(), currency, amount)
+    let amounts = Object.assign({}, account.amounts)
+    amounts[currency].aaveInterestAmount = amounts[currency].aaveInterestAmount.sub(aaveInterestAmount);
+    amounts[currency].apAmount = amounts[currency].apAmount.sub(apAmount.sub(BigInt(fee)));
+    const newAccount = new Account({ amounts })
 
     accountCommitments = accountCommitments || (await this._fetchAccountCommitments())
     const accountTree = new MerkleTree(this.merkleTreeHeight, accountCommitments, {
       hashFunction: poseidonHash2,
     })
-    const accountIndex = accountTree.indexOf(account.commitment, (a, b) => toBN(a).eq(toBN(b)))
+    const accountIndex = accountTree.indexOf(account.commitment, (a, b) => BigInt(a).eq(BigInt(b)))
     if (accountIndex === -1) {
       throw new Error('The accounts tree does not contain such account commitment')
     }
@@ -346,41 +342,39 @@ class Controller {
     const extDataHash = getExtWithdrawArgsHash({ fee, recipient, relayer, encryptedAccount })
 
     const input = {
-      apAmount: toBN(apAmount).add(toBN(fee)),
-      aaveInterestAmount: toBN(aaveInterestAmount),
-      extDataHash,
-
-      inputApAmount: account.apAmount,
-      inputAaveInterestAmount: account.aaveInterestAmount,
-      inputSecret: account.secret,
-      inputNullifier: account.nullifier,
-      inputNullifierHash: account.nullifierHash,
-      inputRoot: accountTreeUpdate.oldRoot,
+      // public
+      apAmount: tohex(BigInt(apAmount).add(BigInt(fee))),
+      aaveInterestAmount: toHex(aaveInterestAmount),
+      extDataHash: toHex(extDataHash),
+      symbolIndex: toHex(account.getSymbolIndex(currency)),
+      inputRoot: toHex(accountTreeUpdate.oldRoot),
+      outputRoot: toHex(accountTreeUpdate.newRoot),
+      inputNullifierHash: toHex(account.nullifierHash),
+      outputPathIndices: bitsToNumber(accountTreeUpdate.pathIndices),
+      outputCommitment: toHex(newAccount.commitment),
+      // private
+      inputApAmounts: account.getAmountsList(),
+      inputAaveInterestAmounts: account.getAaveInterestsList(),
+      inputSecret: toHex(account.secret),
+      inputNullifier: toHex(account.nullifier),
       inputPathIndices: bitsToNumber(accountPath.pathIndices),
       inputPathElements: accountPath.pathElements,
-
-      outputApAmount: newAccount.apAmount,
-      outputAaveInterestAmount: newAccount.aaveInterestAmount,
-      outputSecret: newAccount.secret,
-      outputNullifier: newAccount.nullifier,
-      outputRoot: accountTreeUpdate.newRoot,
-      outputPathIndices: accountTreeUpdate.pathIndices,
+      outputApAmounts: newAccount.getAmountsList(),
+      outputAaveInterestAmount: newAccount.getAaveInterestsList(),
+      outputSecret: toHex(newAccount.secret),
+      outputNullifier: toHex(newAccount.nullifier),
       outputPathElements: accountTreeUpdate.pathElements,
-      outputCommitment: newAccount.commitment,
     }
 
-    const proofData = await websnarkUtils.genWitnessAndProve(
-      this.groth16,
-      input,
-      this.provingKeys.withdrawCircuit,
-      this.provingKeys.withdrawProvingKey,
-    )
-    const { proof } = websnarkUtils.toSolidityInput(proofData)
+    console.log('Generating SNARK proof')
+    const {a, b, c} = await generateGroth16Proof(input, this.provingKeys.withdrawWasmFile, this.provingKeys.withdrawZkeyFileName);
+    console.log('Submitting reward withdrawal transaction')
 
     const args = {
-      apAmount: toHex(input.apAmount),
-      aaveInterestAmount: toHex(input.aaveInterestAmount),
-      extDataHash: toHex(input.extDataHash),
+      instance: toHex(instance),
+      apAmount: input.apAmount,
+      aaveInterestAmount: input.aaveInterestAmount,
+      extDataHash: input.extDataHash,
       extData: {
         fee: toHex(fee),
         recipient: toHex(recipient, 20),
@@ -388,16 +382,16 @@ class Controller {
         encryptedAccount,
       },
       account: {
-        inputRoot: toHex(input.inputRoot),
-        inputNullifierHash: toHex(input.inputNullifierHash),
-        outputRoot: toHex(input.outputRoot),
-        outputPathIndices: toHex(input.outputPathIndices),
-        outputCommitment: toHex(input.outputCommitment),
+        inputRoot: input.inputRoot,
+        inputNullifierHash: input.inputNullifierHash,
+        outputRoot: input.outputRoot,
+        outputPathIndices: input.outputPathIndices,
+        outputCommitment: input.outputCommitment,
       },
     }
 
     return {
-      proof,
+      a, b, c,
       args,
       account: newAccount,
     }

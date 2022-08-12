@@ -7,7 +7,7 @@ const { toWei} = require('web3-utils')
 const baseUtils = require("./baseUtils")
 
 const { PRIVATE_KEY, HARDHAT_CHAINID } = process.env
-let web3, circuit, proving_key
+let web3, wasmFile, zkeyFileName
 let sacredProxy, contracts = {}
 let MERKLE_TREE_HEIGHT
 let zeroMerkleRoot
@@ -41,9 +41,9 @@ async function init({ instancesInfo, erc20Contract, rpc }) {
   zeroMerkleRoot = '0x' + tree.root().toString(16).padStart(32 * 2, '0')
 }
 
-async function setup({ ethSacredAbi, erc20SacredAbi, sacredProxyContract, withdrawCircuit, withdrawProvidingKey }) {
-  circuit = withdrawCircuit
-  proving_key = withdrawProvidingKey
+async function setup({ ethSacredAbi, erc20SacredAbi, sacredProxyContract, wasmPath, zkeyFilePath }) {
+  wasmFile = wasmPath
+  zkeyFileName = zkeyFilePath
   MERKLE_TREE_HEIGHT = process.env.MERKLE_TREE_HEIGHT || 20
   sacredProxy = sacredProxyContract
 
@@ -175,7 +175,7 @@ async function generateProof({ sacredInstance, deposit, recipient, relayerAddres
   }
 
   console.log('Generating SNARK proof')
-  const {a, b, c} = await generateGroth16Proof(input, "build/circuits/withdraw_js/withdraw.wasm", "build/circuits/withdraw_0001.zkey");
+  const {a, b, c} = await generateGroth16Proof(input, wasmFile, zkeyFileName);
   const args = [
     input.root,
     input.nullifierHash,
@@ -234,7 +234,7 @@ async function deposit({ currency, amount }) {
 
     // const allowance = await erc20.methods.allowance(senderAccount, sacredInstance.address).call({ from: senderAccount })
     // console.log('Current allowance is', fromWei(allowance))
-    // if (toBN(allowance).lt(toBN(tokenAmount))) {
+    // if (BigInt(allowance).lt(BigInt(tokenAmount))) {
     //   console.log('Approving tokens for deposit')
     //   await erc20.methods.approve(sacredInstance.address, tokenAmount).send({ from: senderAccount, gas: 1e6 })
     // }
@@ -279,14 +279,14 @@ async function withdraw({ deposit, currency, amount, recipient, relayerURL, refu
 
     const decimals = isLocalRPC ? 18 : config.pools[`${netId}`][currency].decimals
     const fee = baseUtils.calculateFee({ gasPrices, currency, amount, refund, ethPrices, relayerServiceFee, decimals })
-    if (fee.gt(fromDecimals({ amount, decimals }))) {
+    if (fee.gt(ethers.utils.parseUnits( amount, decimals ))) {
       throw new Error('Too high refund')
     }
-    const { proof, args } = await generateProof({ sacredInstance, deposit, recipient, relayerAddress, fee, refund })
+    const { a, b, c, args } = await generateProof({ sacredInstance, deposit, recipient, relayerAddress, fee, refund })
 
     console.log('Sending withdraw transaction through relay')
     try {
-      const relay = await axios.post(relayerURL + '/relay', { contract: sacred._address, proof, args })
+      const relay = await axios.post(relayerURL + '/relay', { contract: sacred._address, a, b, c, args })
       if (netId === 1 || netId === 42) {
         console.log(`Transaction submitted through the relay. View transaction on etherscan https://${getCurrentNetworkName()}etherscan.io/tx/${relay.data.txHash}`)
       } else {
@@ -303,16 +303,16 @@ async function withdraw({ deposit, currency, amount, recipient, relayerURL, refu
       }
     }
   } else {
-    const { proof, args } = await generateProof({ sacredInstance, deposit, recipient, refund })
+    const { a, b, c, args } = await generateProof({ sacredInstance, deposit, recipient, refund })
 
     console.log('Submitting withdraw transaction')
     let tx
     const senderAccount = wallet.address
     if (sacredProxy) {
       const instance = getSacredInstanceAddress(netId, currency, amount)
-      tx = await (await sacredProxy.withdraw(instance, proof, ...args, { from: senderAccount, value: refund.toString(), gasLimit: 20000000 })).wait()
+      tx = await (await sacredProxy.withdraw(instance, a, b, c, ...args, { from: senderAccount, value: refund.toString(), gasLimit: 20000000 })).wait()
     } else {
-      tx = await (await sacredInstance.withdraw(proof, ...args, { from: senderAccount, value: refund.toString(), gasLimit: 20000000 })).wait()
+      tx = await (await sacredInstance.withdraw(a, b, c, ...args, { from: senderAccount, value: refund.toString(), gasLimit: 20000000 })).wait()
     }
 
     blockNumber = tx.blockNumber

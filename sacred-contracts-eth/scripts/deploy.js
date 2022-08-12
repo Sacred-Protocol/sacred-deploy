@@ -38,25 +38,56 @@ async function main() {
     }
   );
 
-  //Deploy SacredInstances(ETH)
-  const ethAmounts = ETH_AMOUNTS.split(",");
-  let addresses = []
-  for (var i = 0; i < ethAmounts.length; i++) {
-    let amount = ethAmounts[i];
-    console.log("Deploying ETHSacred instance: ", ethers.utils.formatEther(amount))
-    const sacred = await (await ETHSacred
-      .deploy(verifier.address, amount, MERKLE_TREE_HEIGHT, LENDING_POOL_ADDRESS_PROVIDER, WETH_GATEWAY, WETH_TOKEN, wallet.address, OPERATOR_FEE))
-      .deployed();
-    addresses[i] = sacred.address
-  }
+  const ERC20Sacred = await ethers.getContractFactory(
+    "ERC20Sacred",
+    {
+      libraries: {
+        Hasher: hasher.address
+      }
+    }
+  );
 
-  for (var i = 0; i < ethAmounts.length; i++) {
-    let amount = ethAmounts[i];
-    let currencyAmount = ethers.utils.formatEther(amount)
-    let amountKey = "" + parseFloat(currencyAmount)
-    config.pools["" + chainId]["eth"].instanceAddress[amountKey] = addresses[i]
-    console.log('' + currencyAmount + ' - ETHSacred\'s address ', addresses[i])
-  }
+  //Deploy SacredInstances(ETH)
+  const currencies = config.pools["" + chainId]["eth"].keys()
+  currencies.forEach(currency => {
+    console.log("Deploying Pools for ", currency.toUpperCase())
+    let info = config.pools["" + chainId][currency]
+    if(!info.aToken) {
+      console.log("Missing aToken address for ", currency)
+      return
+    }
+
+    if(!info.decimals) {
+      console.log("Missing decimals for ", currency)
+      return
+    }
+    const amounts = info.instanceAddress.keys()
+    if(currency == "eth") {
+      amounts.forEach(amount => {
+        console.log("Deploying ETHSacred instance: ", currency, amount)
+        const weiAmount = ethers.utils.parseEther(amount)
+        console.log("#####", weiAmount, info.aToken)
+        const sacred = await (await ETHSacred
+          .deploy(verifier.address, amount, MERKLE_TREE_HEIGHT, LENDING_POOL_ADDRESS_PROVIDER, WETH_GATEWAY, info.aToken, wallet.address, OPERATOR_FEE))
+          .deployed();
+        info.instanceAddress[amount] = sacred.address
+      })
+    } else {
+      if(!info.token) {
+        console.log("Missing token address for ", currency)
+        return
+      }
+      amounts.forEach(amount => {
+        console.log("Deploying ERC20Sacred instance: ", currency, amount)
+        const weiAmount = ethers.utils.parseUnits(amount, info.decimals)
+        console.log("#####", weiAmount, info.aToken)
+        const sacred = await (await ERC20Sacred
+          .deploy(verifier.address, amount, MERKLE_TREE_HEIGHT, LENDING_POOL_ADDRESS_PROVIDER, info.aToken, wallet.address, info.token, OPERATOR_FEE))
+          .deployed();
+        info.instanceAddress[amount] = sacred.address
+      })
+    }
+  })
 
   await fs.writeFileSync('../config.json', JSON.stringify(config, null, '  '))
   console.log("Deployed Contract's addresses are saved into config.json!")

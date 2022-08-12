@@ -1,11 +1,15 @@
+pragma circom 2.0.5;
+
 include "../node_modules/circomlib/circuits/poseidon.circom";
 include "../node_modules/circomlib/circuits/bitify.circom";
 include "../node_modules/circomlib/circuits/comparators.circom";
 include "./Utils.circom";
 include "./MerkleTree.circom";
 include "./MerkleTreeUpdater.circom";
+include "./QuinSelector.circom";
 
-template Reward(levels, zeroLeaf) {
+template Reward(levels, currencyCnt,  zeroLeaf) {
+  //public signals
   signal input rate;
   signal input fee;
   signal input instance;
@@ -13,67 +17,101 @@ template Reward(levels, zeroLeaf) {
   signal input aaveInterestAmount;
   signal input rewardNullifier;
   signal input extDataHash;
+  signal input symbolIndex;
+  signal input inputRoot;
+  signal input inputNullifierHash;
+  signal input outputRoot;
+  signal input outputPathIndices;
+  signal input outputCommitment;
+  signal input depositRoot;
+  signal input withdrawalRoot;
 
-  signal private input noteSecret;
-  signal private input noteNullifier;
-  signal private input noteNullifierHash;
+  //private signals
+  signal input noteSecret;
+  signal input noteNullifier;
+  signal input noteNullifierHash;
 
-  signal private input inputApAmount;
-  signal private input inputAaveInterestAmount;
-  signal private input inputSecret;
-  signal private input inputNullifier;
-  signal         input inputRoot;
-  signal private input inputPathElements[levels];
-  signal private input inputPathIndices;
-  signal         input inputNullifierHash;
+  signal input inputApAmounts[currencyCnt];
+  signal input inputAaveInterestAmounts[currencyCnt];
+  signal input inputSecret;
+  signal input inputNullifier;
+  signal input inputPathElements[levels];
+  signal input inputPathIndices;
+  signal input outputApAmounts[currencyCnt];
+  signal input outputAaveInterestAmounts[currencyCnt];
+  signal input outputSecret;
+  signal input outputNullifier;
+  signal input outputPathElements[levels];
 
-  signal private input outputApAmount;
-  signal private input outputAaveInterestAmount;
-  signal private input outputSecret;
-  signal private input outputNullifier;
-  signal         input outputRoot;
-  signal         input outputPathIndices;
-  signal private input outputPathElements[levels];
-  signal         input outputCommitment;
+  signal input depositBlock;
+  
+  signal input depositPathIndices;
+  signal input depositPathElements[levels];
 
-  signal private input depositBlock;
-  signal         input depositRoot;
-  signal private input depositPathIndices;
-  signal private input depositPathElements[levels];
+  signal input withdrawalBlock;
+  
+  signal input withdrawalPathIndices;
+  signal input withdrawalPathElements[levels];
 
-  signal private input withdrawalBlock;
-  signal         input withdrawalRoot;
-  signal private input withdrawalPathIndices;
-  signal private input withdrawalPathElements[levels];
+  //Initialize ArraySelectors
+  component inputApAmountsSelector = QuinSelector(currencyCnt);
+  component inputAaveInterestAmountsSelector = QuinSelector(currencyCnt);
+  component outputApAmountsSelector = QuinSelector(currencyCnt);
+  component outputAaveInterestAmountsSelector = QuinSelector(currencyCnt);
+  for (var i = 0; i < currencyCnt; i++) {
+    inputApAmountsSelector.in[i] <== inputApAmounts[i];
+    inputAaveInterestAmountsSelector.in[i] <== inputAaveInterestAmounts[i];
+    outputApAmountsSelector.in[i] <== outputApAmounts[i];
+    outputAaveInterestAmountsSelector.in[i] <== outputAaveInterestAmounts[i];
+  }
+  // Check apAmount invariant
+  inputApAmountsSelector.index <== symbolIndex;
+  var inputApAmount = inputApAmountsSelector.out;
+  outputApAmountsSelector.index <== symbolIndex;
+  inputApAmount + rate * (withdrawalBlock - depositBlock) === outputApAmountsSelector.out + fee;
+  apAmount === rate * (withdrawalBlock - depositBlock);
 
-  // Check amount invariant
-  inputApAmount + rate * (withdrawalBlock - depositBlock) === outputApAmount + fee;
-  apAmount === rate * (withdrawalBlock - depositBlock)
-  aaveInterestAmount === (outputAaveInterestAmount - inputAaveInterestAmount);
-
+  // Check aaveInterestAmount invariant
+  inputAaveInterestAmountsSelector.index <== symbolIndex;
+  outputAaveInterestAmountsSelector.index <== symbolIndex;
+  aaveInterestAmount === (outputAaveInterestAmountsSelector.out - inputAaveInterestAmountsSelector.out);
+  
   // === check input and output accounts and block range ===
   // Check that amounts fit into 248 bits to prevent overflow
   // Fee range is checked by the smart contract
   // Technically block range check could be skipped because it can't be large enough
   // negative number that `outputAmount` fits into 248 bits
-  component inputAmountCheck = Num2Bits(248);
-  component outputAmountCheck = Num2Bits(248);
-  component inputAaveInterestAmountCheck = Num2Bits(248);
-  component outputAaveInterestAmountCheck = Num2Bits(248);
+  component inputAmountChecks[currencyCnt];
+  component outputAmountChecks[currencyCnt];
+  component inputAaveInterestAmountChecks[currencyCnt];
+  component outputAaveInterestAmountChecks[currencyCnt];
+
+  for (var i = 0; i < currencyCnt; i++) {
+   inputAmountChecks[i] = Num2Bits(248);
+   outputAmountChecks[i] = Num2Bits(248);
+   inputAaveInterestAmountChecks[i] = Num2Bits(248);
+   outputAaveInterestAmountChecks[i] = Num2Bits(248);
+  }
+  
+  for (var i = 0; i < currencyCnt; i++) {
+    inputAmountChecks[i].in <== inputApAmounts[i];
+    outputAmountChecks[i].in <== outputApAmounts[i];
+    inputAaveInterestAmountChecks[i].in <== inputAaveInterestAmounts[i];
+    outputAaveInterestAmountChecks[i].in <== outputAaveInterestAmounts[i];
+  }
+ 
   component blockRangeCheck = Num2Bits(32);
-  inputAmountCheck.in <== inputApAmount;
-  outputAmountCheck.in <== outputApAmount;
-  inputAaveInterestAmountCheck.in <== inputAaveInterestAmount;
-  outputAaveInterestAmountCheck.in <== outputAaveInterestAmount;
   blockRangeCheck.in <== withdrawalBlock - depositBlock;
 
   // Compute input commitment
-  component inputHasher = Poseidon(4);
-  inputHasher.inputs[0] <== inputApAmount;
-  inputHasher.inputs[1] <== inputAaveInterestAmount;
-  inputHasher.inputs[2] <== inputSecret;
-  inputHasher.inputs[3] <== inputNullifier;
-
+  component inputHasher = Poseidon(currencyCnt*2+2);
+  for (var i = 0; i < currencyCnt; i++) {
+    inputHasher.inputs[i*2] <== inputApAmounts[i];
+    inputHasher.inputs[i*2+1] <== inputAaveInterestAmounts[i];
+  }
+  inputHasher.inputs[currencyCnt*2] <== inputSecret;
+  inputHasher.inputs[currencyCnt*2+1] <== inputNullifier;
+  
   // Verify that input commitment exists in the tree
   component inputTree = MerkleTree(levels);
   inputTree.leaf <== inputHasher.out;
@@ -94,11 +132,13 @@ template Reward(levels, zeroLeaf) {
   inputNullifierHasher.out === inputNullifierHash;
 
   // Compute and verify output commitment
-  component outputHasher = Poseidon(4);
-  outputHasher.inputs[0] <== outputApAmount;
-  outputHasher.inputs[1] <== outputAaveInterestAmount;
-  outputHasher.inputs[2] <== outputSecret;
-  outputHasher.inputs[3] <== outputNullifier;
+  component outputHasher = Poseidon(currencyCnt*2+2);
+  for (var i = 0; i < currencyCnt; i++) {
+    outputHasher.inputs[i*2] <== outputApAmounts[i];
+    outputHasher.inputs[i*2+1] <== outputAaveInterestAmounts[i];
+  }
+  outputHasher.inputs[currencyCnt*2] <== outputSecret;
+  outputHasher.inputs[currencyCnt*2+1] <== outputNullifier;
   outputHasher.out === outputCommitment;
 
   // Update accounts tree with output account commitment
@@ -160,4 +200,21 @@ template Reward(levels, zeroLeaf) {
 }
 
 // zeroLeaf = keccak256("sacred") % FIELD_SIZE
-component main = Reward(20, 21663839004416932945382355908790599225266501822907911457504978515578255421292);
+
+component main {public [
+  rate,
+  fee,
+  instance,
+  apAmount,
+  aaveInterestAmount,
+  rewardNullifier,
+  extDataHash,
+  symbolIndex,
+  inputRoot,
+  inputNullifierHash,
+  outputRoot,
+  outputPathIndices,
+  outputCommitment,
+  depositRoot,
+  withdrawalRoot
+]} = Reward(20, 5, 21663839004416932945382355908790599225266501822907911457504978515578255421292);

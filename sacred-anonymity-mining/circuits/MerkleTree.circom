@@ -1,3 +1,4 @@
+pragma circom 2.0.5;
 include "../node_modules/circomlib/circuits/poseidon.circom";
 include "../node_modules/circomlib/circuits/bitify.circom";
 
@@ -60,12 +61,12 @@ template MerkleTree(levels) {
     component indexBits = Num2Bits(levels);
     indexBits.in <== pathIndices;
 
-    component tree = RawMerkleTree(levels)
+    component tree = RawMerkleTree(levels);
     tree.leaf <== leaf;
     for (var i = 0; i < levels; i++) {
         tree.pathIndices[i] <== indexBits.out[i];
         tree.pathElements[i] <== pathElements[i];
     }
 
-    root <== tree.root
+    root <== tree.root;
 }

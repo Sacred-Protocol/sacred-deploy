@@ -2,7 +2,7 @@
 // mechanism
 const path = require('path')
 const fs = require('fs')
-const genContract = require('circomlib/src/poseidon_gencontract.js')
+const {poseidonContract} = require('circomlibjs')
 
 // where Truffle will expect to find the results of the external compiler
 // command
@@ -16,8 +16,8 @@ if (!fs.existsSync(outputPath)) {
 function main() {
   const contract = {
     contractName: 'Hasher',
-    abi: genContract.generateABI(1),
-    bytecode: genContract.createCode(1),
+    abi: poseidonContract.generateABI(1),
+    bytecode: poseidonContract.createCode(1),
   }
 
   fs.writeFileSync(outputPath1, JSON.stringify(contract, null, 2))

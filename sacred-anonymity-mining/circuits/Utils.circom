@@ -1,3 +1,4 @@
+pragma circom 2.0.5;
 include "../node_modules/circomlib/circuits/bitify.circom";
 include "../node_modules/circomlib/circuits/pedersen.circom";
 

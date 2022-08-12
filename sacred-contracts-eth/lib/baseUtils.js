@@ -1,8 +1,9 @@
 const { ethers } = require("hardhat");
 const {toBigIntLE, toBufferLE, toBigIntBE, toBufferBE} = require('bigint-buffer')
 const crypto = require('crypto')
-const { toWei, toBN } = require('web3-utils')
+const { toWei } = require('web3-utils')
 const circomlib = require('circomlibjs');
+const { BigNumber } = require("ethers");
 
 let provider
 let babyJub, pedersen, poseidon
@@ -16,20 +17,18 @@ function bitsToNumber(bits) {
 }
 
 /** Generate random number of specified byte length */
-const randomBN = (nbytes = 31) => toBN(toBigIntLE(crypto.randomBytes(nbytes)).toString())
+const randomBN = (nbytes = 31) => BigInt(toBigIntLE(crypto.randomBytes(nbytes)).toString())
 
 /** Compute pedersen hash */
-const pedersenHash = data => toBN(babyJub.F.toString(babyJub.unpackPoint(pedersen.hash(data))[0]))
-const poseidonHash = (items) => toBN(poseidon.F.toString(poseidon(items)))
+const pedersenHash = data => BigInt(babyJub.F.toString(babyJub.unpackPoint(pedersen.hash(data))[0]))
+const poseidonHash = (items) => BigInt(poseidon.F.toString(poseidon(items)))
 const poseidonHash2 = (a, b) => poseidonHash([a, b])
 
 function numToBuffer(number, size, endianess) {
   if(endianess === "le") {
-    //return toBufferLE(number, size)
-    return number.toBuffer('le', 31)
+    return toBufferLE(number, size)
   } else if(endianess === "be") {
-    //return toBufferBE(number, size)
-    return number.toBuffer('be', 31)
+    return toBufferBE(number, size)
   } else {
     console.log("endianess has to be 'le' or 'be'")
     return ""
@@ -38,9 +37,9 @@ function numToBuffer(number, size, endianess) {
 
 function bufferToNum(buf, endianess) {
   if(endianess === "le") {
-    return toBN(toBigIntLE(buf).toString())
+    return toBigIntLE(buf)
   } else if(endianess === "be") {
-    return toBN(toBigIntBE(buf).toString())
+    return toBigIntBE(buf)
   } else {
     console.log("endianess has to be 'le' or 'be'")
     return 0
@@ -158,9 +157,9 @@ function calculateFee({ gasPrices, currency, amount, refund, ethPrices, relayerS
     0 :
     relayerServiceFee.toString().split('.')[1].length
   const roundDecimal = 10 ** decimalsPoint
-  const total = toBN(fromDecimals({ amount, decimals }))
-  const feePercent = total.mul(toBN(relayerServiceFee * roundDecimal)).div(toBN(roundDecimal * 100))
-  const expense = toBN(toWei(gasPrices.fast.toString(), 'gwei')).mul(toBN(0xF4240))
+  const total = ethers.utils.parseUnits( amount, decimals )
+  const feePercent = total.mul(BigNumber(relayerServiceFee * roundDecimal)).div(BigNumber(roundDecimal * 100))
+  const expense = ethers.utils.parseUnits(gasPrices.fast.toString(), 'gwei').mul(BigNumber(0xF4240))
   let desiredFee
   switch (currency) {
     case 'eth': {
@@ -168,9 +167,9 @@ function calculateFee({ gasPrices, currency, amount, refund, ethPrices, relayerS
       break
     }
     default: {
-      desiredFee = expense.add(toBN(refund))
-        .mul(toBN(10 ** decimals))
-        .div(toBN(ethPrices[currency]))
+      desiredFee = expense.add(BigNumber(refund))
+        .mul(BigNumber(10 ** decimals))
+        .div(BigNumber(ethPrices[currency]))
       desiredFee = desiredFee.add(feePercent)
       break
     }
@@ -227,5 +226,7 @@ module.exports = {
   getEvents,
   getProvider,
   getNetworkName,
-  unstringifyBigInts
+  unstringifyBigInts,
+  numToBuffer,
+  bufferToNum
 }

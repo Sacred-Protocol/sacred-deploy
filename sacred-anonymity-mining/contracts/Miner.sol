@@ -21,6 +21,10 @@ interface ETHSacred {
   function totalAaveInterests() external pure returns(uint256);
 }
 
+interface ERC20Sacred {
+  function totalAaveInterests() external pure returns(uint256);
+}
+
 struct ReferenceContracts {
   address rewardSwap;
   address governance;
@@ -32,6 +36,7 @@ struct ReferenceContracts {
 contract Miner is ReentrancyGuard{
   using SafeMath for uint256;
 
+  uint256 constant currencyCnt = 5; 
   IVerifier public rewardVerifier;
   IVerifier public withdrawVerifier;
   IVerifier public treeUpdateVerifier;
@@ -39,19 +44,20 @@ contract Miner is ReentrancyGuard{
   address public immutable governance;
   address public immutable sacredProxy;
   ISacredTrees public sacredTrees;
-  ShareTrack public shareTrack;
+  ShareTrack[currencyCnt] public shareTrack;
 
   mapping(bytes32 => bool) public accountNullifiers;
   mapping(bytes32 => bool) public rewardNullifiers;
   uint256 public minimumInterests;
   uint256 public aaveInterestFee = 50;// 0.5%, 50 / 10000, value: 0, 1 (0.01%),~ 1000 (10%)
-  uint256 private instanceCount;
+  uint256[currencyCnt] private instanceCount;
   Hasher private hasher;
   address public aaveInterestsProxy;
   mapping(address => uint256) public rates;
-  mapping(uint256 => address) public instances;
-  mapping(address => uint256) public activeDeposits;
-  mapping(bytes32 => uint256[2]) public totalShareSnapshots;
+  mapping(address => uint256) public currencies;
+  mapping(uint256 => address)[currencyCnt] public instances;
+  mapping(address => uint256)[currencyCnt] public activeDeposits;
+  mapping(bytes32 => uint256[2])[currencyCnt] public totalShareSnapshots;
 
   uint256 public accountCount;
   uint256 public constant ACCOUNT_ROOT_HISTORY_SIZE = 100;
@@ -95,6 +101,7 @@ contract Miner is ReentrancyGuard{
     uint256 aaveInterestAmount;
     bytes32 rewardNullifier;
     bytes32 extDataHash;
+    uint256 symbolIndex;
     bytes32 depositRoot;
     bytes32 withdrawalRoot;
     RewardExtData extData;
@@ -109,6 +116,7 @@ contract Miner is ReentrancyGuard{
   }
 
   struct WithdrawArgs {
+    address instance;
     uint256 apAmount;
     uint256 aaveInterestAmount;
     bytes32 extDataHash;
@@ -118,6 +126,7 @@ contract Miner is ReentrancyGuard{
 
   struct Rate {
     address instance;
+    uint256 currencyIndex;
     uint256 value;
   }
 
@@ -159,60 +168,84 @@ contract Miner is ReentrancyGuard{
       IVerifier(_verifiers[1]),
       IVerifier(_verifiers[2])
     ]);
-    shareTrack.lastUpdated = block.number;
-  }
-
-  function updateShares(address instance, bool byDeposit, bytes32 nullifier) external onlySacredProxy {
-    _updateShares();
-    if(byDeposit) {
-      activeDeposits[instance]++;
-    } else {
-      activeDeposits[instance]--;
-      bytes32 key = hasher.poseidon([nullifier]);
-      uint256 totalInterests = 0;
-      for(uint256 i = 0; i < instanceCount; ++i) {
-        totalInterests +=  ETHSacred(instances[i]).totalAaveInterests();
-      }
-      totalShareSnapshots[key] = [shareTrack.totalShares, totalInterests];
+    for(uint256 i = 0; i < currencyCnt; ++i) {
+      shareTrack[i].lastUpdated = block.number;
     }
   }
 
-  function getAaveInterestsAmount(bytes32 rewardNullifier, uint256 apAmount) public returns (uint256) {
+  function updateShares(address instance, bool byDeposit, bytes32 nullifier) external onlySacredProxy {
+    uint256 currencyIndex = currencies[instance];
+    _updateShares(currencyIndex);
+    if(byDeposit) {
+      activeDeposits[currencyIndex][instance]++;
+    } else {
+      activeDeposits[currencyIndex][instance]--;
+      bytes32 key = hasher.poseidon([nullifier]);
+      uint256 totalInterests = 0;
+      if(currencyIndex == 0) {
+        for(uint256 i = 0; i < instanceCount[currencyIndex]; ++i) {
+          totalInterests += ETHSacred(instances[i]).totalAaveInterests();
+        }
+      } else {
+        for(uint256 i = 0; i < instanceCount[currencyIndex]; ++i) {
+          totalInterests += ERC20Sacred(instances[i]).totalAaveInterests();
+        }
+      }
+      totalShareSnapshots[currencyIndex][key] = [shareTrack[currencyIndex].totalShares, totalInterests];
+    }
+  }
+
+  function getAaveInterestsAmount(uint256 currencyIndex, bytes32 rewardNullifier, uint256 apAmount) public returns (uint256) {
     uint256 interests = 0;
-    if(totalShareSnapshots[rewardNullifier][0] > 0) {
-      interests = totalShareSnapshots[rewardNullifier][1].mul(apAmount).div(totalShareSnapshots[rewardNullifier][0]);
+    if(totalShareSnapshots[currencyIndex][rewardNullifier][0] > 0) {
+      interests = totalShareSnapshots[currencyIndex][rewardNullifier][1].mul(apAmount).div(totalShareSnapshots[currencyIndex][rewardNullifier][0]);
     }
     emit AaveInterestsAmount(interests);
     return interests;
   }
 
-  function reward(bytes memory _proof, RewardArgs memory _args) public {
-    reward(_proof, _args, new bytes(0), TreeUpdateArgs(0, 0, 0, 0));
+  function reward(
+    uint[2] memory a, 
+    uint[2][2] memory b, 
+    uint[2] memory c,  
+    RewardArgs memory _args) public {
+    uint[2][2] memory emptyB;
+    uint[2] memory emptyAC;
+    reward(a, b, c, _args, emptyAC, emptyB, emptyAC, TreeUpdateArgs(0, 0, 0, 0));
   }
 
   function batchReward(bytes[] calldata _rewardArgs) external {
     for (uint256 i = 0; i < _rewardArgs.length; ++i) {
-      (bytes memory proof, RewardArgs memory args) = abi.decode(_rewardArgs[i], (bytes, RewardArgs));
-      reward(proof, args);
+      (uint[2] memory a, 
+        uint[2][2] memory b, 
+        uint[2] memory c, 
+        RewardArgs memory args) = abi.decode(_rewardArgs[i], (uint[2], uint[2][2], uint[2], RewardArgs));
+      reward(a, b, c, args);
     }
   }
 
   function reward (
-    bytes memory _proof,
+    uint[2] memory a, 
+    uint[2][2] memory b, 
+    uint[2] memory c,  
     RewardArgs memory _args,
-    bytes memory _treeUpdateProof,
+    uint[2] memory ta, 
+    uint[2][2] memory tb, 
+    uint[2] memory tc,
     TreeUpdateArgs memory _treeUpdateArgs
   ) public {
-    validateAccountUpdate(_args.account, _treeUpdateProof, _treeUpdateArgs);
+    validateAccountUpdate(_args.account, ta, tb, tc, _treeUpdateArgs);
     sacredTrees.validateRoots(_args.depositRoot, _args.withdrawalRoot);
     require(_args.extDataHash == keccak248(abi.encode(_args.extData)), "Incorrect external data hash");
     require(_args.fee < 2**248, "Fee value out of range");
     require(_args.rate == rates[_args.instance] && _args.rate > 0, "Invalid reward rate");
     require(!rewardNullifiers[_args.rewardNullifier], "Reward has been already spent");
-    require(_args.aaveInterestAmount == getAaveInterestsAmount(_args.rewardNullifier, _args.apAmount), "Incorrect value for aave interest amount");
+    require(_args.aaveInterestAmount == getAaveInterestsAmount(_args.symbolIndex, _args.rewardNullifier, _args.apAmount), "Incorrect value for aave interest amount");
     require(
       rewardVerifier.verifyProof(
-        _proof,
+        a,
+        b,
+        c,
         [
           uint256(_args.rate),
           uint256(_args.fee),
@@ -221,6 +254,7 @@ contract Miner is ReentrancyGuard{
           uint256(_args.aaveInterestAmount),
           uint256(_args.rewardNullifier),
           uint256(_args.extDataHash),
+          uint256(_args.symbolIndex),
           uint256(_args.account.inputRoot),
           uint256(_args.account.inputNullifierHash),
           uint256(_args.account.outputRoot),
@@ -240,7 +274,7 @@ contract Miner is ReentrancyGuard{
       rewardSwap.swap(_args.extData.relayer, _args.fee);
     }
 
-    delete totalShareSnapshots[_args.rewardNullifier];
+    delete totalShareSnapshots[_args.symbolIndex][_args.rewardNullifier];
 
     emit NewAccount(
       _args.account.outputCommitment,
@@ -250,27 +284,40 @@ contract Miner is ReentrancyGuard{
     );
   }
 
-  function withdraw(bytes memory _proof, WithdrawArgs memory _args) public {
-    withdraw(_proof, _args, new bytes(0), TreeUpdateArgs(0, 0, 0, 0));
+  function withdraw(
+    uint[2] memory a, 
+    uint[2][2] memory b, 
+    uint[2] memory c, 
+    WithdrawArgs memory _args) public {
+    uint[2][2] memory emptyB;
+    uint[2] memory emptyAC;
+    withdraw(a, b, c, _args, emptyAC, emptyB, emptyAC, TreeUpdateArgs(0, 0, 0, 0));
   }
 
   function withdraw(
-    bytes memory _proof,
+    uint[2] memory a, 
+    uint[2][2] memory b, 
+    uint[2] memory c,
     WithdrawArgs memory _args,
-    bytes memory _treeUpdateProof,
+    uint[2] memory ta, 
+    uint[2][2] memory tb, 
+    uint[2] memory tc,
     TreeUpdateArgs memory _treeUpdateArgs
   ) public nonReentrant {
-    validateAccountUpdate(_args.account, _treeUpdateProof, _treeUpdateArgs);
+    validateAccountUpdate(_args.account, ta, tb, tc, _treeUpdateArgs);
     require(_args.extDataHash == keccak248(abi.encode(_args.extData)), "Incorrect external data hash");
     require(_args.apAmount < 2**248, "Amount value out of range");
     require(_args.aaveInterestAmount < 2**248, "AaveInterestAmount value out of range");
     require(
       withdrawVerifier.verifyProof(
-        _proof,
+        a,
+        b,
+        c,
         [
           uint256(_args.apAmount),
           uint256(_args.aaveInterestAmount),
           uint256(_args.extDataHash),
+          uint256(_args.symbolIndex),
           uint256(_args.account.inputRoot),
           uint256(_args.account.inputNullifierHash),
           uint256(_args.account.outputRoot),
@@ -294,10 +341,18 @@ contract Miner is ReentrancyGuard{
     }
     
     uint256 fee  = _args.aaveInterestAmount * aaveInterestFee / 10000;
-    if(_args.aaveInterestAmount - fee > minimumInterests) {
-      AaveInterestsProxy(aaveInterestsProxy).withdraw(_args.aaveInterestAmount - fee, _args.extData.recipient);
+
+    if(_args.symbolIndex == 0) { // eth
+      if(_args.aaveInterestAmount - fee > minimumInterests) {
+        AaveInterestsProxy(aaveInterestsProxy).withdraw(address(0), _args.aaveInterestAmount - fee, _args.extData.recipient);
+        if(fee > minimumInterests) {
+          AaveInterestsProxy(aaveInterestsProxy).withdraw(address(0), fee, governance);
+        }
+      }
+    } else {
+      AaveInterestsProxy(aaveInterestsProxy).withdraw(address(0), _args.aaveInterestAmount - fee, _args.extData.recipient);
       if(fee > minimumInterests) {
-        AaveInterestsProxy(aaveInterestsProxy).withdraw(fee, governance);
+        AaveInterestsProxy(aaveInterestsProxy).withdraw(address(0), fee, governance);
       }
     }
 
@@ -364,17 +419,21 @@ contract Miner is ReentrancyGuard{
   }
 
   function validateTreeUpdate(
-    bytes memory _proof,
+    uint[2] memory a, 
+    uint[2][2] memory b, 
+    uint[2] memory c,
     TreeUpdateArgs memory _args,
     bytes32 _commitment
   ) internal view {
-    require(_proof.length > 0, "Outdated account merkle root");
+    require(a[0] != 0 && a[1] != 0, "Outdated account merkle root");
     require(_args.oldRoot == getLastAccountRoot(), "Outdated tree update merkle root");
     require(_args.leaf == _commitment, "Incorrect commitment inserted");
     require(_args.pathIndices == accountCount, "Incorrect account insert index");
     require(
       treeUpdateVerifier.verifyProof(
-        _proof,
+        a,
+        b,
+        c,
         [uint256(_args.oldRoot), uint256(_args.newRoot), uint256(_args.leaf), uint256(_args.pathIndices)]
       ),
       "Invalid tree update proof"
@@ -383,7 +442,9 @@ contract Miner is ReentrancyGuard{
 
   function validateAccountUpdate(
     AccountUpdate memory _account,
-    bytes memory _treeUpdateProof,
+    uint[2] memory a, 
+    uint[2][2] memory b, 
+    uint[2] memory c,
     TreeUpdateArgs memory _treeUpdateArgs
   ) internal view {
     require(!accountNullifiers[_account.inputNullifierHash], "Outdated account state");
@@ -391,7 +452,7 @@ contract Miner is ReentrancyGuard{
       // _account.outputPathIndices (= last tree leaf index) is always equal to root index in the history mapping
       // because we always generate a new root for each new leaf
       require(isKnownAccountRoot(_account.inputRoot, _account.outputPathIndices), "Invalid account root");
-      validateTreeUpdate(_treeUpdateProof, _treeUpdateArgs, _account.outputCommitment);
+      validateTreeUpdate(a, b, c, _treeUpdateArgs, _account.outputCommitment);
     } else {
       require(_account.outputPathIndices == accountCount, "Incorrect account insert index");
     }
@@ -402,12 +463,12 @@ contract Miner is ReentrancyGuard{
   }
 
   function _setRates(Rate[] memory _rates) internal {
-    instanceCount = _rates.length;
     for (uint256 i = 0; i < _rates.length; ++i) {
       require(_rates[i].value < 2**128, "Incorrect rate");
       address instance = _rates[i].instance;
       rates[instance] = _rates[i].value;
-      instances[i] = instance;
+      currencies[indstance] = _rates[i].currencyIndex;
+      instances[_rates[i].currencyIndex].push(instance);
       emit RateChanged(instance, _rates[i].value);
     }
   }
@@ -422,12 +483,12 @@ contract Miner is ReentrancyGuard{
     emit VerifiersUpdated(address(_verifiers[0]), address(_verifiers[1]), address(_verifiers[2]));
   }
 
-  function _updateShares() private {
-    uint256 delta = block.number - shareTrack.lastUpdated;
-    for(uint256 i = 0; i < instanceCount; ++i) {
-      address instance = instances[i];
-      shareTrack.totalShares += delta * activeDeposits[instance] * rates[instance];
+  function _updateShares(uint256 currencyIndex) private {
+    uint256 delta = block.number - shareTrack[currencyIndex].lastUpdated;
+    for(uint256 i = 0; i < instanceCount[currencyIndex]; ++i) {
+      address instance = instances[currencyIndex][i];
+      shareTrack[currencyIndex].totalShares += delta * activeDeposits[currencyIndex][instance] * rates[instance];
     }
-    shareTrack.lastUpdated = block.number;
+    shareTrack[currencyIndex].lastUpdated = block.number;
   }
 }

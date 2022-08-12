@@ -12,6 +12,19 @@ interface IVerifier {
             uint[6] memory input) external returns(bool);
 }
 
+interface AddressesProvider {
+    function getPool()
+    external
+    view
+    returns (address);
+}
+
+interface AToken {
+  function balanceOf(address _user) external view returns (uint256);
+  function approve(address spender, uint256 amount) external returns (bool);
+  function transfer(address receiver, uint256 amount) external returns (bool);
+}
+
 abstract contract Sacred is MerkleTreeWithHistory, ReentrancyGuard, TwoStepOwnerable {
   uint256 public denomination;
   mapping(bytes32 => bool) public nullifierHashes;

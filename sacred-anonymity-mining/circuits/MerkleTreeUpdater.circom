@@ -1,3 +1,4 @@
+pragma circom 2.0.5;
 include "./MerkleTree.circom";
 
 // inserts a leaf into a tree
@@ -7,7 +8,8 @@ template MerkleTreeUpdater(levels, zeroLeaf) {
     signal input newRoot;
     signal input leaf;
     signal input pathIndices;
-    signal private input pathElements[levels];
+    //private signals
+    signal  input pathElements[levels];
 
     // Compute indexBits once for both trees
     // Since Num2Bits is non deterministic, 2 duplicate calls to it cannot be
