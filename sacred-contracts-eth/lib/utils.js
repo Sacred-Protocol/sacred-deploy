@@ -240,7 +240,8 @@ async function deposit({ currency, amount }) {
     }
 
     console.log('Submitting deposit transaction')
-    await sacredInstance.deposit(baseUtils.toHex(deposit.commitment), { from: senderAccount, gasLimit: 2e6 })
+    const tx = await (await sacredInstance.deposit(baseUtils.toHex(deposit.commitment), { from: senderAccount, gasLimit: 2e6 })).wait()
+    blockNumber = tx.blockNumber
     await printERC20Balance({ address: sacredInstance.address, name: 'Sacred', tokenAddress })
     await printERC20Balance({ address: senderAccount, name: 'Sender account', tokenAddress })
   }
@@ -317,7 +318,7 @@ async function withdraw({ deposit, currency, amount, recipient, relayerURL, refu
 
     blockNumber = tx.blockNumber
     if (tx.status === 1) { //Success
-      if ([1, 42, 4].includes(parseInt(netId))) {
+      if ([1, 42, 4, 5].includes(parseInt(netId))) {
         console.log(`View transaction on etherscan https://${getCurrentNetworkName()}etherscan.io/tx/${tx.transactionHash}`)
       } else {
         console.log(`The transaction hash is ${tx.transactionHash}`)

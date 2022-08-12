@@ -36,7 +36,7 @@ contract ERC20Sacred is Sacred {
     require(msg.value == 0, "ETH value is supposed to be 0 for ERC20 instance");
     _safeErc20TransferFrom(msg.sender, address(this), denomination);
     address lendingPool = AddressesProvider(lendingPoolAddressProvider).getPool();
-    IERC20(token).approve(lendingPool, denomination);
+    require(IERC20(token).approve(lendingPool, denomination), "token approval failed");
     Pool(lendingPool).supply(token, denomination, address(this), 0);
     collateralAmount += denomination;
     collectAaveInterests();
@@ -44,9 +44,6 @@ contract ERC20Sacred is Sacred {
 
   function _processWithdraw(address payable _recipient, address payable _relayer, uint256 _fee, uint256 _refund) internal override{
     require(msg.value == _refund, "Incorrect refund amount received by the contract");
-
-
-
     address lendingPool = AddressesProvider(lendingPoolAddressProvider).getPool();
     uint256 operatorFee = denomination * fee / 10000;
     require(AToken(aToken).approve(lendingPool, denomination), "aToken approval failed");
@@ -93,6 +90,10 @@ contract ERC20Sacred is Sacred {
       success = abi.decode(data, (bool));
       require(success, "not enough tokens. Token returns false.");
     }
+  }
+
+  function setAaveInterestsProxy(address _aaveInterestsProxy) external onlyOwner {
+    aaveInterestsProxy = _aaveInterestsProxy;
   }
 
   function collectAaveInterests() private {

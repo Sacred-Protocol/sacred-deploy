@@ -15,10 +15,10 @@
     "4": {
       "eth": {
         "instanceAddress": {
-          "1": "0xb672f6D9cf13Cc322247042F4c7Fe91AB7D14f67",
-          "10": "0xc90Df373e646E8a8c689BaD0ADb1FC3cC7936e30",
-          "100": "0x55CA186dcE8990f7623Da2B8910978F74772EC1e",
-          "0.1": "0xF8FEEb982F9F7699a5247B133A3FfcBa1Dc7a853"
+          "1": "0x0E5522aEC19436e7d4128B10aCE9619D6d412cDB",
+          "10": "0x6375Af6763fbec4B596b1F26DFE21B3986F5F126",
+          "100": "0x666BE09De3C64e7a6AA7938029e8d3e529b8aEd6",
+          "0.1": "0x2D0F830C47Db0B55b093251AF7A78E8b12Ed5722"
         },
         "symbol": "ETH",
         "decimals": 18,
@@ -26,15 +26,40 @@
       },
       "dai": {
         "instanceAddress": {
-          "1": "0xb672f6D9cf13Cc322247042F4c7Fe91AB7D14f67",
-          "10": "0xc90Df373e646E8a8c689BaD0ADb1FC3cC7936e30",
-          "100": "0x55CA186dcE8990f7623Da2B8910978F74772EC1e",
-          "0.1": "0xF8FEEb982F9F7699a5247B133A3FfcBa1Dc7a853"
+          "200": "0xbbF18e5a6423cA11cE541d130d80Ea97e7B45b14",
+          "2000": "0x3994fDc7CA53c576aC22e1F1F7033386E4aB7ebb",
+          "20000": "0x046AD249163902E0B24e36F09eC540BEc3aA3e62",
+          "200000": "0xC8D50232e5b8035Bff1A39CCAF4582f983a25A35"
         },
-        "symbol": "ETH",
+        "symbol": "DAI",
         "decimals": 18,
         "token": "0x4aAded56bd7c69861E8654719195fCA9C670EB45",
         "aToken": "0x49866611AA7Dc30130Ac6A0DF29217D16FD87bc0"
+      }
+    },
+    "5": {
+      "eth": {
+        "instanceAddress": {
+          "1": "0x5bB012F12dfb423Ed013e4a76Aaf269914Be111c",
+          "10": "0x5877dfbDAD44c9b491aB699c045B1417c48A54BE",
+          "100": "0x8358ddF5A85DbDEc02C92f82681FEb8C50235A19",
+          "0.1": "0xE3660620A614edE2e580aF2d1aEC8d795fE1EC9f"
+        },
+        "symbol": "ETH",
+        "decimals": 18,
+        "aToken": "0x27B4692C93959048833f40702b22FE3578E77759"
+      },
+      "dai": {
+        "instanceAddress": {
+          "200": "0x91CCB886d9E0A916c76eE17cD311A276d1a4C40f",
+          "2000": "0x1731094433BE73250707bDF94FdB4B1bf0BDbAca",
+          "20000": "0x28c62C78A015Ce6505dFD594D90A6a43dA3068Bd",
+          "200000": "0x2588DaA1892A858C83E7a1Ba8b0f996Cc30877d1"
+        },
+        "symbol": "DAI",
+        "decimals": 18,
+        "token": "0xDF1742fE5b0bFc12331D8EAec6b478DfDbD31464",
+        "aToken": "0x310839bE20Fc6a8A89f33A59C7D5fC651365068f"
       }
     },
     "42": {
