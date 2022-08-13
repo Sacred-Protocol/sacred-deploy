@@ -231,7 +231,7 @@ async function deposit({ currency, amount }) {
     await printERC20Balance({ address: sacredInstance.address, name: 'Sacred', tokenAddress })
     await printERC20Balance({ address: senderAccount, name: 'Sender account', tokenAddress })
     const decimals = config.pools[`${netId}`][currency].decimals
-    const tokenAmount = ethers.utils.parseUnits( amount, decimals )
+    const tokenAmount = ethers.utils.parseUnits( ""+amount, decimals )
     const allowance = await erc20.allowance(senderAccount, sacredInstance.address, { from: senderAccount })
     console.log('Current allowance is', ethers.utils.formatUnits(allowance, decimals))
     if (BigInt(allowance) < BigInt(tokenAmount)) {
