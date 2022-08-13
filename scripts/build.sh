@@ -18,6 +18,8 @@ function load_envs() {
 
 load_envs
 
+./scripts/prepBuildCircuit.sh
+
 cp ./sacred-contracts-eth/artifacts/contracts/ETHSacred.sol/ETHSacred.json ./abi/ETHSacred.json
 cp ./sacred-contracts-eth/artifacts/contracts/ERC20Sacred.sol/ERC20Sacred.json ./abi/ERC20Sacred.json
 

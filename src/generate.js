@@ -175,7 +175,7 @@ async function main() {
   //TornadoTreeV2 was deployed through proposalContract
   //https://etherscan.io/address/0x722122df12d4e14e13ac3b6895a86e84145b6967#code
   const instances = config.miningV2.rates.map(function(rate) {
-    const tokenAddr = instancesInfo[`${netId}`][rate.currency].token
+    const tokenAddr = instancesInfo.pools[`${netId}`][rate.currency].token
     return {
       addr: utils.getSacredInstanceAddress(netId, rate.currency, rate.amount),
       instance: {
