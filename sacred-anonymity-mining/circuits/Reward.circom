@@ -17,7 +17,7 @@ template Reward(levels, currencyCnt,  zeroLeaf) {
   signal input aaveInterestAmount;
   signal input rewardNullifier;
   signal input extDataHash;
-  signal input symbolIndex;
+  signal input currencyIndex;
   signal input inputRoot;
   signal input inputNullifierHash;
   signal input outputRoot;
@@ -65,15 +65,15 @@ template Reward(levels, currencyCnt,  zeroLeaf) {
     outputAaveInterestAmountsSelector.in[i] <== outputAaveInterestAmounts[i];
   }
   // Check apAmount invariant
-  inputApAmountsSelector.index <== symbolIndex;
+  inputApAmountsSelector.index <== currencyIndex;
   var inputApAmount = inputApAmountsSelector.out;
-  outputApAmountsSelector.index <== symbolIndex;
+  outputApAmountsSelector.index <== currencyIndex;
   inputApAmount + rate * (withdrawalBlock - depositBlock) === outputApAmountsSelector.out + fee;
   apAmount === rate * (withdrawalBlock - depositBlock);
 
   // Check aaveInterestAmount invariant
-  inputAaveInterestAmountsSelector.index <== symbolIndex;
-  outputAaveInterestAmountsSelector.index <== symbolIndex;
+  inputAaveInterestAmountsSelector.index <== currencyIndex;
+  outputAaveInterestAmountsSelector.index <== currencyIndex;
   aaveInterestAmount === (outputAaveInterestAmountsSelector.out - inputAaveInterestAmountsSelector.out);
   
   // === check input and output accounts and block range ===
@@ -209,7 +209,7 @@ component main {public [
   aaveInterestAmount,
   rewardNullifier,
   extDataHash,
-  symbolIndex,
+  currencyIndex,
   inputRoot,
   inputNullifierHash,
   outputRoot,

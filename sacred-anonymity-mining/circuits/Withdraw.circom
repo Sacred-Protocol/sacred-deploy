@@ -12,7 +12,7 @@ template Withdraw(levels, currencyCnt, zeroLeaf) {
   signal input apAmount;
   signal input aaveInterestAmount;
   signal input extDataHash;
-  signal input symbolIndex;
+  signal input currencyIndex;
   signal input inputRoot;
   signal input inputNullifierHash;
   signal input outputRoot;
@@ -46,15 +46,15 @@ template Withdraw(levels, currencyCnt, zeroLeaf) {
   }
 
   // Check apAmount invariant
-  inputApAmountsSelector.index <== symbolIndex;
+  inputApAmountsSelector.index <== currencyIndex;
   var inputApAmount = inputApAmountsSelector.out;
   apAmount === inputApAmount;
-  outputApAmountsSelector.index <== symbolIndex;
+  outputApAmountsSelector.index <== currencyIndex;
   (inputApAmount - apAmount) === outputApAmountsSelector.out;
 
   // Check aaveInterestAmount invariant
-  inputAaveInterestAmountsSelector.index <== symbolIndex;
-  outputAaveInterestAmountsSelector.index <== symbolIndex;
+  inputAaveInterestAmountsSelector.index <== currencyIndex;
+  outputAaveInterestAmountsSelector.index <== currencyIndex;
   inputAaveInterestAmountsSelector.out - aaveInterestAmount === outputAaveInterestAmountsSelector.out;
   
   // === check input and output accounts and block range ===
@@ -144,7 +144,7 @@ component main {public [
   apAmount,
   aaveInterestAmount,
   extDataHash,
-  symbolIndex,
+  currencyIndex,
   inputRoot,
   inputNullifierHash,
   outputRoot,

@@ -101,7 +101,7 @@ contract Miner is ReentrancyGuard{
     uint256 aaveInterestAmount;
     bytes32 rewardNullifier;
     bytes32 extDataHash;
-    uint256 symbolIndex;
+    uint256 currencyIndex;
     bytes32 depositRoot;
     bytes32 withdrawalRoot;
     RewardExtData extData;
@@ -120,7 +120,7 @@ contract Miner is ReentrancyGuard{
     uint256 apAmount;
     uint256 aaveInterestAmount;
     bytes32 extDataHash;
-    uint256 symbolIndex;
+    uint256 currencyIndex;
     WithdrawExtData extData;
     AccountUpdate account;
   }
@@ -241,7 +241,7 @@ contract Miner is ReentrancyGuard{
     require(_args.fee < 2**248, "Fee value out of range");
     require(_args.rate == rates[_args.instance] && _args.rate > 0, "Invalid reward rate");
     require(!rewardNullifiers[_args.rewardNullifier], "Reward has been already spent");
-    require(_args.aaveInterestAmount == getAaveInterestsAmount(_args.symbolIndex, _args.rewardNullifier, _args.apAmount), "Incorrect value for aave interest amount");
+    require(_args.aaveInterestAmount == getAaveInterestsAmount(_args.currencyIndex, _args.rewardNullifier, _args.apAmount), "Incorrect value for aave interest amount");
     require(
       rewardVerifier.verifyProof(
         a,
@@ -255,7 +255,7 @@ contract Miner is ReentrancyGuard{
           uint256(_args.aaveInterestAmount),
           uint256(_args.rewardNullifier),
           uint256(_args.extDataHash),
-          uint256(_args.symbolIndex),
+          uint256(_args.currencyIndex),
           uint256(_args.account.inputRoot),
           uint256(_args.account.inputNullifierHash),
           uint256(_args.account.outputRoot),
@@ -275,7 +275,7 @@ contract Miner is ReentrancyGuard{
       rewardSwap.swap(_args.extData.relayer, _args.fee);
     }
 
-    delete totalShareSnapshots[_args.symbolIndex][_args.rewardNullifier];
+    delete totalShareSnapshots[_args.currencyIndex][_args.rewardNullifier];
 
     emit NewAccount(
       _args.account.outputCommitment,
@@ -318,7 +318,7 @@ contract Miner is ReentrancyGuard{
           uint256(_args.apAmount),
           uint256(_args.aaveInterestAmount),
           uint256(_args.extDataHash),
-          uint256(_args.symbolIndex),
+          uint256(_args.currencyIndex),
           uint256(_args.account.inputRoot),
           uint256(_args.account.inputNullifierHash),
           uint256(_args.account.outputRoot),
@@ -343,7 +343,7 @@ contract Miner is ReentrancyGuard{
     
     uint256 fee  = _args.aaveInterestAmount * aaveInterestFee / 10000;
 
-    if(_args.symbolIndex == 0) { // eth
+    if(_args.currencyIndex == 0) { // eth
       if(_args.aaveInterestAmount - fee > minimumInterests) {
         AaveInterestsProxy(aaveInterestsProxy).withdraw(address(0), _args.aaveInterestAmount - fee, _args.extData.recipient);
         if(fee > minimumInterests) {

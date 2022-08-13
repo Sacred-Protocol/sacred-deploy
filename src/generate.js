@@ -6,6 +6,7 @@ const instancesInfo = require('../config.json')
 const erc20Abi = require('../abi/erc20.abi.json')
 const utils = require('../sacred-contracts-eth/lib/utils')
 const { deploy, getContractData, ensToAddr, getAddressTable, setAddress, initAddressTable } = require('../lib/deployUtils')
+const Account = require('../sacred-anonymity-mining/src/account')
 const { DEPLOYER, SALT, MINIMUM_INTERESTS, INTERESTS_FEE, REWARDSWAP_MINING_CAP } = process.env
 
 const governance = getContractData('../sacred-governance/artifacts/contracts/Governance.sol/Governance.json')
@@ -34,10 +35,6 @@ async function main() {
   const netId = utils.getNetId()
   console.log("owner address: ", wallet.address)
   initAddressTable()
-  setAddress('eth-01.sacredcash.eth', utils.getSacredInstanceAddress(netId, "eth", 0.1))
-  setAddress('eth-1.sacredcash.eth', utils.getSacredInstanceAddress(netId, "eth", 1))
-  setAddress('eth-10.sacredcash.eth', utils.getSacredInstanceAddress(netId, "eth", 10))
-  setAddress('eth-100.sacredcash.eth', utils.getSacredInstanceAddress(netId, "eth", 100))
 
   sacredTokenAddress = instancesInfo.sacredToken["" + netId]
   // Deploy Governance implementation
@@ -177,14 +174,17 @@ async function main() {
   //const instances = config.miningV2.rates.map((rate) => ensToAddr(rate.instance))
   //TornadoTreeV2 was deployed through proposalContract
   //https://etherscan.io/address/0x722122df12d4e14e13ac3b6895a86e84145b6967#code
-  const instances = config.miningV2.rates.map((rate) => ({
-    addr: ensToAddr(rate.instance),
-    instance: {
-      isERC20: false,
-      token: ethers.constants.AddressZero,
-      state: 2 //"MINEABLE"
-    },
-  }))
+  const instances = config.miningV2.rates.map(function(rate) {
+    const tokenAddr = instancesInfo[`${netId}`][rate.currency].token
+    return {
+      addr: utils.getSacredInstanceAddress(netId, rate.currency, rate.amount),
+      instance: {
+        isERC20: tokenAddr ? true : false,
+        token: tokenAddr ? tokenAddr : ethers.constants.AddressZero,
+        state: 2 //"MINEABLE"
+      }
+    }
+  })
 
   actions.push(
     deploy({
@@ -222,8 +222,9 @@ async function main() {
 
   // Deploy Miner
   const rates = config.miningV2.rates.map((rate) => ({
-    instance: ensToAddr(rate.instance),
+    instance: utils.getSacredInstanceAddress(netId, rate.currency, rate.amount),
     value: rate.value,
+    currencyIndex: Account.getCurrencyIndex(rate.currency)
   }))
 
   actions.push(

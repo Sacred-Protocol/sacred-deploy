@@ -1,13 +1,13 @@
 const { encrypt, decrypt } = require('eth-sig-util')
 const {randomBN, numToBuffer, bufferToNum, poseidonHash} = require('../../sacred-contracts-eth/lib/baseUtils')
-const symboList = ["eth", "usdt", "dai"]
+const currencyList = ["eth", "dai"]
 
 class Account {
   constructor({ amounts, secret, nullifier } = {}) {
     
     if(!amounts) {
       amounts = {}
-      symboList.forEach(symbol => {
+      currencyList.forEach(symbol => {
         amounts[symbol] = {
           "apAmount" : BigInt('0'),
           "aaveInterestAmount" : BigInt('0')
@@ -16,15 +16,12 @@ class Account {
       })
     }
 
-    const symbols = this.amounts.keys()
-
     this.amounts = amounts
     this.secret = secret ? BigInt(secret) : randomBN(31)
     this.nullifier = nullifier ? BigInt(nullifier) : randomBN(31)
 
     let data = []
-    symbols = symbols.sort()
-    symbols.forEach(symbol=>{
+    currencyList.forEach(symbol=>{
       data.push(this.amounts[symbol].apAmount)
       data.push(this.amounts[symbol].aaveInterestAmount)
     })
@@ -33,7 +30,7 @@ class Account {
     this.commitment = poseidonHash(data)
     this.nullifierHash = poseidonHash([this.nullifier])
 
-    symbols.forEach(symbol => {
+    currencyList.forEach(symbol => {
       const amountInfo = this.amounts[symbol]
       if (amountInfo.apAmount.lt(BigInt(0))) {
         throw new Error('Cannot create an account with negative ap amount')
@@ -47,7 +44,7 @@ class Account {
 
   getAmountsList() {
     let data = []
-    symboList.forEach(symbol=>{
+    currencyList.forEach(symbol=>{
       data.push(this.amounts[symbol].apAmount)
     })
     return data
@@ -55,22 +52,21 @@ class Account {
 
   getAaveInterestsList() {
     let data = []
-    symboList.forEach(symbol=>{
+    currencyList.forEach(symbol=>{
       data.push(this.amounts[symbol].aaveInterestAmount)
     })
     return data
   }
 
-  getSymbolIndex(symbol) {
-    return symboList.findIndex(item => {
+  static getCurrencyIndex(symbol) {
+    return currencyList.findIndex(item => {
       return symbol === item
     })
   }
 
   encrypt(pubkey) {
-    const symbols = this.amounts.keys()
     let data = [numToBuffer(this.secret, 31, 'be'), numToBuffer(this.nullifier, 31, 'be')]
-    symbols.forEach(symbol=>{
+    currencyList.forEach(symbol=>{
       data.push(symbol)
       data.push("&&")
       data.push(numToBuffer(this.amounts[symbol].apAmount, 31, 'be'))
