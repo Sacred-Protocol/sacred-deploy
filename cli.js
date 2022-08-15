@@ -27,7 +27,7 @@ const { getEncryptionPublicKey } = require('eth-sig-util');
 const fs = require('fs')
 const program = require('commander')
 const levels = 20
-const { PRIVATE_KEY, NETWORK, RPC_URL } = process.env
+const { PRIVATE_KEY, NETWORK, RPC_URL, IMPERSONATE_ACCOUNT } = process.env
 const addressTable = require('./address.json')
 
 const provingKeys = {
@@ -50,7 +50,7 @@ let wallet
 let sacredTokenAddress
 
 async function init(rpc) {
-  await utils.init({ instancesInfo, erc20Contract: erc20Abi, rpc })
+  await utils.init({ instancesInfo, erc20Contract: erc20Abi, rpc, accountToInpersonate: IMPERSONATE_ACCOUNT })
   wallet = utils.getWalllet()
   sacredTokenAddress = instancesInfo.sacredToken["" + utils.getNetId()]
 
