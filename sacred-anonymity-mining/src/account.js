@@ -12,7 +12,6 @@ class Account {
           "apAmount" : BigInt('0'),
           "aaveInterestAmount" : BigInt('0')
         }
-        amounts.push(new AmountInfo(symbol))
       })
     }
 

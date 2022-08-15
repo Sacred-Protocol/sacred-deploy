@@ -40,7 +40,7 @@ const provingKeys = {
   treeUpdateZkeyFilePath: "./sacred-anonymity-mining/build/circuits/TreeUpdate_0001.zkey",
 }
 
-const { PRIVATE_KEY, RPC_URL, MINIMUM_INTERESTS } = process.env
+const { PRIVATE_KEY, RPC_URL, MINIMUM_INTERESTS, IMPERSONATE_ACCOUNT } = process.env
 
 async function updateRoot(sacredTrees, type) {
   const { committedEvents, pendingEvents } = await rootUpdaterEvents.getEvents(sacredTrees, type)
@@ -91,7 +91,7 @@ describe('Testing SacredAnanomityMining', () => {
   const publicKey = getEncryptionPublicKey(privateKey)
 
   before(async () => {
-    await utils.init({ instancesInfo, erc20Contract: erc20Abi, RPC_URL })
+    await utils.init({ instancesInfo, erc20Contract: erc20Abi, RPC_URL, accountToInpersonate: IMPERSONATE_ACCOUNT })
     updateAddressTable(addressTable)
     wallet = utils.getWalllet()
 

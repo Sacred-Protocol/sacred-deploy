@@ -8,7 +8,7 @@ const ethSacredAbi = require('../artifacts/contracts/ETHSacred.sol/ETHSacred.jso
 const erc20SacredAbi = require('../artifacts/contracts/ERC20Sacred.sol/ERC20Sacred.json')
 const { ethers } = require("hardhat");
 
-const { RPC_URL, MERKLE_TREE_HEIGHT, LENDING_POOL_ADDRESS_PROVIDER, WETH_GATEWAY, WETH_TOKEN, OPERATOR_FEE } = process.env
+const { RPC_URL, MERKLE_TREE_HEIGHT, LENDING_POOL_ADDRESS_PROVIDER, WETH_GATEWAY, WETH_TOKEN, OPERATOR_FEE, IMPERSONATE_ACCOUNT } = process.env
 let owner;
 let deployedSacred;
 const wasmPath = "build/circuits/withdraw_js/withdraw.wasm"
@@ -17,13 +17,11 @@ const zkeyFilePath = "build/circuits/withdraw_0001.zkey"
 describe('Test Sacred Contracts', () => {
   // Deploy and setup the contracts
   before(async () => {
-    // get the signers
-    const signers = await ethers.getSigners();
-    owner = signers[0];
-    await utils.init({instancesInfo:config, erc20Contract: erc20Abi, rpc: RPC_URL})
+    await utils.init({instancesInfo:config, erc20Contract: erc20Abi, rpc: RPC_URL, accountToInpersonate: IMPERSONATE_ACCOUNT})
+    owner = utils.getWalllet()
   });
 
-  describe('Test Deploy And Check Accecibility', () => {
+  /* describe('Test Deploy And Check Accecibility', () => {
     it('Deploy Contracts', async () => {
       //Deploy Verifier Contract
       const Verifier = await ethers.getContractFactory('Verifier');
@@ -71,8 +69,9 @@ describe('Test Sacred Contracts', () => {
       ).to.be.revertedWith('Not authorized');
     });
   });
-  
-  describe('Test Deposit, Withdraw ETH', () => {
+  */
+
+  /*describe('Test Deposit, Withdraw ETH', () => {
     // we'll always need the user ETH balance to be greater than 3 ETH, because we use 2 ETH as the base amount for token conversions e.t.c
     it('Deposit/Withdraw', async () => {
       let ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
@@ -96,6 +95,7 @@ describe('Test Sacred Contracts', () => {
       console.log('User ETH balance is ', ethbalance);
     });
   });
+  */
 
   describe('Test Deposit, Withdraw DAI', () => {
     // we'll always need the user ETH balance to be greater than 3 ETH, because we use 2 ETH as the base amount for token conversions e.t.c

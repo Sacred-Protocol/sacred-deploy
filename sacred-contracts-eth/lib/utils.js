@@ -15,7 +15,7 @@ let netId, netName, config, wallet
 let erc20Abi
 let provider
 
-async function init({ instancesInfo, erc20Contract, rpc }) {
+async function init({ instancesInfo, erc20Contract, rpc, accountToInpersonate }) {
   await baseUtils.init(rpc)
   provider = await baseUtils.getProvider()
   const { chainId, name } = await provider.getNetwork()
@@ -24,8 +24,17 @@ async function init({ instancesInfo, erc20Contract, rpc }) {
   const testing = typeof hre !== 'undefined' ? ["hardhat", "localhost"].includes(hre.network.name) : false
 
   if (testing) {
-    const accounts = await ethers.getSigners();
-    wallet = accounts[0];
+    if(accountToInpersonate) {
+      await hre.network.provider.request({
+        method: "hardhat_impersonateAccount",
+        params: [accountToInpersonate],
+      });
+      wallet = await ethers.getSigner(accountToInpersonate)
+    } else {
+      const accounts = await ethers.getSigners();
+      wallet = accounts[0];
+    }
+
     netId = "" + HARDHAT_CHAINID
     if (!netId) {
       console.log("Please specifiy original chainId of forked network in .env")

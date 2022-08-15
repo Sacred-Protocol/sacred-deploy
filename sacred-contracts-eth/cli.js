@@ -11,7 +11,7 @@ const config = require('../config.json')
 const ethSacredAbi = require('./artifacts/contracts/ETHSacred.sol/ETHSacred.json')
 const erc20SacredAbi = require('./artifacts/contracts/ERC20Sacred.sol/ERC20Sacred.json')
 
-const { PRIVATE_KEY, RPC_URL } = process.env
+const { PRIVATE_KEY, RPC_URL, IMPERSONATE_ACCOUNT } = process.env
 const wasmPath = "build/circuits/withdraw_js/withdraw.wasm"
 const zkeyFilePath = "build/circuits/withdraw_0001.zkey"
 async function main() {
@@ -22,7 +22,7 @@ async function main() {
     .command('deposit <currency> <amount>')
     .description('Submit a deposit of specified currency and amount from default eth account and return the resulting note. The currency is one of (ETH|). The amount depends on currency, see config.js file.')
     .action(async (currency, amount) => {
-      await utils.init({instancesInfo: config, erc20Contract: erc20Abi, rpc: program.rpc || RPC_URL})
+      await utils.init({instancesInfo: config, erc20Contract: erc20Abi, rpc: program.rpc || RPC_URL, accountToInpersonate: IMPERSONATE_ACCOUNT})
       currency = currency.toLowerCase()
       await utils.setup({
         ethSacredAbi: ethSacredAbi.abi, 
@@ -36,7 +36,7 @@ async function main() {
     .command('withdraw <note> <recipient> [ETH_purchase]')
     .description('Withdraw a note to a recipient account using relayer or specified private key. You can exchange some of your deposit`s tokens to ETH during the withdrawal by specifing ETH_purchase (e.g. 0.01) to pay for gas in future transactions. Also see the --relayer option.')
     .action(async (noteString, recipient, refund) => {
-      await utils.init({instancesInfo: config, erc20Contract: erc20Abi, rpc:program.rpc || RPC_URL})
+      await utils.init({instancesInfo: config, erc20Contract: erc20Abi, rpc:program.rpc || RPC_URL, accountToInpersonate: IMPERSONATE_ACCOUNT})
       const { currency, amount, netId, deposit } = utils.baseUtils.parseNote(noteString)
       if(netId == utils.getNetId()) {
         await utils.setup({
@@ -54,7 +54,7 @@ async function main() {
     .command('sacredtest <currency> <amount> <recipient>')
     .description('Perform an automated test. It deposits and withdraws one ETH. Uses Kovan Testnet.')
     .action(async (currency, amount, recipient) => {
-      await utils.init({instancesInfo: config, erc20Contract: erc20Abi, rpc:program.rpc || RPC_URL})
+      await utils.init({instancesInfo: config, erc20Contract: erc20Abi, rpc:program.rpc || RPC_URL, accountToInpersonate: IMPERSONATE_ACCOUNT})
       currency = currency.toLowerCase()
       await utils.setup({
         ethSacredAbi: ethSacredAbi.abi, 
@@ -75,7 +75,7 @@ async function main() {
     .command('balance <address> [token_address]')
     .description('Check ETH and ERC20 balance')
     .action(async (address, tokenAddress) => {
-      await utils.init({instancesInfo: config, erc20Contract: erc20Abi, rpc:program.rpc || RPC_URL})
+      await utils.init({instancesInfo: config, erc20Contract: erc20Abi, rpc:program.rpc || RPC_URL, accountToInpersonate: IMPERSONATE_ACCOUNT})
       await utils.printETHBalance({ address, name: '' })
       if (tokenAddress) {
         await utils.printERC20Balance({ address, name: '', tokenAddress })
@@ -85,7 +85,7 @@ async function main() {
     .command('compliance <note>')
     .description('Shows the deposit and withdrawal of the provided note. This might be necessary to show the origin of assets held in your withdrawal address.')
     .action(async (noteString) => {
-      await utils.init({instancesInfo: config, erc20Contract: erc20Abi, rpc:program.rpc || RPC_URL})
+      await utils.init({instancesInfo: config, erc20Contract: erc20Abi, rpc:program.rpc || RPC_URL, accountToInpersonate: IMPERSONATE_ACCOUNT})
       const { currency, amount, netId, deposit } = utils.baseUtils.parseNote(noteString)
       await utils.setup({
         ethSacredAbi: ethSacredAbi.abi, 
