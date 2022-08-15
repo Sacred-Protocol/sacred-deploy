@@ -27,7 +27,6 @@ const minerAbi = require('../sacred-anonymity-mining/artifacts/contracts/Miner.s
 const ethSacredAbi = require('../abi/ETHSacred.json')
 const erc20SacredAbi = require('../abi/ERC20Sacred.json')
 const erc20Abi = require('../abi/erc20.abi.json')
-const buildGroth16 = require('websnark/src/groth16')
 const addressTable = require('../address.json')
 
 const provingKeys = {
@@ -37,6 +36,8 @@ const provingKeys = {
   rewardZkeyFilePath: "./sacred-anonymity-mining/build/circuits/Reward_0001.zkey",
   withdrawWasmPath: "./sacred-anonymity-mining/build/circuits/Withdraw_js/Withdraw.wasm",
   withdrawZkeyFilePath: "./sacred-anonymity-mining/build/circuits/Withdraw_0001.zkey",
+  treeUpdateWasmPath: "./sacred-anonymity-mining/build/circuits/TreeUpdate_js/TreeUpdate.wasm",
+  treeUpdateZkeyFilePath: "./sacred-anonymity-mining/build/circuits/TreeUpdate_0001.zkey",
 }
 
 const { PRIVATE_KEY, RPC_URL, MINIMUM_INTERESTS } = process.env
@@ -111,13 +112,11 @@ describe('Testing SacredAnanomityMining', () => {
       zkeyFilePath: provingKeys.zkeyFilePath
     });
 
-    let groth16 = await buildGroth16()
     controller = new Controller({
       minerContract: miner,
       sacredTreesContract: sacredTrees,
       merkleTreeHeight: levels,
-      provingKeys,
-      groth16
+      provingKeys
     })
     rootUpdaterEvents.setProvider(utils.getProvider())
     await controller.init()

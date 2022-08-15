@@ -23,7 +23,6 @@ const sacredTreesAbi = require('./sacred-trees/artifacts/contracts/SacredTrees.s
 const sacredAbi = require('./sacred-token/artifacts/contracts/SACRED.sol/SACRED.json')
 const minerAbi = require('./sacred-anonymity-mining/artifacts/contracts/Miner.sol/Miner.json')
 const { unpackEncryptedMessage } = require('./sacred-anonymity-mining/src/utils')
-const buildGroth16 = require('websnark/src/groth16')
 const { getEncryptionPublicKey } = require('eth-sig-util');
 const fs = require('fs')
 const program = require('commander')

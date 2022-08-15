@@ -10,8 +10,6 @@ const {poseidonHash, poseidonHash2, bitsToNumber, toHex} = require('../../sacred
 
 const Account = require('./account')
 const MerkleTree = require('fixed-merkle-tree')
-const websnarkUtils = require('websnark/src/utils')
-const buildGroth16 = require('websnark/src/groth16')
 const { ethers } = require("hardhat")
 let provider
 
@@ -87,7 +85,6 @@ class Controller {
   }
 
   async init(rpc) {
-    this.groth16 = await buildGroth16()
     await getProvider(rpc)
   }
 
@@ -407,30 +404,23 @@ class Controller {
     const accountTreeUpdate = this._updateTree(accountTree, commitment)
 
     const input = {
-      oldRoot: accountTreeUpdate.oldRoot,
-      newRoot: accountTreeUpdate.newRoot,
-      leaf: commitment,
-      pathIndices: accountTreeUpdate.pathIndices,
+      oldRoot: toHex(accountTreeUpdate.oldRoot),
+      newRoot: toHex(accountTreeUpdate.newRoot),
+      leaf: toHex(commitment),
+      pathIndices: bitsToNumber(accountTreeUpdate.pathIndices),
       pathElements: accountTreeUpdate.pathElements,
     }
 
-    const proofData = await websnarkUtils.genWitnessAndProve(
-      this.groth16,
-      input,
-      this.provingKeys.treeUpdateCircuit,
-      this.provingKeys.treeUpdateProvingKey,
-    )
-    const { proof } = websnarkUtils.toSolidityInput(proofData)
-
+    const {a, b, c} = await generateGroth16Proof(input, this.provingKeys.treeUpdateWasmPath, this.provingKeys.treeUpdateZkeyFilePath);
     const args = {
-      oldRoot: toHex(input.oldRoot),
-      newRoot: toHex(input.newRoot),
-      leaf: toHex(input.leaf),
-      pathIndices: toHex(input.pathIndices),
+      oldRoot: input.oldRoot,
+      newRoot: input.newRoot,
+      leaf: input.leaf,
+      pathIndices: input.pathIndices,
     }
 
     return {
-      proof,
+      a, b, c,
       args,
     }
   }
