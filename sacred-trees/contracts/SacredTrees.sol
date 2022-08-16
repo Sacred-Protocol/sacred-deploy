@@ -2,10 +2,9 @@
 pragma solidity 0.8.9;
 
 import "./interfaces/IBatchTreeUpdateVerifier.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 /// @dev This contract holds a merkle tree of all sacred cash deposit and withdrawal events
-contract SacredTrees is Initializable {
+contract SacredTrees {
   address public immutable governance;
   address private immutable owner;
   bytes32 public depositRoot;

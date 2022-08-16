@@ -4,7 +4,7 @@ pragma solidity 0.8.9;
 
 abstract contract TwoStepOwnerable {
   address internal owner;
-  mapping (address => bool) private invited;
+  address private invited;
 	event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 	
   modifier onlyOwner() {
@@ -13,7 +13,7 @@ abstract contract TwoStepOwnerable {
   }
 
   modifier onlyInvited() {
-  	require(invited[msg.sender] == true, "Not authorized");
+  	require(msg.sender == invited, "Not authorized");
     _;
   }
 
@@ -23,12 +23,16 @@ abstract contract TwoStepOwnerable {
   
   function transferOwnership(address newOwner) public onlyOwner {
 	  require(newOwner != address(0), "owner cannot be zero address");
-  	invited[newOwner] = true;
+  	invited = newOwner;
   }
   
   function ownershipAccepted() public onlyInvited {
 	  _transferOwnership(msg.sender);
-  	delete invited[msg.sender];
+  	invited = address(0);
+  }
+
+  function revokeInvitation() public onlyInvited {
+    invited = address(0);
   }
   
   function renounceOwnership() public onlyOwner {
