@@ -57,6 +57,14 @@ class Account {
     return data
   }
 
+  getApAmount(symbol) {
+    return this.amounts[symbol].apAmount
+  }
+
+  getAaveInterest(symbol) {
+    return this.amounts[symbol].aaveInterestAmount
+  }
+
   static getCurrencyIndex(symbol) {
     return currencyList.findIndex(item => {
       return symbol === item

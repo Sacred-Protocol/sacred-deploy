@@ -46,7 +46,7 @@ async function main() {
       }
     }
   );
-
+  
   //Deploy SacredInstances(ETH)
   const currencies = Object.keys(config.pools["" + chainId])
   for(const currency of currencies) {
@@ -62,7 +62,7 @@ async function main() {
       return
     }
     const amounts = Object.keys(info.instanceAddress)
-    if (currency == "eth") {
+    if (currency == "eth" || currency == "matic") {
       for (const amount of amounts) {
         const weiAmount = ethers.utils.parseEther(amount)
         const sacred = await(await ETHSacred

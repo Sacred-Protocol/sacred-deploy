@@ -188,7 +188,7 @@ describe('Testing SacredAnanomityMining', () => {
     it('should work', async () => {
       const zeroAccount = new Account()
       const accountCount = await miner.accountCount()
-      expect(zeroAccount.apAmount.toString()).to.equal("0")
+      expect(zeroAccount.getApAmount("eth").toString()).to.equal("0")
 
       //noteString = "sacred-eth-0.1-4-0x702dea4c5b3aaefb219b9d5d066bd6f37467391bec008ab03408c9d7b7560e1d69a9d59df9364c4b9485b3c0e58ea0a52f22bc22e947a1fc0f2c72adc343"
       console.log("Note: ", noteString)
@@ -219,8 +219,8 @@ describe('Testing SacredAnanomityMining', () => {
 
       const encryptedAccount = newAccountEvent.args.encryptedAccount
       const account2 = Account.decrypt(privateKey, unpackEncryptedMessage(encryptedAccount))
-      expect(account.apAmount.toString()).to.equal(account2.apAmount.toString())
-      expect(account.aaveInterestAmount.toString()).to.equal(account2.aaveInterestAmount.toString())
+      expect(account.getApAmount("eth").toString()).to.equal(account2.apAmount.toString())
+      expect(account.getAaveInterest().toString()).to.equal(account2.aaveInterestAmount.toString())
       expect(account.secret.toString()).to.equal(account2.secret.toString())
       expect(account.nullifier.toString()).to.equal(account2.nullifier.toString())
       expect(account.commitment.toString()).to.equal(account2.commitment.toString())

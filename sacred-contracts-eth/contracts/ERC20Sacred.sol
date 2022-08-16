@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./Sacred.sol";
 
 interface Pool {
@@ -46,15 +45,18 @@ contract ERC20Sacred is Sacred {
     require(msg.value == _refund, "Incorrect refund amount received by the contract");
     address lendingPool = AddressesProvider(lendingPoolAddressProvider).getPool();
     uint256 operatorFee = denomination * fee / 10000;
-    require(AToken(aToken).approve(lendingPool, denomination), "aToken approval failed");
-    Pool(lendingPool).withdraw(aToken, denomination - operatorFee - _fee, _recipient);
+    require(IERC20(aToken).approve(lendingPool, denomination), "aToken approval failed");
+    Pool(lendingPool).withdraw(token, denomination - operatorFee - _fee, address(this));
+    _safeErc20Transfer(_recipient, denomination - operatorFee - _fee);
 
     if (operatorFee > 0) {
-      Pool(lendingPool).withdraw(aToken, operatorFee, owner);
+      Pool(lendingPool).withdraw(token, operatorFee, address(this));
+      _safeErc20Transfer(owner, operatorFee);
     }
 
     if (_fee > 0) {
-      Pool(lendingPool).withdraw(aToken, _fee, _relayer);
+      Pool(lendingPool).withdraw(token, _fee, address(this));
+      _safeErc20Transfer(_relayer, _fee);
     }
     collateralAmount -= denomination;
     collectAaveInterests();
@@ -97,10 +99,10 @@ contract ERC20Sacred is Sacred {
   }
 
   function collectAaveInterests() private {
-    uint256 interests = AToken(aToken).balanceOf(address(this)) - collateralAmount;
+    uint256 interests = IERC20(aToken).balanceOf(address(this)) - collateralAmount;
     if(interests > 0 && aaveInterestsProxy != address(0)) {
       address lendingPool = AddressesProvider(lendingPoolAddressProvider).getPool();
-      require(AToken(aToken).approve(lendingPool, interests), "aToken approval failed");
+      require(IERC20(aToken).approve(lendingPool, interests), "aToken approval failed");
       Pool(lendingPool).withdraw(aToken, interests, aaveInterestsProxy);
       totalAaveInterests += interests;
     }
