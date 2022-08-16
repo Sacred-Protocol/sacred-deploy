@@ -15,10 +15,10 @@
     "4": {
       "eth": {
         "instanceAddress": {
-          "1": "0x0E5522aEC19436e7d4128B10aCE9619D6d412cDB",
-          "10": "0x6375Af6763fbec4B596b1F26DFE21B3986F5F126",
-          "100": "0x666BE09De3C64e7a6AA7938029e8d3e529b8aEd6",
-          "0.1": "0x2D0F830C47Db0B55b093251AF7A78E8b12Ed5722"
+          "1": "0xc8a3D2018F9E19De9aB129a178ed631895F8d948",
+          "10": "0x333f4d72F59e019D649998d06D917973B7c53d0d",
+          "100": "0xD4DC9DfA6FA66dFd268E29C28CcbE0B5E49cdbfF",
+          "0.1": "0x96caa27F254133eBD9Ea66335f4a00E334bc956F"
         },
         "symbol": "ETH",
         "decimals": 18,
@@ -26,10 +26,10 @@
       },
       "dai": {
         "instanceAddress": {
-          "200": "0xbbF18e5a6423cA11cE541d130d80Ea97e7B45b14",
-          "2000": "0x3994fDc7CA53c576aC22e1F1F7033386E4aB7ebb",
-          "20000": "0x046AD249163902E0B24e36F09eC540BEc3aA3e62",
-          "200000": "0xC8D50232e5b8035Bff1A39CCAF4582f983a25A35"
+          "200": "0xf26d4a92f019786718904dfDf60397309e0ac847",
+          "2000": "0x3Eda738e284A5571b3CC4361082ab778f69168b0",
+          "20000": "0x132c73246c531Af0A2Cea102BaC9309c9eF6e986",
+          "200000": "0x5AA6Bd76FD12Ac5e79eEB46A52A1BF428f867F26"
         },
         "symbol": "DAI",
         "decimals": 18,
@@ -40,10 +40,10 @@
     "5": {
       "eth": {
         "instanceAddress": {
-          "1": "0x5bB012F12dfb423Ed013e4a76Aaf269914Be111c",
-          "10": "0x5877dfbDAD44c9b491aB699c045B1417c48A54BE",
-          "100": "0x8358ddF5A85DbDEc02C92f82681FEb8C50235A19",
-          "0.1": "0xE3660620A614edE2e580aF2d1aEC8d795fE1EC9f"
+          "1": "0x7B0E3108F3eBdaCB5B34E9c13A04d1d59F9F285a",
+          "10": "0xe13A187F6Ef4a62371b82519DD310BC213FcF635",
+          "100": "0x7BbD339aF0f86C63aFE576c3eA7cB1068c4f538b",
+          "0.1": "0xecC1b971Ff520093077954099441B27fBC026fD5"
         },
         "symbol": "ETH",
         "decimals": 18,
@@ -51,10 +51,10 @@
       },
       "dai": {
         "instanceAddress": {
-          "200": "0x91CCB886d9E0A916c76eE17cD311A276d1a4C40f",
-          "2000": "0x1731094433BE73250707bDF94FdB4B1bf0BDbAca",
-          "20000": "0x28c62C78A015Ce6505dFD594D90A6a43dA3068Bd",
-          "200000": "0x2588DaA1892A858C83E7a1Ba8b0f996Cc30877d1"
+          "200": "0x6434e5d05A8381812755B19Be4ba3AcD2227378A",
+          "2000": "0x11E837207dFE2cAB33C29724b1D42bA7c0595735",
+          "20000": "0xf8e3CB17707e990192C19a1Eb5e404798173Fc58",
+          "200000": "0xa4dAFBdc34B71EFf01a9154ae9cc7077CcfA769E"
         },
         "symbol": "DAI",
         "decimals": 18,
@@ -71,7 +71,20 @@
           "0.1": "0x2202eBeAA83db32d2B6d6AEd49248bF446277a8d"
         },
         "symbol": "ETH",
-        "decimals": 18
+        "decimals": 18,
+        "aToken": "0xec6E5B3Bd3e8CC74756Af812994361d8D1EF30F8"
+      },
+      "dai": {
+        "instanceAddress": {
+          "200": "0x2643D12A1a4c04dC59b900A9Fc686d245F3505E3",
+          "2000": "0x7C89BE13e41e72349D5bBc02C68334A30fFD3Eda",
+          "20000": "0xBDF5BFa1e882CD3C47769775aB96dA83D51CC490",
+          "200000": "0x37C671b00a86805e1836dB54Bce2D3f88B5A3661"
+        },
+        "symbol": "DAI",
+        "decimals": 18,
+        "token": "0x58Cd851c28dF05Edc7F018B533C0257DE57673f7",
+        "aToken": "0xE101EcB2283Acf0C91e05A428DDD8833Ac66B572"
       }
     },
     "80001": {
@@ -83,13 +96,28 @@
           "0.1": "0x91CCB886d9E0A916c76eE17cD311A276d1a4C40f"
         },
         "symbol": "MATIC",
-        "decimals": 18
+        "decimals": 18,
+        "aToken": "0x89a6AE840b3F8f489418933A220315eeA36d11fF"
+      },
+      "dai": {
+        "instanceAddress": {
+          "200": "0x2643D12A1a4c04dC59b900A9Fc686d245F3505E3",
+          "2000": "0x7C89BE13e41e72349D5bBc02C68334A30fFD3Eda",
+          "20000": "0xBDF5BFa1e882CD3C47769775aB96dA83D51CC490",
+          "200000": "0x37C671b00a86805e1836dB54Bce2D3f88B5A3661"
+        },
+        "symbol": "DAI",
+        "decimals": 18,
+        "token": "0x9A753f0F7886C9fbF63cF59D0D4423C5eFaCE95B",
+        "aToken": "0xDD4f3Ee61466C4158D394d57f3D4C397E91fBc51"
       }
     }
   },
   "sacredToken": {
     "1": "",
     "4": "0x4B53db927Aca655b044F6F3F789531919F6B8EEe",
-    "42": ""
+    "5": "0x237De650da002d7e9065d570e3dFC6b43F865e7f",
+    "42": "",
+    "80001": "0xa2B1B2299D3100Ec9fF491a952A66547b852E25f"
   }
 }
