@@ -2,8 +2,10 @@
 
 1. node 14
 2. yarn
-3. zkutil (`brew install rust && cargo install zkutil`) (needed only for circuit compilation and setup)
-4. libgmp-dev, nlohmann-json3-dev, nasm  
+3. circom  
+https://docs.circom.io/getting-started/installation/#installing-dependencies  
+4. zkutil (`brew install rust && cargo install zkutil`) (needed only for circuit compilation and setup)
+5. libgmp-dev, nlohmann-json3-dev, nasm  
 
 #  How to deploy it  
 
