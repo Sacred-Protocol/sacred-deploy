@@ -67,12 +67,19 @@ async function deployContracts() {
   }
 
   console.log("Initialization Done.")
-  const instances = [0.1, 1, 10, 100]
-  for (let i = 0; i < instances.length; i++) {
-    let sacredInstance = new ethers.Contract(utils.getSacredInstanceAddress(utils.getNetId(), 'eth', instances[i]), ethSacredAbi.abi, wallet)
-    const receipt = await (await sacredInstance.setAaveInterestsProxy(ensToAddr(config.aaveInterestsProxy.address))).wait()
-    const _gasUsed = BigInt(receipt.cumulativeGasUsed) * BigInt(receipt.effectiveGasPrice);
-    gasUsed = gasUsed + _gasUsed
+
+  const netId = "" + utils.getNetId()
+  const currencies = Object.keys(instancesInfo.pools[netId])
+  for(const currency of currencies) {
+    let info = instancesInfo.pools[netId][currency]
+    const amounts = Object.keys(info.instanceAddress)
+    for (const amount of amounts) {
+      console.log(`Initializing ${currency} - ${amount} pool`)
+      let sacredInstance = new ethers.Contract(utils.getSacredInstanceAddress(netId, currency, amount), ethSacredAbi.abi, wallet)
+      const receipt = await (await sacredInstance.setAaveInterestsProxy(ensToAddr(config.aaveInterestsProxy.address))).wait()
+      const _gasUsed = BigInt(receipt.cumulativeGasUsed) * BigInt(receipt.effectiveGasPrice);
+      gasUsed = gasUsed + _gasUsed
+    }
   }
 
   console.log("Total used gas: ", gasUsed.toString())
