@@ -284,7 +284,7 @@ class Controller {
     }
 
     console.log('Generating SNARK proof')
-    const {a, b, c} = await generateGroth16Proof(input, this.provingKeys.rewardWasmFile, this.provingKeys.rewardZkeyFileName);
+    const {a, b, c} = await generateGroth16Proof(input, this.provingKeys.rewardWasmPath, this.provingKeys.rewardZkeyFilePath);
     console.log('Submitting reward transaction')
 
     const args = {
@@ -365,7 +365,7 @@ class Controller {
     }
 
     console.log('Generating SNARK proof')
-    const {a, b, c} = await generateGroth16Proof(input, this.provingKeys.withdrawWasmFile, this.provingKeys.withdrawZkeyFileName);
+    const {a, b, c} = await generateGroth16Proof(input, this.provingKeys.withdrawWasmPath, this.provingKeys.withdrawZkeyFilePath);
     console.log('Submitting reward withdrawal transaction')
 
     const args = {
