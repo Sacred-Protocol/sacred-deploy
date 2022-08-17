@@ -132,7 +132,7 @@ class Controller {
       oldRoot,
       newRoot,
       pathElements,
-      pathIndices: bitsToNumber(pathIndices),
+      pathIndices,
     }
   }
 
