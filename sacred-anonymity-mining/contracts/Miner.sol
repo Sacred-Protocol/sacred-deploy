@@ -116,7 +116,6 @@ contract Miner is ReentrancyGuard{
   }
 
   struct WithdrawArgs {
-    address instance;
     uint256 apAmount;
     uint256 aaveInterestAmount;
     bytes32 extDataHash;
