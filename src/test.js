@@ -66,6 +66,41 @@ async function getBlockNumbers(sacredTrees, type, noteString) {
   return blockNum
 }
 
+async function getFormatedBalance(tokenAddress, _wallet) {
+  let balance = 0
+  if(tokenAddress) {
+    const erc20 = new ethers.Contract(tokenAddress, erc20Abi, _wallet)
+    const decimals = await erc20.decimals()
+    balance = ethers.utils.formatUnits(await erc20.balanceOf(_wallet.address), decimals)
+  } else {
+    balance = ethers.utils.formatEther(await _wallet.getBalance())
+  }
+  return balance
+}
+
+async function deposit(currency, amount, _wallet) {
+    const tokenAddress = instancesInfo.pools[`${utils.getNetId()}`][currency].token
+    let balance = await getFormatedBalance(tokenAddress, _wallet)
+    console.log(`Before Deposit: User ${currency} balance is `, balance);
+    const result = await utils.deposit({ currency, amount });
+    console.log('Deposit block number is ', result.blockNumber);
+    balance = await getFormatedBalance(tokenAddress, _wallet)
+    console.log(`After Deposit: User ${currency} balance is `, balance);
+    return result
+}
+
+async function withdraw(noteString, _wallet) {
+  const { deposit, currency, amount } = utils.baseUtils.parseNote(noteString);
+  const tokenAddress = instancesInfo.pools[`${utils.getNetId()}`][currency].token
+  let balance = await getFormatedBalance(tokenAddress, _wallet)
+  console.log(`Before Withdraw: User ${currency} balance is `, balance);
+  const blockNumber = await utils.withdraw({ deposit, currency, amount, recipient: _wallet.address, relayerURL: null });
+  console.log('Withdraw block number is ', blockNumber);
+  balance = await getFormatedBalance(tokenAddress, _wallet)
+  console.log(`After Withdraw: User ${currency} balance is `, balance);
+  return blockNumber
+}
+
 describe('Testing SacredAnanomityMining', () => {
   const RATE = BigNumber.from(10)
   const levels = 20
@@ -156,23 +191,23 @@ describe('Testing SacredAnanomityMining', () => {
   })
 
   describe('#Deposit And Withdraw', () => {
-    it('should work', async () => {
+    it('It should work for ETH', async () => {
       for (let i = 0; i < 2; i++) {
-        let ethbalance = Number(ethers.utils.formatEther(await wallet.getBalance()));
-        console.log('Before Deposit: User ETH balance is ', ethbalance);
-        //Deposit
-        const result = await utils.deposit({ currency: 'eth', amount: 0.1 });
-        noteString = result.noteString;
-        depositBlockNum = result.blockNumber;
-        console.log('Deposit block number is ', depositBlockNum);
-        ethbalance = Number(ethers.utils.formatEther(await wallet.getBalance()));
-        console.log('After Deposit: User ETH balance is ', ethbalance);
+        let result = await deposit("eth", 0.1, wallet)
+        noteString = result.noteString
+        depositBlockNum = result.blockNumber
         //Withdraw
-        const { deposit, currency, amount } = utils.baseUtils.parseNote(noteString);
-        withdrawBlockNum = await utils.withdraw({ deposit, currency, amount, recipient: wallet.address, relayerURL: null });
-        console.log('Withdraw block number is ', withdrawBlockNum);
-        ethbalance = Number(ethers.utils.formatEther(await wallet.getBalance()));
-        console.log('After Withdraw: User ETH balance is ', ethbalance);
+        withdrawBlockNum = await withdraw(noteString, wallet)
+      }
+    })
+
+    it('It should work for DAI', async () => {
+      for (let i = 0; i < 2; i++) {
+        let result = await deposit("dai", 200, wallet)
+        noteString = result.noteString
+        depositBlockNum = result.blockNumber
+        //Withdraw
+        withdrawBlockNum = await withdraw(noteString, wallet)
       }
     })
   })
@@ -186,32 +221,38 @@ describe('Testing SacredAnanomityMining', () => {
 
   describe('#reward', () => {
     it('should work', async () => {
+      //noteString = "sacred-eth-0.1-4-0x702dea4c5b3aaefb219b9d5d066bd6f37467391bec008ab03408c9d7b7560e1d69a9d59df9364c4b9485b3c0e58ea0a52f22bc22e947a1fc0f2c72adc343"
+      const { currency, amount } = utils.baseUtils.parseNote(noteString);
+      const currencyIndex = Account.getCurrencyIndex(currency)
       const zeroAccount = new Account()
       const accountCount = await miner.accountCount()
-      expect(zeroAccount.getApAmount("eth").toString()).to.equal("0")
-
-      //noteString = "sacred-eth-0.1-4-0x702dea4c5b3aaefb219b9d5d066bd6f37467391bec008ab03408c9d7b7560e1d69a9d59df9364c4b9485b3c0e58ea0a52f22bc22e947a1fc0f2c72adc343"
+      zeroAccount.getAmountsList().forEach(amount=>{
+        expect(amount.toString()).to.equal("0")
+      })
       console.log("Note: ", noteString)
       depositBlockNum = await getBlockNumbers(sacredTrees, action.DEPOSIT, noteString)
       withdrawBlockNum = await getBlockNumbers(sacredTrees, action.WITHDRAWAL, noteString)
       console.log("depositBlockNumber:", depositBlockNum)
       console.log("withdrawBlockNumber:", withdrawBlockNum)
-      const note = Note.fromString(noteString, utils.getSacredInstanceAddress(utils.getNetId(), 'eth', 0.1), depositBlockNum, withdrawBlockNum)
-      const shareTracks = await miner.shareTrack()
-      const totalShares = await miner.totalShareSnapshots(toHex(note.rewardNullifier), 0)
-      const interests = await miner.totalShareSnapshots(toHex(note.rewardNullifier), 1)
+      const note = Note.fromString(noteString, utils.getSacredInstanceAddress(utils.getNetId(), currency, amount), depositBlockNum, withdrawBlockNum)
+      const shareTracks = await miner.shareTrack(currencyIndex)
+      const totalShares = await miner.totalShareSnapshots(currencyIndex, toHex(note.rewardNullifier), 0)
+      const interests = await miner.totalShareSnapshots(currencyIndex, toHex(note.rewardNullifier), 1)
       expect(totalShares.gt(BigNumber.from(0))).to.equal(true)
       expect(interests.gt(BigNumber.from(0))).to.equal(true)
       expect(shareTracks.totalShares.gte(totalShares)).to.equal(true)
       const eventsDeposit = await rootUpdaterEvents.getEvents(sacredTrees, action.DEPOSIT)
       const eventsWithdraw = await rootUpdaterEvents.getEvents(sacredTrees, action.WITHDRAWAL)
       const result = await controller.reward({ account: zeroAccount, note, publicKey, fee: 0, relayer: 0, accountCommitments: null, depositDataEvents: eventsDeposit.committedEvents, withdrawalDataEvents: eventsWithdraw.committedEvents })
-      proof = result.proof
       args = result.args
       account = result.account
-      const tx = await (await miner['reward(bytes,(uint256,uint256,address,uint256,uint256,bytes32,bytes32,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](proof, args, { gasLimit: 500000000 })).wait();
+      const tx = await (await miner['reward(bytes,(uint256,uint256,address,uint256,uint256,bytes32,bytes32,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](
+        result.a, 
+        result.b, 
+        result.c, 
+        args, 
+        { gasLimit: 500000000 })).wait();
       const newAccountEvent = tx.events.find(item => item.event === 'NewAccount')
-
       expect(newAccountEvent.event).to.equal('NewAccount')
       expect(newAccountEvent.args.commitment).to.equal(toHex(account.commitment))
       expect(newAccountEvent.args.index).to.equal(accountCount)
@@ -248,7 +289,11 @@ describe('Testing SacredAnanomityMining', () => {
       const preETHBalance = await ethers.provider.getBalance(recipient);
       const withdrawSnark = await controller.withdraw({ account, apAmount: account.apAmount, aaveInterestAmount: account.aaveInterestAmount, recipient, publicKey })
       const balanceBefore = await sacred.balanceOf(recipient)
-      const tx = await (await miner['withdraw(bytes,(uint256,uint256,bytes32,(uint256,address,address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](withdrawSnark.proof, withdrawSnark.args)).wait()
+      const tx = await (await miner['withdraw(bytes,(uint256,uint256,bytes32,(uint256,address,address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](
+        withdrawSnark.a, 
+        withdrawSnark.b, 
+        withdrawSnark.c, 
+        withdrawSnark.args)).wait()
 
       const gasUsed = BigInt(tx.cumulativeGasUsed) * BigInt(tx.effectiveGasPrice);
 

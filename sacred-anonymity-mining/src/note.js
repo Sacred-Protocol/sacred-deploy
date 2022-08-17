@@ -1,5 +1,5 @@
 
-const {parseNote, randomBN, pedersenHash, poseidonHash} = require('../../sacred-contracts-eth/lib/baseUtils')
+const {parseNote, numToBuffer, randomBN, pedersenHash, poseidonHash} = require('../../sacred-contracts-eth/lib/baseUtils')
 
 class Note {
   constructor({ secret, nullifier, netId, amount, currency, depositBlock, withdrawalBlock, instance } = {}) {
@@ -7,9 +7,9 @@ class Note {
     this.nullifier = nullifier ? BigInt(nullifier) : randomBN(31)
 
     this.commitment = pedersenHash(
-      Buffer.concat([this.nullifier.toBuffer('le', 31), this.secret.toBuffer('le', 31)]),
+      Buffer.concat([numToBuffer(this.nullifier, 31, 'le'), numToBuffer(this.secret, 31, 'le')]),
     )
-    this.nullifierHash = pedersenHash(this.nullifier.toBuffer('le', 31))
+    this.nullifierHash = pedersenHash(numToBuffer(this.nullifier, 31, 'le'))
     this.rewardNullifier = poseidonHash([this.nullifierHash])
 
     this.netId = netId
