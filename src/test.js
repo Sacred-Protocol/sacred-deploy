@@ -247,7 +247,7 @@ describe('Testing SacredAnanomityMining', () => {
       const result = await controller.reward({ account: zeroAccount, note, publicKey, fee: 0, relayer: 0, accountCommitments: null, depositDataEvents: eventsDeposit.committedEvents, withdrawalDataEvents: eventsWithdraw.committedEvents })
       args = result.args
       account = result.account
-      const tx = await (await miner['reward(uint[2],uint[2][2],uint[2],(uint256,uint256,address,uint256,uint256,bytes32,bytes32,uint256,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](
+      const tx = await (await miner['reward(uint256[2],uint256[2][2],uint256[2],(uint256,uint256,address,uint256,uint256,bytes32,bytes32,uint256,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](
         result.a, 
         result.b, 
         result.c, 
@@ -290,7 +290,7 @@ describe('Testing SacredAnanomityMining', () => {
       const preETHBalance = await ethers.provider.getBalance(recipient);
       const withdrawSnark = await controller.withdraw({ account, apAmount: account.apAmount, aaveInterestAmount: account.aaveInterestAmount, recipient, publicKey })
       const balanceBefore = await sacred.balanceOf(recipient)
-      const tx = await (await miner['withdraw(uint[2],uint[2][2],uint[2],(uint256,uint256,bytes32,uint256,(uint256,address,address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](
+      const tx = await (await miner['withdraw(uint256[2],uint256[2][2],uint256[2],(uint256,uint256,bytes32,uint256,(uint256,address,address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](
         withdrawSnark.a, 
         withdrawSnark.b, 
         withdrawSnark.c, 

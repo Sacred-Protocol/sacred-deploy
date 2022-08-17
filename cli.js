@@ -209,7 +209,7 @@ async function main() {
         const publicKey = getEncryptionPublicKey(program.privateKey || PRIVATE_KEY)
         const result = await controller.reward({ account: zeroAccount, note: _note, publicKey, fee: 0, relayer: program.relayer, accountCommitments: null, depositDataEvents: eventsDeposit.committedEvents, withdrawalDataEvents: eventsWithdraw.committedEvents })
         const account = result.account
-        const tx = await (await miner['reward(uint[2],uint[2][2],uint[2],(uint256,uint256,address,uint256,uint256,bytes32,bytes32,uint256,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](result.proof, result.args, { gasLimit: 500000 })).wait();
+        const tx = await (await miner['reward(uint256[2],uint256[2][2],uint256[2],(uint256,uint256,address,uint256,uint256,bytes32,bytes32,uint256,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](result.proof, result.args, { gasLimit: 500000 })).wait();
         const newAccountEvent = tx.events.find(item => item.event === 'NewAccount')
         const encryptedAccount = newAccountEvent.args.encryptedAccount
         console.log("Claimed Ap Amount: ", account.apAmount.toString())
@@ -229,7 +229,7 @@ async function main() {
       const withdrawSnark = await controller.withdraw({ currency, account: decryptedAccount, apAmount, aaveInterestAmount, recipient, publicKey })
       const balanceBefore = await sacred.balanceOf(recipient)
       console.log("Balance Before RewardSwap:", balanceBefore)
-      const tx = await (await miner['withdraw(uint[2],uint[2][2],uint[2],(uint256,uint256,bytes32,uint256,(uint256,address,address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](withdrawSnark.proof, withdrawSnark.args)).wait()
+      const tx = await (await miner['withdraw(uint256[2],uint256[2][2],uint256[2],(uint256,uint256,bytes32,uint256,(uint256,address,address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](withdrawSnark.proof, withdrawSnark.args)).wait()
       const balanceAfter = await sacred.balanceOf(recipient)
       console.log("Balance After RewardSwap:", balanceAfter)
     })
