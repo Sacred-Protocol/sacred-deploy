@@ -90,16 +90,19 @@ class Account {
     const secret = bufferToNum(buf.slice(0, 31), "be")
     const nullifier = bufferToNum(buf.slice(31, 62), "be")
     let amounts = {}
-    const coinInfos = buf.slice(62).split(";;")
+    let coinInfos = buf.slice(62).toString().split(";;")
+    coinInfos = coinInfos.filter(item=>!!item)
     coinInfos.forEach(infoBuf=>{
       const data = infoBuf.split("&&")
       if(data.length !== 2) {
         throw new Error('Corrupted CoinInfo')
       }
+      
       const symbol = data[0]
+      const buf2 = Buffer.from(data[1])
       amounts[symbol] = {
-        "apAmount" : bufferToNum(data[1].slice(0, 31), "be"),
-        "aaveInterestAmount" : bufferToNum(data[1].slice(31, 62), "be")
+        "apAmount" : bufferToNum(buf2.slice(0, 31), "be"),
+        "aaveInterestAmount" : bufferToNum(buf2.slice(31, 62), "be")
       }
     })
 
