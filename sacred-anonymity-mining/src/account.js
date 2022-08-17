@@ -1,6 +1,6 @@
 const { encrypt, decrypt } = require('eth-sig-util')
 const {randomBN, numToBuffer, bufferToNum, poseidonHash} = require('../../sacred-contracts-eth/lib/baseUtils')
-const currencyList = ["eth", "dai"]
+const currencyList = ["eth", "dai", "reserve1", "reserve2", "reserve3"]
 
 class Account {
   constructor({ amounts, secret, nullifier } = {}) {
