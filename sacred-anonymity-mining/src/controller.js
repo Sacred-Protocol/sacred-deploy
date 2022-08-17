@@ -185,8 +185,9 @@ class Controller {
       rate = await this.minerContract.rates(note.instance)
       rate = rate.toString()
     }
+    const currencyIndex = Account.getCurrencyIndex(note.currency)
     const apAmount = BigInt(rate).mul(BigInt(note.withdrawalBlock).sub(BigInt(note.depositBlock)))
-    const tx = await (await this.minerContract.getAaveInterestsAmount(toHex(note.rewardNullifier), toHex(apAmount.toString()))).wait();
+    const tx = await (await this.minerContract.getAaveInterestsAmount(currencyIndex, toHex(note.rewardNullifier), toHex(apAmount.toString()))).wait();
     const amountEvent = tx.events.find(item => item.event === 'AaveInterestsAmount')
     let aaveInterestAmount = BigInt(amountEvent.args.amount.toString());
     let amounts = Object.assign({}, account.amounts)
