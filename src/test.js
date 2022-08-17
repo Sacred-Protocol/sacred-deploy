@@ -151,7 +151,8 @@ describe('Testing SacredAnanomityMining', () => {
       minerContract: miner,
       sacredTreesContract: sacredTrees,
       merkleTreeHeight: levels,
-      provingKeys
+      provingKeys,
+      utils
     })
     rootUpdaterEvents.setProvider(utils.getProvider())
     await controller.init()

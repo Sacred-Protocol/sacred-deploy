@@ -470,5 +470,6 @@ module.exports = {
   loadDepositData,
   loadWithdrawalData,
   getZeroMerkleRoot,
+  generateGroth16Proof,
   baseUtils,
 }

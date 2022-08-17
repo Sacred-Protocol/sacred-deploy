@@ -283,7 +283,7 @@ class Controller {
     }
 
     console.log('Generating SNARK proof')
-    const {a, b, c} = await utils.generateGroth16Proof(input, this.provingKeys.rewardWasmPath, this.provingKeys.rewardZkeyFilePath);
+    const {a, b, c} = await this.utils.generateGroth16Proof(input, this.provingKeys.rewardWasmPath, this.provingKeys.rewardZkeyFilePath);
     console.log('Submitting reward transaction')
 
     const args = {
@@ -318,7 +318,7 @@ class Controller {
   }
 
   async withdraw({ currency, account, apAmount, aaveInterestAmount, recipient, publicKey, fee = 0, relayer = 0, accountCommitments = null }) {
-    const instance = utils.getSacredInstanceAddress(utils.getNetId(), currency, amount)
+    const instance = this.utils.getSacredInstanceAddress(this.utils.getNetId(), currency, amount)
     let amounts = Object.assign({}, account.amounts)
     amounts[currency].aaveInterestAmount = amounts[currency].aaveInterestAmount.sub(aaveInterestAmount);
     amounts[currency].apAmount = amounts[currency].apAmount.sub(apAmount.sub(BigInt(fee)));
@@ -364,7 +364,7 @@ class Controller {
     }
 
     console.log('Generating SNARK proof')
-    const {a, b, c} = await utils.generateGroth16Proof(input, this.provingKeys.withdrawWasmPath, this.provingKeys.withdrawZkeyFilePath);
+    const {a, b, c} = await this.utils.generateGroth16Proof(input, this.provingKeys.withdrawWasmPath, this.provingKeys.withdrawZkeyFilePath);
     console.log('Submitting reward withdrawal transaction')
 
     const args = {
@@ -411,7 +411,7 @@ class Controller {
       pathElements: accountTreeUpdate.pathElements,
     }
 
-    const {a, b, c} = await utils.generateGroth16Proof(input, this.provingKeys.treeUpdateWasmPath, this.provingKeys.treeUpdateZkeyFilePath);
+    const {a, b, c} = await this.utils.generateGroth16Proof(input, this.provingKeys.treeUpdateWasmPath, this.provingKeys.treeUpdateZkeyFilePath);
     const args = {
       oldRoot: input.oldRoot,
       newRoot: input.newRoot,
