@@ -226,7 +226,7 @@ describe('Testing SacredAnanomityMining', () => {
       const currencyIndex = Account.getCurrencyIndex(currency)
       const zeroAccount = new Account()
       const accountCount = await miner.accountCount()
-      zeroAccount.getAmountsList().forEach(amount=>{
+      zeroAccount.getApAmountList().forEach(amount=>{
         expect(amount.toString()).to.equal("0")
       })
       console.log("Note: ", noteString)

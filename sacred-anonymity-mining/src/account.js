@@ -41,7 +41,7 @@ class Account {
     })
   }
 
-  getAmountsList() {
+  getApAmountList() {
     let data = []
     currencyList.forEach(symbol=>{
       data.push(this.amounts[symbol].apAmount)
@@ -49,7 +49,7 @@ class Account {
     return data
   }
 
-  getAaveInterestsList() {
+  getAaveInterestList() {
     let data = []
     currencyList.forEach(symbol=>{
       data.push(this.amounts[symbol].aaveInterestAmount)

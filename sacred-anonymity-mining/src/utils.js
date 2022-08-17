@@ -1,7 +1,7 @@
 const Decimal = require('decimal.js')
 const { soliditySha3 } = require('web3-utils')
 const { groth16 } = require('snarkjs')
-const { toHex} = require('../../sacred-contracts-eth/lib/baseUtils')
+const { toHex, unstringifyBigInts} = require('../../sacred-contracts-eth/lib/baseUtils')
 const Web3 = require('web3')
 const web3 = new Web3()
 
@@ -120,18 +120,6 @@ function reverseSacredFormula({ balance, tokens, poolWeight = 1e10 }) {
   return BigInt(poolWeight.times(Decimal.ln(balance.div(balance.sub(tokens)))).toFixed(0))
 }
 
-async function generateGroth16Proof(input, wasmFile, zkeyFileName) {
-  const { proof: _proof, publicSignals: _publicSignals } = await groth16.fullProve(input, wasmFile, zkeyFileName);
-  const editedPublicSignals = baseUtils.unstringifyBigInts(_publicSignals);
-  const editedProof = baseUtils.unstringifyBigInts(_proof);
-  const calldata = await groth16.exportSolidityCallData(editedProof, editedPublicSignals);
-  const argv = calldata.replace(/["[\]\s]/g, "").split(',').map(x => BigInt(x).toString());
-  const a = [argv[0], argv[1]];
-  const b = [[argv[2], argv[3]], [argv[4], argv[5]]];
-  const c = [argv[6], argv[7]];
-  return {a, b, c}
-}
-
 module.exports = {
   getExtRewardArgsHash,
   getExtWithdrawArgsHash,
@@ -139,7 +127,6 @@ module.exports = {
   unpackEncryptedMessage,
   sacredFormula,
   reverseSacredFormula,
-  generateGroth16Proof,
   RewardArgs,
   RewardExtData,
   AccountUpdate,

@@ -2,7 +2,6 @@ const {
   getExtRewardArgsHash,
   getExtWithdrawArgsHash,
   packEncryptedMessage,
-  generateGroth16Proof,
   RewardArgs,
 } = require('./utils')
 
@@ -264,14 +263,14 @@ class Controller {
       noteSecret: toHex(note.secret),
       noteNullifier: toHex(note.nullifier),
       noteNullifierHash: toHex(note.nullifierHash),
-      inputApAmounts: account.getAmountsList(),
-      inputAaveInterestAmounts: account.getAaveInterestsList(),
+      inputApAmounts: account.getApAmountList(),
+      inputAaveInterestAmounts: account.getAaveInterestList(),
       inputSecret: toHex(account.secret),
       inputNullifier: toHex(account.nullifier),
       inputPathElements: accountPath.pathElements.map(item => toHex(item)),
       inputPathIndices: bitsToNumber(accountPath.pathIndices),
-      outputApAmounts: newAccount.getAmountsList(),
-      outputAaveInterestAmounts: newAccount.getAaveInterestsList(),
+      outputApAmounts: newAccount.getApAmountList(),
+      outputAaveInterestAmounts: newAccount.getAaveInterestList(),
       outputSecret: toHex(newAccount.secret),
       outputNullifier: toHex(newAccount.nullifier),
       outputPathElements: accountTreeUpdate.pathElements.map(item => toHex(item)),
@@ -284,7 +283,7 @@ class Controller {
     }
 
     console.log('Generating SNARK proof')
-    const {a, b, c} = await generateGroth16Proof(input, this.provingKeys.rewardWasmPath, this.provingKeys.rewardZkeyFilePath);
+    const {a, b, c} = await utils.generateGroth16Proof(input, this.provingKeys.rewardWasmPath, this.provingKeys.rewardZkeyFilePath);
     console.log('Submitting reward transaction')
 
     const args = {
@@ -351,21 +350,21 @@ class Controller {
       outputPathIndices: bitsToNumber(accountTreeUpdate.pathIndices),
       outputCommitment: toHex(newAccount.commitment),
       // private
-      inputApAmounts: account.getAmountsList(),
-      inputAaveInterestAmounts: account.getAaveInterestsList(),
+      inputApAmounts: account.getApAmountList(),
+      inputAaveInterestAmounts: account.getAaveInterestList(),
       inputSecret: toHex(account.secret),
       inputNullifier: toHex(account.nullifier),
       inputPathIndices: bitsToNumber(accountPath.pathIndices),
       inputPathElements: accountPath.pathElements.map(item => toHex(item)),
-      outputApAmounts: newAccount.getAmountsList(),
-      outputAaveInterestAmounts: newAccount.getAaveInterestsList(),
+      outputApAmounts: newAccount.getApAmountList(),
+      outputAaveInterestAmounts: newAccount.getAaveInterestList(),
       outputSecret: toHex(newAccount.secret),
       outputNullifier: toHex(newAccount.nullifier),
       outputPathElements: accountTreeUpdate.pathElements.map(item => toHex(item)),
     }
 
     console.log('Generating SNARK proof')
-    const {a, b, c} = await generateGroth16Proof(input, this.provingKeys.withdrawWasmPath, this.provingKeys.withdrawZkeyFilePath);
+    const {a, b, c} = await utils.generateGroth16Proof(input, this.provingKeys.withdrawWasmPath, this.provingKeys.withdrawZkeyFilePath);
     console.log('Submitting reward withdrawal transaction')
 
     const args = {
@@ -412,7 +411,7 @@ class Controller {
       pathElements: accountTreeUpdate.pathElements,
     }
 
-    const {a, b, c} = await generateGroth16Proof(input, this.provingKeys.treeUpdateWasmPath, this.provingKeys.treeUpdateZkeyFilePath);
+    const {a, b, c} = await utils.generateGroth16Proof(input, this.provingKeys.treeUpdateWasmPath, this.provingKeys.treeUpdateZkeyFilePath);
     const args = {
       oldRoot: input.oldRoot,
       newRoot: input.newRoot,
