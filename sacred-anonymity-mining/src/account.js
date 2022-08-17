@@ -74,11 +74,11 @@ class Account {
   encrypt(pubkey) {
     let data = [numToBuffer(this.secret, 31, 'be'), numToBuffer(this.nullifier, 31, 'be')]
     currencyList.forEach(symbol=>{
-      data.push(symbol)
-      data.push("&&")
+      data.push(Buffer.from(symbol))
+      data.push(Buffer.from("&&"))
       data.push(numToBuffer(this.amounts[symbol].apAmount, 31, 'be'))
       data.push(numToBuffer(this.amounts[symbol].aaveInterestAmount, 31, 'be'))
-      data.push(";;")
+      data.push(Buffer.from(";;"))
     })
     const bytes = Buffer.concat(data)
     return encrypt(pubkey, { data: bytes.toString('base64') }, 'x25519-xsalsa20-poly1305')
