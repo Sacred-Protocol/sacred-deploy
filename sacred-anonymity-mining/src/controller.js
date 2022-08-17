@@ -268,19 +268,19 @@ class Controller {
       inputAaveInterestAmounts: account.getAaveInterestsList(),
       inputSecret: toHex(account.secret),
       inputNullifier: toHex(account.nullifier),
-      inputPathElements: accountPath.pathElements,
+      inputPathElements: accountPath.pathElements.map(item => toHex(item)),
       inputPathIndices: bitsToNumber(accountPath.pathIndices),
       outputApAmounts: newAccount.getAmountsList(),
       outputAaveInterestAmounts: newAccount.getAaveInterestsList(),
       outputSecret: toHex(newAccount.secret),
       outputNullifier: toHex(newAccount.nullifier),
-      outputPathElements: accountTreeUpdate.pathElements,
+      outputPathElements: accountTreeUpdate.pathElements.map(item => toHex(item)),
       depositBlock: toHex(note.depositBlock),
       depositPathIndices: bitsToNumber(depositPath.pathIndices),
-      depositPathElements: depositPath.pathElements,
+      depositPathElements: depositPath.pathElements.map(item => toHex(item)),
       withdrawalBlock: toHex(note.withdrawalBlock),
       withdrawalPathIndices: bitsToNumber(withdrawalPath.pathIndices),
-      withdrawalPathElements: withdrawalPath.pathElements,
+      withdrawalPathElements: withdrawalPath.pathElements.map(item => toHex(item)),
     }
 
     console.log('Generating SNARK proof')
@@ -356,12 +356,12 @@ class Controller {
       inputSecret: toHex(account.secret),
       inputNullifier: toHex(account.nullifier),
       inputPathIndices: bitsToNumber(accountPath.pathIndices),
-      inputPathElements: accountPath.pathElements,
+      inputPathElements: accountPath.pathElements.map(item => toHex(item)),
       outputApAmounts: newAccount.getAmountsList(),
       outputAaveInterestAmounts: newAccount.getAaveInterestsList(),
       outputSecret: toHex(newAccount.secret),
       outputNullifier: toHex(newAccount.nullifier),
-      outputPathElements: accountTreeUpdate.pathElements,
+      outputPathElements: accountTreeUpdate.pathElements.map(item => toHex(item)),
     }
 
     console.log('Generating SNARK proof')
