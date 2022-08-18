@@ -185,14 +185,16 @@ class Controller {
       rate = rate.toString()
     }
     const currencyIndex = Account.getCurrencyIndex(note.currency)
-    const apAmount = BigInt(rate).mul(BigInt(note.withdrawalBlock).sub(BigInt(note.depositBlock)))
-    const tx = await (await this.minerContract.getAaveInterestsAmount(currencyIndex, toHex(note.rewardNullifier), toHex(apAmount.toString()))).wait();
+    const apAmount = BigInt(rate).mul(note.withdrawalBlock.sub(note.depositBlock))
+    const tx = await (await this.minerContract.getAaveInterestsAmount(currencyIndex, toHex(note.rewardNullifier), toHex(apAmount))).wait();
     const amountEvent = tx.events.find(item => item.event === 'AaveInterestsAmount')
     let aaveInterestAmount = BigInt(amountEvent.args.amount.toString());
-    let amounts = Object.assign({}, account.amounts)
-    amounts[note.currency].aaveInterestAmount = amounts[note.currency].aaveInterestAmount.add(aaveInterestAmount);
-    amounts[note.currency].apAmount = amounts[note.currency].apAmount.add(apAmount.sub(BigInt(fee)));
-    const newAccount = new Account({ amounts })
+    
+    let apAmounts = account.getApAmountList()
+    let aaveInterestAmounts = account.getAaveInterestList()
+    apAmounts[currencyIndex] = apAmounts[currencyIndex].add(apAmount.sub(BigInt(fee)));
+    aaveInterestAmounts[currencyIndex] = aaveInterestAmounts[currencyIndex].add(aaveInterestAmount);
+    const newAccount = new Account({ apAmounts, aaveInterestAmounts })
 
     depositDataEvents = depositDataEvents || (await this._fetchDepositDataEvents())
     const depositLeaves = depositDataEvents.map((x) => {
@@ -251,7 +253,7 @@ class Controller {
       aaveInterestAmount: toHex(aaveInterestAmount),
       rewardNullifier: toHex(note.rewardNullifier),
       extDataHash: toHex(extDataHash),
-      currencyIndex: toHex(Account.getCurrencyIndex(note.currency)),
+      currencyIndex: toHex(currencyIndex),
       inputRoot: toHex(accountTreeUpdate.oldRoot),
       inputNullifierHash: toHex(account.nullifierHash),
       outputRoot: toHex(accountTreeUpdate.newRoot),
@@ -319,11 +321,12 @@ class Controller {
 
   async withdraw({ currency, account, apAmount, aaveInterestAmount, recipient, publicKey, fee = 0, relayer = 0, accountCommitments = null }) {
     const instance = this.utils.getSacredInstanceAddress(this.utils.getNetId(), currency, amount)
-    let amounts = Object.assign({}, account.amounts)
-    amounts[currency].aaveInterestAmount = amounts[currency].aaveInterestAmount.sub(aaveInterestAmount);
-    amounts[currency].apAmount = amounts[currency].apAmount.sub(apAmount.sub(BigInt(fee)));
-    const newAccount = new Account({ amounts })
-
+    const currencyIndex = Account.getCurrencyIndex(currency)
+    let apAmounts = account.getApAmountList()
+    let aaveInterestAmounts = account.getAaveInterestList()
+    apAmounts[currencyIndex] = apAmounts[currencyIndex].sub(apAmount.sub(BigInt(fee)));
+    aaveInterestAmounts[currencyIndex] = aaveInterestAmounts[currencyIndex].sub(aaveInterestAmount);
+    const newAccount = new Account({ apAmounts, aaveInterestAmounts })
     accountCommitments = accountCommitments || (await this._fetchAccountCommitments())
     const accountTree = new MerkleTree(this.merkleTreeHeight, accountCommitments, {
       hashFunction: poseidonHash2,
@@ -343,7 +346,7 @@ class Controller {
       apAmount: tohex(BigInt(apAmount).add(BigInt(fee))),
       aaveInterestAmount: toHex(aaveInterestAmount),
       extDataHash: toHex(extDataHash),
-      currencyIndex: toHex(Account.getCurrencyIndex(currency)),
+      currencyIndex: toHex(currencyIndex),
       inputRoot: toHex(accountTreeUpdate.oldRoot),
       outputRoot: toHex(accountTreeUpdate.newRoot),
       inputNullifierHash: toHex(account.nullifierHash),
