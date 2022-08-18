@@ -3,13 +3,11 @@ const { utils } = require('ffjavascript')
 const jsSHA = require('jssha')
 const fs = require('fs')
 const tmp = require('tmp-promise')
-const {poseidonHash, bitsToNumber, toHex} = require('../../sacred-contracts-eth/lib/baseUtils')
+const {poseidonHash, bitsToNumber, toHex, numToBuffer} = require('../../sacred-contracts-eth/lib/baseUtils')
 const util = require('util')
 const exec = util.promisify(require('child_process').exec)
 
-function toBuffer(value, length) {
-  return Buffer.from(toHex(BigInt(value), length), 'hex', )
-}
+const toBuffer = (value, length) => numToBuffer(BigInt(value), length, 'be')
 
 function hashInputs(input) {
   const sha = new jsSHA('SHA-256', 'ARRAYBUFFER')
