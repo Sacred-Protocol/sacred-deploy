@@ -47,7 +47,7 @@ async function init({ instancesInfo, erc20Contract, rpc, accountToInpersonate })
   erc20Abi = erc20Contract
 
   const tree = new MerkleTree(20, [], { hashFunction: baseUtils.poseidonHash2 })
-  zeroMerkleRoot = '0x' + tree.root().toString(16).padStart(32 * 2, '0')
+  zeroMerkleRoot = baseUtils.toHex(tree.root())
 }
 
 async function setup({ ethSacredAbi, erc20SacredAbi, sacredProxyContract, wasmPath, zkeyFilePath }) {

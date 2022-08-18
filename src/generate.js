@@ -206,7 +206,7 @@ async function main() {
   actions[sacredTreeActionIndex].initArgs = [
     ensToAddr(config.sacredProxy.address),
     ensToAddr("batchTreeUpdateVerifier.contract.sacredcash.eth"),
-    "0x29f9a0a07a22ab214d00aaa0190f54509e853f3119009baecb0035347606b0a9"
+    utils.getZeroMerkleRoot(),
   ];
 
   // Deploy AaveInterestsProxy

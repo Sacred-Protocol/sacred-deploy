@@ -30,7 +30,6 @@ template Reward(levels, currencyCnt,  zeroLeaf) {
   signal input noteSecret;
   signal input noteNullifier;
   signal input noteNullifierHash;
-
   signal input inputApAmounts[currencyCnt];
   signal input inputAaveInterestAmounts[currencyCnt];
   signal input inputSecret;
@@ -42,14 +41,10 @@ template Reward(levels, currencyCnt,  zeroLeaf) {
   signal input outputSecret;
   signal input outputNullifier;
   signal input outputPathElements[levels];
-
   signal input depositBlock;
-  
   signal input depositPathIndices;
   signal input depositPathElements[levels];
-
   signal input withdrawalBlock;
-  
   signal input withdrawalPathIndices;
   signal input withdrawalPathElements[levels];
 

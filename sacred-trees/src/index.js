@@ -3,7 +3,8 @@ const BigNumber = ethers.BigNumber
 const { wtns } = require('snarkjs')
 const { utils } = require('ffjavascript')
 
-const { bitsToNumber, toBuffer, toFixedHex, poseidonHash } = require('./utils')
+const { toBuffer } = require('./utils')
+const {poseidonHash, bitsToNumber, toHex} = require('../../sacred-contracts-eth/lib/baseUtils')
 
 const jsSHA = require('jssha')
 
@@ -11,6 +12,10 @@ const fs = require('fs')
 const tmp = require('tmp-promise')
 const util = require('util')
 const exec = util.promisify(require('child_process').exec)
+
+function toBuffer(value, length) {
+  return Buffer.from( toHex(BigInt(value), length), 'hex', )
+}
 
 function hashInputs(input) {
   const sha = new jsSHA('SHA-256', 'ARRAYBUFFER')
@@ -25,10 +30,8 @@ function hashInputs(input) {
   }
 
   const hash = '0x' + sha.getHash('HEX')
-  const result = BigNumber.from(hash)
-    .mod(BigNumber.from('21888242871839275222246405745257275088548364400416034343698204186575808495617'))
-    .toString()
-  return result
+  const result = BigInt(hash) % BigInt('21888242871839275222246405745257275088548364400416034343698204186575808495617')
+  return toHex(result)
 }
 
 function prove(input, keyBasePath) {
@@ -99,14 +102,14 @@ function batchTreeUpdate(tree, events) {
   input.argsHash = hashInputs(input)
 
   const args = [
-    toFixedHex(input.argsHash),
-    toFixedHex(input.oldRoot),
-    toFixedHex(input.newRoot),
-    toFixedHex(input.pathIndices, 4),
+    toHex(input.argsHash),
+    toHex(input.oldRoot),
+    toHex(input.newRoot),
+    toHex(input.pathIndices, 4),
     events.map((e) => ({
-      hash: toFixedHex(e.hash),
-      instance: toFixedHex(e.instance, 20),
-      block: toFixedHex(e.block, 4),
+      hash: toHex(e.hash),
+      instance: toHex(e.instance, 20),
+      block: toHex(e.block, 4),
     })),
   ]
   return { input, args }
@@ -119,13 +122,13 @@ function batchTreeUpdate(tree, events) {
   // const { proof } = websnarkUtils.toSolidityInput(proofData)
 
   // const args = [
-  //   toFixedHex(input.oldRoot),
-  //   toFixedHex(input.newRoot),
-  //   toFixedHex(input.pathIndices),
+  //   toHex(input.oldRoot),
+  //   toHex(input.newRoot),
+  //   toHex(input.pathIndices),
   //   events.map((e) => ({
-  //     instance: toFixedHex(e.instance, 20),
-  //     hash: toFixedHex(e.hash),
-  //     block: toFixedHex(e.block),
+  //     instance: toHex(e.instance, 20),
+  //     hash: toHex(e.hash),
+  //     block: toHex(e.block),
   //   })),
   // ]
 
