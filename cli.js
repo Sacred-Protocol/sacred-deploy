@@ -14,7 +14,6 @@ const rootUpdaterEvents = require('./lib/root-updater/events')
 const { updateTree } = require('./lib/root-updater/update')
 const { action } = require('./lib/root-updater/utils')
 const config = require('./sacred-token/config')
-const { BigNumber } = require('ethers')
 const Account = require('./sacred-anonymity-mining/src/account')
 const Controller = require('./sacred-anonymity-mining/src/controller')
 const Note = require('./sacred-anonymity-mining/src/note')
@@ -183,7 +182,7 @@ async function main() {
       if (depositBlock > 0 && withdrawalBlock > 0) {
         const { currency, amount, netId, deposit } = utils.baseUtils.parseNote(note)
         const rate = await miner.rates(utils.getSacredInstanceAddress(netId, currency, amount))
-        const apAmount = BigNumber.from(withdrawalBlock - depositBlock).mul(rate)
+        const apAmount = BigInt(withdrawalBlock - depositBlock).mul(rate)
         console.log("AP amount: ", apAmount.toString())
       }
     })

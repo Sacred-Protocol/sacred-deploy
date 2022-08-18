@@ -1,7 +1,6 @@
 /* global artifacts, web3, contract */
 const { expect } = require('chai');
 const { ethers } = require("hardhat");
-const fs = require('fs')
 const { BigNumber } = require('ethers')
 const { encrypt, decrypt, getEncryptionPublicKey } = require('eth-sig-util')
 const instancesInfo = require('../config.json')

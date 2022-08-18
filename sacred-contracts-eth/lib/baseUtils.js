@@ -1,9 +1,7 @@
 const { ethers } = require("hardhat");
 const {toBigIntLE, toBufferLE, toBigIntBE, toBufferBE} = require('bigint-buffer')
 const crypto = require('crypto')
-const { toWei } = require('web3-utils')
 const circomlib = require('circomlibjs');
-const { BigNumber } = require("ethers");
 
 let provider
 let babyJub, pedersen, poseidon
@@ -158,8 +156,8 @@ function calculateFee({ gasPrices, currency, amount, refund, ethPrices, relayerS
     relayerServiceFee.toString().split('.')[1].length
   const roundDecimal = 10 ** decimalsPoint
   const total = ethers.utils.parseUnits( amount, decimals )
-  const feePercent = total.mul(BigNumber(relayerServiceFee * roundDecimal)).div(BigNumber(roundDecimal * 100))
-  const expense = ethers.utils.parseUnits(gasPrices.fast.toString(), 'gwei').mul(BigNumber(0xF4240))
+  const feePercent = total.mul(BigInt(relayerServiceFee * roundDecimal)).div(BigInt(roundDecimal * 100))
+  const expense = ethers.utils.parseUnits(gasPrices.fast.toString(), 'gwei').mul(BigInt(0xF4240))
   let desiredFee
   switch (currency) {
     case 'eth': {
@@ -167,9 +165,9 @@ function calculateFee({ gasPrices, currency, amount, refund, ethPrices, relayerS
       break
     }
     default: {
-      desiredFee = expense.add(BigNumber(refund))
-        .mul(BigNumber(10 ** decimals))
-        .div(BigNumber(ethPrices[currency]))
+      desiredFee = expense.add(BigInt(refund))
+        .mul(BigInt(10 ** decimals))
+        .div(BigInt(ethPrices[currency]))
       desiredFee = desiredFee.add(feePercent)
       break
     }

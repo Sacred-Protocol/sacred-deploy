@@ -1,19 +1,14 @@
-const ethers = require('ethers')
-const BigNumber = ethers.BigNumber
 const { wtns } = require('snarkjs')
 const { utils } = require('ffjavascript')
-
-const {poseidonHash, bitsToNumber, toHex} = require('../../sacred-contracts-eth/lib/baseUtils')
-
 const jsSHA = require('jssha')
-
 const fs = require('fs')
 const tmp = require('tmp-promise')
+const {poseidonHash, bitsToNumber, toHex} = require('../../sacred-contracts-eth/lib/baseUtils')
 const util = require('util')
 const exec = util.promisify(require('child_process').exec)
 
 function toBuffer(value, length) {
-  return Buffer.from( toHex(BigInt(value), length), 'hex', )
+  return Buffer.from(toHex(BigInt(value), length), 'hex', )
 }
 
 function hashInputs(input) {
@@ -30,7 +25,7 @@ function hashInputs(input) {
 
   const hash = '0x' + sha.getHash('HEX')
   const result = BigInt(hash) % BigInt('21888242871839275222246405745257275088548364400416034343698204186575808495617')
-  return toHex(result)
+  return result.toString()
 }
 
 function prove(input, keyBasePath) {
@@ -85,7 +80,7 @@ function batchTreeUpdate(tree, events) {
   tree.bulkInsert(leaves)
   const newRoot = tree.root().toString()
   let { pathElements, pathIndices } = tree.path(tree.elements().length - 1)
-  pathElements = pathElements.slice(batchHeight).map((a) => BigNumber.from(a).toString())
+  pathElements = pathElements.slice(batchHeight).map((a) => BigInt(a).toString())
   pathIndices = bitsToNumber(pathIndices.slice(batchHeight)).toString()
 
   const input = {
@@ -93,9 +88,9 @@ function batchTreeUpdate(tree, events) {
     newRoot,
     pathIndices,
     pathElements,
-    instances: events.map((e) => BigNumber.from(e.instance).toString()),
-    hashes: events.map((e) => BigNumber.from(e.hash).toString()),
-    blocks: events.map((e) => BigNumber.from(e.block).toString()),
+    instances: events.map((e) => BigInt(e.instance).toString()),
+    hashes: events.map((e) => BigInt(e.hash).toString()),
+    blocks: events.map((e) => BigInt(e.block).toString()),
   }
 
   input.argsHash = hashInputs(input)
