@@ -89,7 +89,8 @@ class Account {
     })
 
     return new Account({
-      amounts,
+      apAmounts,
+      aaveInterestAmounts,
       secret,
       nullifier,
     })
