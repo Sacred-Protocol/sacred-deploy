@@ -3,7 +3,6 @@ const BigNumber = ethers.BigNumber
 const { wtns } = require('snarkjs')
 const { utils } = require('ffjavascript')
 
-const { toBuffer } = require('./utils')
 const {poseidonHash, bitsToNumber, toHex} = require('../../sacred-contracts-eth/lib/baseUtils')
 
 const jsSHA = require('jssha')
