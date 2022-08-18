@@ -20,7 +20,6 @@
     "changeTreeHeight": "scripts/changeTreeHeight.sh",
     "circuit:batchTreeUpdate": "scripts/buildCircuit.sh BatchTreeUpdate",
     "circuit:batchTreeUpdateLarge": "scripts/buildCircuit.sh BatchTreeUpdate large",
-    "circuit:batchTreeUpdateWitness": "scripts/buildWitness.sh BatchTreeUpdate",
     "circuit": "yarn circuit:batchTreeUpdate"
   },
   "devDependencies": {
@@ -40,15 +39,13 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.5.0",
-    "circom": "0.5.42",
-    "circom_runtime": "0.1.12",
-    "circomlib": "git+https://github.com/tornadocash/circomlib.git#d20d53411d1bef61f38c99a8b36d5d0cc4836aa1",
     "dotenv": "^8.2.0",
     "ffiasm": "^0.1.1",
     "ffjavascript": "^0.2.35",
     "fixed-merkle-tree": "^0.5.0",
     "jssha": "^3.2.0",
-    "snarkjs": "^0.3.57",
-    "tmp-promise": "^3.0.2"
+    "tmp-promise": "^3.0.2",
+    "circomlib": "^2.0.5",
+    "snarkjs": "^0.4.19"
   }
 }

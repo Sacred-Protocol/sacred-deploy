@@ -1,11 +1,22 @@
 #!/bin/bash -e
-mkdir -p artifacts/circuits
+mkdir -p build/circuits
 if [ "$2" = "large" ]; then
-  npx circom -v -f -r artifacts/circuits/$1.r1cs -c artifacts/circuits/$1.cpp -s artifacts/circuits/$1.sym circuits/$1.circom
+  circom --r1cs -c --sym circuits/$1.circom -o build/circuits
 else
-  npx circom -v -r artifacts/circuits/$1.r1cs -w artifacts/circuits/$1.wasm -s artifacts/circuits/$1.sym circuits/$1.circom
+  circom --r1cs --wasm --sym circuits/$1.circom -o build/circuits
 fi
-zkutil setup -c artifacts/circuits/$1.r1cs -p artifacts/circuits/$1.params
-zkutil generate-verifier -p artifacts/circuits/$1.params -v artifacts/circuits/${1}Verifier.sol
-sed -i.bak "s/contract Verifier/contract ${1}Verifier/g" artifacts/circuits/${1}Verifier.sol
-npx snarkjs info -r artifacts/circuits/$1.r1cs
+cd ./build/circuits/$1_cpp
+make
+cd ..
+
+# Generate a zkey file that will contain the proving and verification keys together with all phase 2 contributions
+snarkjs groth16 setup $1.r1cs ../../../build/pot12_final.ptau $1_0000.zkey
+# Contribute to phase 2 of the ceremony
+snarkjs zkey contribute $1_0000.zkey $1_0001.zkey --name="1st Contributor Name" -v -e="SacredFinance"
+# Export the verification key
+snarkjs zkey export verificationkey $1_0001.zkey $1_verification_key.json
+
+# Generate solidity verifier 
+snarkjs zkey export solidityverifier $1_0001.zkey ${1}Verifier.sol
+cd ../..
+sed -i.bak "s/contract Verifier/contract ${1}Verifier/g" build/circuits/${1}Verifier.sol

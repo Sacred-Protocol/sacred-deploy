@@ -1,3 +1,4 @@
+pragma circom 2.0.5;
 include "../node_modules/circomlib/circuits/poseidon.circom";
 include "../node_modules/circomlib/circuits/bitify.circom";
 include "./MerkleTreeUpdater.circom";
@@ -22,17 +23,20 @@ template TreeLayer(height) {
 // Checks that tree previously contained zero leaves in the same position
 // Hashes leaves with Poseidon hash
 // `batchLevels` should be less than `levels`
-template BatchTreeUpdate(levels, batchLevels, zeroBatchLeaf) {
+template BatchTreeUpdate(levels, zeroBatchLeaf) {
+  var CHUNK_TREE_HEIGHT = 1;
+  var batchLevels = CHUNK_TREE_HEIGHT;
   var height = levels - batchLevels;
   var nLeaves = 1 << batchLevels;
   signal input argsHash;
-  signal private input oldRoot;
-  signal private input newRoot;
-  signal private input pathIndices;
-  signal private input pathElements[height];
-  signal private input hashes[nLeaves];
-  signal private input instances[nLeaves];
-  signal private input blocks[nLeaves];
+  //private
+  signal input oldRoot;
+  signal input newRoot;
+  signal input pathIndices;
+  signal input pathElements[height];
+  signal input hashes[nLeaves];
+  signal input instances[nLeaves];
+  signal input blocks[nLeaves];
 
   // Check that hash of arguments is correct
   // We compress arguments into a single hash to considerably reduce gas usage on chain
@@ -78,7 +82,9 @@ template BatchTreeUpdate(levels, batchLevels, zeroBatchLeaf) {
 
 // zeroLeaf = keccak256("sacred") % FIELD_SIZE
 // zeroBatchLeaf is poseidon(zeroLeaf, zeroLeaf) (batchLevels - 1) times
-function nthZero(n) {
+function nthZero() {
+    var CHUNK_TREE_HEIGHT = 1;
+    var n = CHUNK_TREE_HEIGHT;
     if (n == 0) return 21663839004416932945382355908790599225266501822907911457504978515578255421292;
     if (n == 1) return 11850551329423159860688778991827824730037759162201783566284850822760196767874;
     if (n == 2) return 21572503925325825116380792768937986743990254033176521064707045559165336555197;
@@ -89,7 +95,7 @@ function nthZero(n) {
     if (n == 7) return 17857585024203959071818533000506593455576509792639288560876436361491747801924;
     if (n == 8) return 17278668323652664881420209773995988768195998574629614593395162463145689805534;
     if (n == 9) return 209436188287252095316293336871467217491997565239632454977424802439169726471;
+    return 0;
 }
 
-var CHUNK_TREE_HEIGHT = 1
-component main = BatchTreeUpdate(20, CHUNK_TREE_HEIGHT, nthZero(CHUNK_TREE_HEIGHT))
+component main {public [argsHash]} = BatchTreeUpdate(20, nthZero());

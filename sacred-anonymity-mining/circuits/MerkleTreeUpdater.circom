@@ -9,7 +9,7 @@ template MerkleTreeUpdater(levels, zeroLeaf) {
     signal input leaf;
     signal input pathIndices;
     //private signals
-    signal  input pathElements[levels];
+    signal input pathElements[levels];
 
     // Compute indexBits once for both trees
     // Since Num2Bits is non deterministic, 2 duplicate calls to it cannot be

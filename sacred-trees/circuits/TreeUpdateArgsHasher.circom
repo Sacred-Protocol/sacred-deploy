@@ -1,3 +1,4 @@
+pragma circom 2.0.5;
 include "../node_modules/circomlib/circuits/bitify.circom";
 include "../node_modules/circomlib/circuits/sha256/sha256.circom";
 
@@ -30,18 +31,25 @@ template TreeUpdateArgsHasher(nLeaves) {
 
     var index = 0;
 
-    hasher.in[index++] <== 0;
-    hasher.in[index++] <== 0;
+    hasher.in[index] <== 0;
+    index++;
+    hasher.in[index] <== 0;
+    index++;
     for(var i = 0; i < 254; i++) {
-        hasher.in[index++] <== bitsOldRoot.out[253 - i];
+        hasher.in[index] <== bitsOldRoot.out[253 - i];
+        index++;
     }
-    hasher.in[index++] <== 0;
-    hasher.in[index++] <== 0;
+    hasher.in[index] <== 0;
+    index++;
+    hasher.in[index] <== 0;
+    index++;
     for(var i = 0; i < 254; i++) {
-        hasher.in[index++] <== bitsNewRoot.out[253 - i];
+        hasher.in[index] <== bitsNewRoot.out[253 - i];
+        index++;
     }
     for(var i = 0; i < 32; i++) {
-        hasher.in[index++] <== bitsPathIndices.out[31 - i];
+        hasher.in[index] <== bitsPathIndices.out[31 - i];
+        index++;
     }
     for(var leaf = 0; leaf < nLeaves; leaf++) {
         // the range check on hash is optional, it's enforced by the smart contract anyway
@@ -51,16 +59,21 @@ template TreeUpdateArgsHasher(nLeaves) {
         bitsHash[leaf].in <== hashes[leaf];
         bitsInstance[leaf].in <== instances[leaf];
         bitsBlock[leaf].in <== blocks[leaf];
-        hasher.in[index++] <== 0;
-        hasher.in[index++] <== 0;
+        hasher.in[index] <== 0;
+        index++;
+        hasher.in[index] <== 0;
+        index++;
         for(var i = 0; i < 254; i++) {
-            hasher.in[index++] <== bitsHash[leaf].out[253 - i];
+            hasher.in[index] <== bitsHash[leaf].out[253 - i];
+            index++;
         }
         for(var i = 0; i < 160; i++) {
-            hasher.in[index++] <== bitsInstance[leaf].out[159 - i];
+            hasher.in[index] <== bitsInstance[leaf].out[159 - i];
+            index++;
         }
         for(var i = 0; i < 32; i++) {
-            hasher.in[index++] <== bitsBlock[leaf].out[31 - i];
+            hasher.in[index] <== bitsBlock[leaf].out[31 - i];
+            index++;
         }
     }
     component b2n = Bits2Num(256);
