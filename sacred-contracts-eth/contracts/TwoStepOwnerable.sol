@@ -31,7 +31,7 @@ abstract contract TwoStepOwnerable {
   	invited = address(0);
   }
 
-  function revokeInvitation() public onlyInvited {
+  function revokeInvitation() public onlyOwner {
     invited = address(0);
   }
   
