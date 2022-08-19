@@ -306,7 +306,7 @@ describe('Testing SacredAnanomityMining', () => {
       const ethBalance = await ethers.provider.getBalance(recipient);
       const receivedAaveInterests = ethBalance.add(gasUsed).sub(preETHBalance)
       console.log("Received ETH", receivedAaveInterests)
-      if (account.aaveInterestAmount.gt(BigInt(MINIMUM_INTERESTS))) {
+      if (account.getAaveInterest(currency) > BigInt(MINIMUM_INTERESTS)) {
         expect(receivedAaveInterests.gt(0)).to.equal(true)
       }
 
@@ -328,7 +328,7 @@ describe('Testing SacredAnanomityMining', () => {
     it('AaveInterestProxy', async () => {
       const aaveInterestProxy = new ethers.Contract(ensToAddr(config.aaveInterestsProxy.address), aaveInterestsProxyAbi.abi, wallet)
       await expect(
-        aaveInterestProxy.withdraw(10, wallet.address)
+        aaveInterestProxy.withdraw(ethers.constants.AddressZero, 10, wallet.address)
       ).to.be.revertedWith('Not authorized');
     })
 

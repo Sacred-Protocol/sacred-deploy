@@ -27,6 +27,7 @@ const RewardArgs = {
     instance: 'address',
     rewardNullifier: 'bytes32',
     extDataHash: 'bytes32',
+    currencyIndex: 'uint256',
     depositRoot: 'bytes32',
     withdrawalRoot: 'bytes32',
     extData: RewardExtData.RewardExtData,
