@@ -359,10 +359,11 @@ describe('Testing SacredAnanomityMining', () => {
       ).to.be.revertedWith('Only governance can perform this action');
 
       const rates = config.miningV2.rates.map((rate) => ({
-        instance: ensToAddr(rate.instance),
+        instance: utils.getSacredInstanceAddress(utils.getNetId(), rate.currency, rate.amount),
         value: rate.value,
+        currencyIndex: Account.getCurrencyIndex(rate.currency)
       }))
-
+    
       await expect(
         miner.setRates(rates)
       ).to.be.revertedWith('Only governance can perform this action');
@@ -390,14 +391,17 @@ describe('Testing SacredAnanomityMining', () => {
         sacredProxy.initialize(ethers.constants.AddressZero)
       ).to.be.revertedWith('Not authorized');
 
-      const instances = config.miningV2.rates.map((rate) => ({
-        addr: ensToAddr(rate.instance),
-        instance: {
-          isERC20: false,
-          token: ethers.constants.AddressZero,
-          state: 2 //"MINEABLE"
-        },
-      }))
+      const instances = config.miningV2.rates.map(function(rate) {
+        const tokenAddr = instancesInfo.pools[`${utils.getNetId()}`][rate.currency].token
+        return {
+          addr: utils.getSacredInstanceAddress(utils.getNetId(), rate.currency, rate.amount),
+          instance: {
+            isERC20: tokenAddr ? true : false,
+            token: tokenAddr ? tokenAddr : ethers.constants.AddressZero,
+            state: 2 //"MINEABLE"
+          }
+        }
+      })
       await expect(
         sacredProxy.updateInstance(instances[0])
       ).to.be.revertedWith('Not authorized');
