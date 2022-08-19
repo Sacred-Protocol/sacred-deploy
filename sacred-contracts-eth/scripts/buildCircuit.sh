@@ -15,5 +15,5 @@ snarkjs zkey export verificationkey withdraw_0001.zkey withdraw_verification_key
 snarkjs zkey export solidityverifier withdraw_0001.zkey Verifier.sol
 cd ../..
 sed -i.bak "s/contract Verifier/contract Verifier/g" build/circuits/Verifier.sol
-cp ./build/circuits/Verifier.sol ./contracts/
+
 
