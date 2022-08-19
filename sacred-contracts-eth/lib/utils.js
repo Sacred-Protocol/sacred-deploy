@@ -110,16 +110,20 @@ async function printERC20Balance({ address, name, tokenAddress }) {
   console.log(`${name} Token Balance is`, ethers.utils.formatUnits(balance, decimals))
 }
 
-async function generateGroth16Proof(input, wasmFile, zkeyFileName) {
-  const { proof: _proof, publicSignals: _publicSignals } = await groth16.fullProve(input, wasmFile, zkeyFileName);
-  const editedPublicSignals = baseUtils.unstringifyBigInts(_publicSignals);
-  const editedProof = baseUtils.unstringifyBigInts(_proof);
+async function convertProofToSolidityInput(proof, publicSignals) {
+  const editedPublicSignals = baseUtils.unstringifyBigInts(publicSignals);
+  const editedProof = baseUtils.unstringifyBigInts(proof);
   const calldata = await groth16.exportSolidityCallData(editedProof, editedPublicSignals);
   const argv = calldata.replace(/["[\]\s]/g, "").split(',').map(x => BigInt(x).toString());
   const a = [argv[0], argv[1]];
   const b = [[argv[2], argv[3]], [argv[4], argv[5]]];
   const c = [argv[6], argv[7]];
   return {a, b, c}
+}
+
+async function generateGroth16Proof(input, wasmFile, zkeyFileName) {
+  const { proof: _proof, publicSignals: _publicSignals } = await groth16.fullProve(input, wasmFile, zkeyFileName);
+  return await convertProofToSolidityInput(_proof, _publicSignals)
 }
 
 /**
@@ -471,5 +475,6 @@ module.exports = {
   loadWithdrawalData,
   getZeroMerkleRoot,
   generateGroth16Proof,
+  convertProofToSolidityInput,
   baseUtils,
 }

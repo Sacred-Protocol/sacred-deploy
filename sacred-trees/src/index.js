@@ -4,6 +4,7 @@ const jsSHA = require('jssha')
 const fs = require('fs')
 const tmp = require('tmp-promise')
 const {poseidonHash, bitsToNumber, toHex, numToBuffer} = require('../../sacred-contracts-eth/lib/baseUtils')
+const {convertProofToSolidityInput} = require('../../sacred-contracts-eth/lib/utils')
 const util = require('util')
 const exec = util.promisify(require('child_process').exec)
 
@@ -49,7 +50,9 @@ function prove(input, snarkPath) {
       console.log(out, e)
       throw e
     }
-    return '0x' + JSON.parse(fs.readFileSync(`${dir}/proof.json`)).proof
+    const proof = JSON.parse(fs.readFileSync(`${dir}/proof.json`))
+    const publicSignals = JSON.parse(fs.readFileSync(`${dir}/public.json`))
+    return convertProofToSolidityInput(proof, publicSignals)
   })
 }
 

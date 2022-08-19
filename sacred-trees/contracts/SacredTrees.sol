@@ -91,14 +91,16 @@ contract SacredTrees is Initializable {
   }
 
   /// @dev Insert a full batch of queued deposits into a merkle tree
-  /// @param _proof A snark proof that elements were inserted correctly
+  /// @param a A snark proof 
+  /// @param b A snark proof 
+  /// @param c A snark proof 
   /// @param _argsHash A hash of snark inputs
   /// @param _argsHash Current merkle tree root
   /// @param _newRoot Updated merkle tree root
   /// @param _pathIndices Merkle path to inserted batch
   /// @param _events A batch of inserted events (leaves)
   function updateDepositTree(
-    bytes calldata _proof,
+    uint[2] memory a, uint[2][2] memory b, uint[2] memory c,
     bytes32 _argsHash,
     bytes32 _currentRoot,
     bytes32 _newRoot,
@@ -131,7 +133,7 @@ contract SacredTrees is Initializable {
 
     uint256 argsHash = uint256(sha256(data)) % SNARK_FIELD;
     require(argsHash == uint256(_argsHash), "Invalid args hash");
-    require(treeUpdateVerifier.verifyProof(_proof, [argsHash]), "Invalid deposit tree update proof");
+    require(treeUpdateVerifier.verifyProof(a,b,c, [argsHash]), "Invalid deposit tree update proof");
 
     previousDepositRoot = _currentRoot;
     depositRoot = _newRoot;
@@ -139,14 +141,16 @@ contract SacredTrees is Initializable {
   }
 
   /// @dev Insert a full batch of queued withdrawals into a merkle tree
-  /// @param _proof A snark proof that elements were inserted correctly
+  /// @param a A snark proof 
+  /// @param b A snark proof 
+  /// @param c A snark proof 
   /// @param _argsHash A hash of snark inputs
   /// @param _argsHash Current merkle tree root
   /// @param _newRoot Updated merkle tree root
   /// @param _pathIndices Merkle path to inserted batch
   /// @param _events A batch of inserted events (leaves)
   function updateWithdrawalTree(
-    bytes calldata _proof,
+    uint[2] memory a, uint[2][2] memory b, uint[2] memory c,
     bytes32 _argsHash,
     bytes32 _currentRoot,
     bytes32 _newRoot,
@@ -179,7 +183,7 @@ contract SacredTrees is Initializable {
 
     uint256 argsHash = uint256(sha256(data)) % SNARK_FIELD;
     require(argsHash == uint256(_argsHash), "Invalid args hash");
-    require(treeUpdateVerifier.verifyProof(_proof, [argsHash]), "Invalid withdrawal tree update proof");
+    require(treeUpdateVerifier.verifyProof(a,b,c, [argsHash]), "Invalid withdrawal tree update proof");
 
     previousWithdrawalRoot = _currentRoot;
     withdrawalRoot = _newRoot;

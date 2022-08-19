@@ -2,12 +2,13 @@
 mkdir -p build/circuits
 if [ "$2" = "large" ]; then
   circom --r1cs -c --sym circuits/$1.circom -o build/circuits
+  cd ./build/circuits/$1_cpp
+  make
+  cd ..
 else
   circom --r1cs --wasm --sym circuits/$1.circom -o build/circuits
+  cd ./build/circuits
 fi
-cd ./build/circuits/$1_cpp
-make
-cd ..
 
 # Generate a zkey file that will contain the proving and verification keys together with all phase 2 contributions
 snarkjs groth16 setup $1.r1cs ../../../build/pot12_final.ptau $1_0000.zkey
