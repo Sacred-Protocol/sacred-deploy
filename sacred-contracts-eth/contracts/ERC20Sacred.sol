@@ -103,7 +103,7 @@ contract ERC20Sacred is Sacred {
     if(interests > 0 && aaveInterestsProxy != address(0)) {
       address lendingPool = AddressesProvider(lendingPoolAddressProvider).getPool();
       require(IERC20(aToken).approve(lendingPool, interests), "aToken approval failed");
-      Pool(lendingPool).withdraw(aToken, interests, aaveInterestsProxy);
+      Pool(lendingPool).withdraw(token, interests, aaveInterestsProxy);
       totalAaveInterests += interests;
     }
   }
