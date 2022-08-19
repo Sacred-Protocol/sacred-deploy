@@ -8,10 +8,10 @@ class Account {
     this.apAmounts = [...new Array(currencyList.length)].map(() => BigInt(0))
     this.aaveInterestAmounts = [...new Array(currencyList.length)].map(() => BigInt(0))
     if(apAmounts) {
-      this.apAmounts = apAmounts
+      this.apAmounts = [...apAmounts]
     }
     if(aaveInterestAmounts) {
-      this.aaveInterestAmounts = aaveInterestAmounts
+      this.aaveInterestAmounts = [...aaveInterestAmounts]
     }
     this.secret = secret ? BigInt(secret) : randomBN(31)
     this.nullifier = nullifier ? BigInt(nullifier) : randomBN(31)
@@ -66,9 +66,6 @@ class Account {
     for(let i = 0; i < currencyList.length; i++) {
       data.push(numToBuffer(this.apAmounts[i], 31, 'be'))
       data.push(numToBuffer(this.aaveInterestAmounts[i], 31, 'be'))
-      if(i < currencyList.length - 1) {
-        data.push(Buffer.from(";;"))
-      }
     }
     const bytes = Buffer.concat(data)
     return encrypt(pubkey, { data: bytes.toString('base64') }, 'x25519-xsalsa20-poly1305')
@@ -79,14 +76,13 @@ class Account {
     const buf = Buffer.from(decryptedMessage, 'base64')
     const secret = bufferToNum(buf.slice(0, 31), "be")
     const nullifier = bufferToNum(buf.slice(31, 62), "be")
-    let coinInfos = buf.slice(62).toString().split(";;")
     let apAmounts = [...new Array(currencyList.length)].map(() => BigInt(0))
     let aaveInterestAmounts = [...new Array(currencyList.length)].map(() => BigInt(0))
-    coinInfos.forEach((infoBuf, index) => {
-      const buf2 = Buffer.from(infoBuf)
-      apAmounts[index] = bufferToNum(buf2.slice(0, 31), "be")
-      aaveInterestAmounts[index] = bufferToNum(buf2.slice(31, 62), "be")
-    })
+    for(let i = 0; i < currencyList.length; i++) {
+      const index = 62 + i * 62
+      apAmounts[i] = bufferToNum(buf.slice(index, index + 31), "be")
+      aaveInterestAmounts[i] = bufferToNum(buf.slice(index + 31, index + 62), "be")
+    }
 
     return new Account({
       apAmounts,

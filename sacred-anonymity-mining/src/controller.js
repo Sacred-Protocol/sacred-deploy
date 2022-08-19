@@ -241,7 +241,6 @@ class Controller {
     const accountIndex = accountTree.indexOf(account.commitment, (a, b) => BigInt(a) === BigInt(b))
     const accountPath = accountIndex !== -1 ? accountTree.path(accountIndex) : zeroAccount
     const accountTreeUpdate = this._updateTree(accountTree, newAccount.commitment)
-
     const encryptedAccount = packEncryptedMessage(newAccount.encrypt(publicKey))
     const extDataHash = getExtRewardArgsHash({ relayer, encryptedAccount })
     const input = {

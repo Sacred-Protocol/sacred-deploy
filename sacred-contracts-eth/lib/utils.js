@@ -190,6 +190,7 @@ async function generateProof({ sacredInstance, deposit, recipient, relayerAddres
   }
 
   console.log('Generating SNARK proof')
+  console.time('Proof time')
   const {a, b, c} = await generateGroth16Proof(input, wasmFile, zkeyFileName);
   const args = [
     input.root,
@@ -199,7 +200,7 @@ async function generateProof({ sacredInstance, deposit, recipient, relayerAddres
     input.fee,
     input.refund
   ]
-  console.time('Proof time')
+  console.timeEnd('Proof time')
   return { a, b, c, args }
 }
 
