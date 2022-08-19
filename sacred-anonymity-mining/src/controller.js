@@ -319,7 +319,6 @@ class Controller {
   }
 
   async withdraw({ currency, account, apAmount, aaveInterestAmount, recipient, publicKey, fee = 0, relayer = 0, accountCommitments = null }) {
-    const instance = this.utils.getSacredInstanceAddress(this.utils.getNetId(), currency, amount)
     const currencyIndex = Account.getCurrencyIndex(currency)
     let apAmounts = account.getApAmountList()
     let aaveInterestAmounts = account.getAaveInterestList()
@@ -342,7 +341,7 @@ class Controller {
 
     const input = {
       // public
-      apAmount: tohex(BigInt(apAmount).add(BigInt(fee))),
+      apAmount: toHex(BigInt(apAmount).add(BigInt(fee))),
       aaveInterestAmount: toHex(aaveInterestAmount),
       extDataHash: toHex(extDataHash),
       currencyIndex: toHex(currencyIndex),
@@ -370,7 +369,6 @@ class Controller {
     console.log('Submitting reward withdrawal transaction')
 
     const args = {
-      instance: toHex(instance),
       apAmount: input.apAmount,
       aaveInterestAmount: input.aaveInterestAmount,
       extDataHash: input.extDataHash,

@@ -21,7 +21,7 @@ describe('Test Sacred Contracts', () => {
     owner = utils.getWalllet()
   });
 
-  /* describe('Test Deploy And Check Accecibility', () => {
+  describe('Test Deploy And Check Accecibility', () => {
     it('Deploy Contracts', async () => {
       //Deploy Verifier Contract
       const Verifier = await ethers.getContractFactory('Verifier');
@@ -69,9 +69,8 @@ describe('Test Sacred Contracts', () => {
       ).to.be.revertedWith('Not authorized');
     });
   });
-  */
 
-  /*describe('Test Deposit, Withdraw ETH', () => {
+  describe('Test Deposit, Withdraw ETH', () => {
     // we'll always need the user ETH balance to be greater than 3 ETH, because we use 2 ETH as the base amount for token conversions e.t.c
     it('Deposit/Withdraw', async () => {
       let ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
@@ -95,7 +94,7 @@ describe('Test Sacred Contracts', () => {
       console.log('User ETH balance is ', ethbalance);
     });
   });
-  */
+  
 
   describe('Test Deposit, Withdraw DAI', () => {
     // we'll always need the user ETH balance to be greater than 3 ETH, because we use 2 ETH as the base amount for token conversions e.t.c

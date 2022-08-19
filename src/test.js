@@ -201,7 +201,7 @@ describe('Testing SacredAnanomityMining', () => {
       }
     })
 
-    it('It should work for DAI', async () => {
+    /*it('It should work for DAI', async () => {
       for (let i = 0; i < 2; i++) {
         let result = await deposit("dai", 200, wallet)
         noteString = result.noteString
@@ -210,6 +210,7 @@ describe('Testing SacredAnanomityMining', () => {
         withdrawBlockNum = await withdraw(noteString, wallet)
       }
     })
+    */
   })
 
   describe('#Update Root of SacredTree', () => {
@@ -226,8 +227,8 @@ describe('Testing SacredAnanomityMining', () => {
       const currencyIndex = Account.getCurrencyIndex(currency)
       const zeroAccount = new Account()
       const accountCount = await miner.accountCount()
-      zeroAccount.getApAmountList().forEach(amount=>{
-        expect(amount.toString()).to.equal("0")
+      zeroAccount.getApAmountList().forEach(value => {
+        expect(value.toString()).to.equal("0")
       })
       console.log("Note: ", noteString)
       depositBlockNum = await getBlockNumbers(sacredTrees, action.DEPOSIT, noteString)
@@ -244,13 +245,12 @@ describe('Testing SacredAnanomityMining', () => {
       const eventsDeposit = await rootUpdaterEvents.getEvents(sacredTrees, action.DEPOSIT)
       const eventsWithdraw = await rootUpdaterEvents.getEvents(sacredTrees, action.WITHDRAWAL)
       const result = await controller.reward({ account: zeroAccount, note, publicKey, fee: 0, relayer: 0, accountCommitments: null, depositDataEvents: eventsDeposit.committedEvents, withdrawalDataEvents: eventsWithdraw.committedEvents })
-      args = result.args
       account = result.account
       const tx = await (await miner['reward(uint256[2],uint256[2][2],uint256[2],(uint256,uint256,address,uint256,uint256,bytes32,bytes32,uint256,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](
         result.a, 
         result.b, 
         result.c, 
-        args, 
+        result.args, 
         { gasLimit: 500000000 })).wait();
       const newAccountEvent = tx.events.find(item => item.event === 'NewAccount')
       expect(newAccountEvent.event).to.equal('NewAccount')
@@ -260,8 +260,9 @@ describe('Testing SacredAnanomityMining', () => {
 
       const encryptedAccount = newAccountEvent.args.encryptedAccount
       const account2 = Account.decrypt(privateKey, unpackEncryptedMessage(encryptedAccount))
-      expect(account.getApAmount("eth").toString()).to.equal(account2.apAmount.toString())
-      expect(account.getAaveInterest().toString()).to.equal(account2.aaveInterestAmount.toString())
+      
+      expect(account.getApAmount(currency).toString()).to.equal(account2.getApAmount(currency).toString())
+      expect(account.getAaveInterest(currency).toString()).to.equal(account2.getAaveInterest(currency).toString())
       expect(account.secret.toString()).to.equal(account2.secret.toString())
       expect(account.nullifier.toString()).to.equal(account2.nullifier.toString())
       expect(account.commitment.toString()).to.equal(account2.commitment.toString())
@@ -269,13 +270,13 @@ describe('Testing SacredAnanomityMining', () => {
       const accountCountAfter = await miner.accountCount()
       expect(accountCountAfter).to.equal(accountCount.add(BigNumber.from(1)))
       const rootAfter = await miner.getLastAccountRoot()
-      expect(rootAfter).to.equal(args.account.outputRoot)
+      expect(rootAfter).to.equal(result.args.account.outputRoot)
       const rewardNullifierAfter = await miner.rewardNullifiers(toHex(note.rewardNullifier))
       expect(rewardNullifierAfter).to.equal(true)
       const accountNullifierAfter = await miner.accountNullifiers(toHex(zeroAccount.nullifierHash))
       expect(accountNullifierAfter).to.equal(true)
 
-      expect(account.apAmount.toString()).to.equal(BigNumber.from(note.withdrawalBlock - note.depositBlock).mul(RATE).toString())
+      expect(account.getApAmount(currency).toString()).to.equal(BigNumber.from(note.withdrawalBlock - note.depositBlock).mul(RATE).toString())
 
     }).timeout(3000000);
   })
@@ -284,10 +285,10 @@ describe('Testing SacredAnanomityMining', () => {
     it('should work', async () => {
       const accountNullifierBefore = await miner.accountNullifiers(toHex(account.nullifierHash))
       expect(accountNullifierBefore).to.equal(false)
-
+      const currency = "eth"
       const recipient = wallet.address
       const preETHBalance = await ethers.provider.getBalance(recipient);
-      const withdrawSnark = await controller.withdraw({ account, apAmount: account.apAmount, aaveInterestAmount: account.aaveInterestAmount, recipient, publicKey })
+      const withdrawSnark = await controller.withdraw({currency, account, apAmount: account.getApAmount(currency), aaveInterestAmount: account.getAaveInterest(currency), recipient, publicKey })
       const balanceBefore = await sacred.balanceOf(recipient)
       const tx = await (await miner['withdraw(uint256[2],uint256[2][2],uint256[2],(uint256,uint256,bytes32,uint256,(uint256,address,address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](
         withdrawSnark.a, 
@@ -315,8 +316,8 @@ describe('Testing SacredAnanomityMining', () => {
       expect(newAccountEvent.args.nullifier).to.equal(toHex(account.nullifierHash))
       const encryptedAccount = newAccountEvent.args.encryptedAccount
       const account2 = Account.decrypt(privateKey, unpackEncryptedMessage(encryptedAccount))
-      expect(withdrawSnark.account.apAmount.toString()).to.equal(account2.apAmount.toString())
-      expect(withdrawSnark.account.aaveInterestAmount.toString()).to.equal(account2.aaveInterestAmount.toString())
+      expect(withdrawSnark.account.getApAmount(currency).toString()).to.equal(account2.getApAmount(currency).toString())
+      expect(withdrawSnark.account.getAaveInterest(currency).toString()).to.equal(account2.getAaveInterest(currency).toString())
       expect(withdrawSnark.account.secret.toString()).to.equal(account2.secret.toString())
       expect(withdrawSnark.account.nullifier.toString()).to.equal(account2.nullifier.toString())
       expect(withdrawSnark.account.commitment.toString()).to.equal(account2.commitment.toString())
