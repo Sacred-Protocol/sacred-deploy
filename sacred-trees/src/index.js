@@ -26,30 +26,24 @@ function hashInputs(input) {
   return result.toString()
 }
 
-function prove(input, keyBasePath) {
+function prove(input, snarkPath) {
+  const appPath = snarkPath + "/BatchTreeUpdate_cpp/BatchTreeUpdate"
   return tmp.dir().then(async (dir) => {
     dir = dir.path
     let out
 
     try {
-      if (fs.existsSync(`${keyBasePath}`)) {
+      fs.writeFileSync(`${dir}/input.json`, JSON.stringify(input, null, 2))
+      if (fs.existsSync(`${appPath}`)) {
         // native witness calc
-        fs.writeFileSync(`${dir}/input.json`, JSON.stringify(input, null, 2))
-        out = await exec(`${keyBasePath} ${dir}/input.json ${dir}/witness.json`)
+        out = await exec(`${appPath} ${dir}/input.json ${dir}/witness.wtns`)
       } else {
-        await wtns.debug(
-          utils.unstringifyBigInts(input),
-          `${keyBasePath}.wasm`,
-          `${dir}/witness.wtns`,
-          `${keyBasePath}.sym`,
-          {},
-          console,
-        )
-        const witness = utils.stringifyBigInts(await wtns.exportJson(`${dir}/witness.wtns`))
-        fs.writeFileSync(`${dir}/witness.json`, JSON.stringify(witness, null, 2))
+        // wasm witness calc
+        const wasmAppPath = snarkPath + "/BatchTreeUpdate_js"
+        out = await exec(`node ${wasmAppPath}/generate_witness.js ${wasmAppPath}/BatchTreeUpdate.wasm ${dir}/input.json ${dir}/witness.wtns`)
       }
       out = await exec(
-        `zkutil prove -c ${keyBasePath}.r1cs -p ${keyBasePath}.params -w ${dir}/witness.json -r ${dir}/proof.json -o ${dir}/public.json`,
+        `snarkjs groth16 prove ${snarkPath}/BatchTreeUpdate_0001.zkey ${dir}/witness.wtns ${dir}/proof.json ${dir}/public.json`,
       )
     } catch (e) {
       console.log(out, e)
