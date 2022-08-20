@@ -373,6 +373,7 @@ class Controller {
       aaveInterestAmount: input.aaveInterestAmount,
       extDataHash: input.extDataHash,
       currencyIndex,
+      asset: this.utils.getAssetAddress(currency),
       extData: {
         fee: toHex(fee),
         recipient: toHex(recipient, 20),

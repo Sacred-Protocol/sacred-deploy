@@ -97,6 +97,10 @@ function getZeroMerkleRoot() {
   return zeroMerkleRoot
 }
 
+function getAssetAddress(currency) {
+  return config.pools[`${netId}`][currency].token
+}
+
 /** Display ETH account balance */
 async function printETHBalance({ address, name }) {
   console.log(`${name} ETH balance is`, ethers.utils.formatEther(await provider.getBalance(address)))
@@ -226,7 +230,6 @@ async function deposit({ currency, amount }) {
     await printETHBalance({ address: sacredInstance.address, name: 'Sacred' })
     await printETHBalance({ address: senderAccount, name: 'Sender account' })
     console.log('Submitting deposit transaction')
-    console.log(value.toString())
     let overrides = { value, from: senderAccount, gasLimit: 20000000 }
     if (sacredProxy) {
       const instance = getSacredInstanceAddress(netId, currency, amount)
@@ -250,12 +253,24 @@ async function deposit({ currency, amount }) {
     console.log('Current allowance is', ethers.utils.formatUnits(allowance, decimals))
     if (BigInt(allowance) < BigInt(tokenAmount)) {
       console.log('Approving tokens for deposit')
-      await erc20.approve(sacredInstance.address, tokenAmount, { from: senderAccount })
+      if (sacredProxy) {
+        await erc20.approve(sacredProxy.address, tokenAmount, { from: senderAccount })
+      } else {
+        await erc20.approve(sacredInstance.address, tokenAmount, { from: senderAccount })
+      }
     }
 
     console.log('Submitting deposit transaction')
-    const tx = await (await sacredInstance.deposit(baseUtils.toHex(deposit.commitment), { from: senderAccount, gasLimit: 2e6 })).wait()
-    blockNumber = tx.blockNumber
+    let overrides = { from: senderAccount, gasLimit: 20000000 }
+    if (sacredProxy) {
+      const instance = getSacredInstanceAddress(netId, currency, amount)
+      const tx = await (await sacredProxy.deposit(instance, baseUtils.toHex(deposit.commitment), note, overrides)).wait()
+      blockNumber = tx.blockNumber
+    } else {
+      const tx = await (await sacredInstance.deposit(baseUtils.toHex(deposit.commitment), overrides)).wait()
+      blockNumber = tx.blockNumber
+    }
+   
     await printERC20Balance({ address: sacredInstance.address, name: 'Sacred', tokenAddress })
     await printERC20Balance({ address: senderAccount, name: 'Sender account', tokenAddress })
   }
@@ -469,6 +484,7 @@ module.exports = {
   getNetId,
   getCurrentNetworkName,
   getWalllet,
+  getAssetAddress,
   getProvider,
   printETHBalance,
   printERC20Balance,

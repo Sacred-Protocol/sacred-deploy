@@ -56,7 +56,7 @@ contract Miner is ReentrancyGuard{
   mapping(address => uint256) public rates;
   mapping(address => uint256) public currencies;
   mapping(uint256 => address)[currencyCnt] public instances;
-  mapping(address => uint256)[currencyCnt] public activeDeposits;
+  mapping(address => uint256) public activeDeposits;
   mapping(bytes32 => uint256[2])[currencyCnt] public totalShareSnapshots;
 
   uint256 public accountCount;
@@ -120,6 +120,7 @@ contract Miner is ReentrancyGuard{
     uint256 aaveInterestAmount;
     bytes32 extDataHash;
     uint256 currencyIndex;
+    uint256 asset;
     WithdrawExtData extData;
     AccountUpdate account;
   }
@@ -177,9 +178,10 @@ contract Miner is ReentrancyGuard{
     uint256 currencyIndex = currencies[instance];
     _updateShares(currencyIndex);
     if(byDeposit) {
-      activeDeposits[currencyIndex][instance]++;
+      activeDeposits[instance] = activeDeposits[instance] + 1;
     } else {
-      activeDeposits[currencyIndex][instance]--;
+      require(activeDeposits[instance] > 0, "No Deposits");
+      activeDeposits[instance] = activeDeposits[instance] - 1;
       bytes32 key = hasher.poseidon([nullifier]);
       uint256 totalInterests = 0;
       if(currencyIndex == 0) {
@@ -350,9 +352,9 @@ contract Miner is ReentrancyGuard{
         }
       }
     } else {
-      AaveInterestsProxy(aaveInterestsProxy).withdraw(address(0), _args.aaveInterestAmount - fee, _args.extData.recipient);
+      AaveInterestsProxy(aaveInterestsProxy).withdraw(_args.asset, _args.aaveInterestAmount - fee, _args.extData.recipient);
       if(fee > minimumInterests) {
-        AaveInterestsProxy(aaveInterestsProxy).withdraw(address(0), fee, governance);
+        AaveInterestsProxy(aaveInterestsProxy).withdraw(_args.asset, fee, governance);
       }
     }
 
@@ -489,7 +491,7 @@ contract Miner is ReentrancyGuard{
     uint256 delta = block.number - shareTrack[currencyIndex].lastUpdated;
     for(uint256 i = 0; i < instanceCount[currencyIndex]; ++i) {
       address instance = instances[currencyIndex][i];
-      shareTrack[currencyIndex].totalShares += delta * activeDeposits[currencyIndex][instance] * rates[instance];
+      shareTrack[currencyIndex].totalShares += delta * activeDeposits[instance] * rates[instance];
     }
     shareTrack[currencyIndex].lastUpdated = block.number;
   }
