@@ -220,6 +220,8 @@ async function main() {
     }),
   )
 
+  const aaveInterestsProxyActionIndex = actions.length - 1;
+
   // Deploy Miner
   const rates = config.miningV2.rates.map((rate) => ({
     instance: utils.getSacredInstanceAddress(netId, rate.currency, rate.amount),
@@ -262,6 +264,11 @@ async function main() {
 
   // Set args for SacredProxy Initialization
   actions[sacredProxyActionIndex].initArgs = [
+    ensToAddr(config.miningV2.address)
+  ];
+
+  // Set args for AaveInterestsProxy Initialization
+  actions[aaveInterestsProxyActionIndex].initArgs = [
     ensToAddr(config.miningV2.address)
   ];
 

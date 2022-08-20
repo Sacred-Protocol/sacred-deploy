@@ -191,26 +191,33 @@ describe('Testing SacredAnanomityMining', () => {
   })
 
   describe('#Deposit And Withdraw', () => {
-    it('It should work for ETH', async () => {
-      for (let i = 0; i < 2; i++) {
-        let result = await deposit("eth", 0.1, wallet)
-        noteString = result.noteString
-        depositBlockNum = result.blockNumber
-        //Withdraw
-        withdrawBlockNum = await withdraw(noteString, wallet)
-      }
-    })
+    // it('It should work for ETH', async () => {
+    //   const instance = utils.getSacredInstanceAddress(utils.getNetId(), "eth", 0.1)
+    //   for (let i = 0; i < 2; i++) {
+    //     const prevDeposits = await miner.activeDeposits(instance)
+    //     let result = await deposit("eth", 0.1, wallet)
+    //     noteString = result.noteString
+    //     depositBlockNum = result.blockNumber
+    //     const deposits = await miner.activeDeposits(instance)
+    //     expect(deposits).to.equal(prevDeposits.add(1))
+    //     //Withdraw
+    //     withdrawBlockNum = await withdraw(noteString, wallet)
+    //   }
+    // })
 
-    /*it('It should work for DAI', async () => {
+    it('It should work for DAI', async () => {
+      const instance = utils.getSacredInstanceAddress(utils.getNetId(), "dai", 200)
       for (let i = 0; i < 2; i++) {
+        const prevDeposits = await miner.activeDeposits(instance)
         let result = await deposit("dai", 200, wallet)
         noteString = result.noteString
         depositBlockNum = result.blockNumber
         //Withdraw
+        const deposits = await miner.activeDeposits(instance)
+        expect(deposits).to.equal(prevDeposits.add(1))
         withdrawBlockNum = await withdraw(noteString, wallet)
       }
     })
-    */
   })
 
   describe('#Update Root of SacredTree', () => {
@@ -285,17 +292,16 @@ describe('Testing SacredAnanomityMining', () => {
     it('should work', async () => {
       const accountNullifierBefore = await miner.accountNullifiers(toHex(account.nullifierHash))
       expect(accountNullifierBefore).to.equal(false)
-      const currency = "eth"
+      const currency = "dai"
       const recipient = wallet.address
       const preETHBalance = await ethers.provider.getBalance(recipient);
       const withdrawSnark = await controller.withdraw({currency, account, apAmount: account.getApAmount(currency), aaveInterestAmount: account.getAaveInterest(currency), recipient, publicKey })
       const balanceBefore = await sacred.balanceOf(recipient)
-      const tx = await (await miner['withdraw(uint256[2],uint256[2][2],uint256[2],(uint256,uint256,bytes32,uint256,(uint256,address,address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](
+      const tx = await (await miner['withdraw(uint256[2],uint256[2][2],uint256[2],(uint256,uint256,bytes32,uint256,address,(uint256,address,address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](
         withdrawSnark.a, 
         withdrawSnark.b, 
         withdrawSnark.c, 
-        withdrawSnark.args)).wait()
-
+        withdrawSnark.args,{ gasLimit: 500000000 })).wait()
       const gasUsed = BigInt(tx.cumulativeGasUsed) * BigInt(tx.effectiveGasPrice);
 
       const balanceAfter = await sacred.balanceOf(recipient)
