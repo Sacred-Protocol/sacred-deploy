@@ -120,7 +120,7 @@ contract Miner is ReentrancyGuard{
     uint256 aaveInterestAmount;
     bytes32 extDataHash;
     uint256 currencyIndex;
-    uint256 asset;
+    address asset;
     WithdrawExtData extData;
     AccountUpdate account;
   }
