@@ -228,7 +228,7 @@ async function main() {
       const withdrawSnark = await controller.withdraw({ currency, account: decryptedAccount, apAmount, aaveInterestAmount, recipient, publicKey })
       const balanceBefore = await sacred.balanceOf(recipient)
       console.log("Balance Before RewardSwap:", balanceBefore)
-      const tx = await (await miner['withdraw(uint256[2],uint256[2][2],uint256[2],(uint256,uint256,bytes32,uint256,address,(uint256,address,address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](withdrawSnark.proof, withdrawSnark.args)).wait()
+      const tx = await (await miner['withdraw(uint256[2],uint256[2][2],uint256[2],(uint256,uint256,bytes32,uint256,address,(uint256,address,address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](withdrawSnark.a, withdrawSnark.b, withdrawSnark.c, withdrawSnark.args)).wait()
       const balanceAfter = await sacred.balanceOf(recipient)
       console.log("Balance After RewardSwap:", balanceAfter)
     })
