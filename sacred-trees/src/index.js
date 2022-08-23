@@ -44,7 +44,7 @@ function prove(input, snarkPath) {
         out = await exec(`node ${wasmAppPath}/generate_witness.js ${wasmAppPath}/BatchTreeUpdate.wasm ${dir}/input.json ${dir}/witness.wtns`)
       }
       out = await exec(
-        `snarkjs groth16 prove ${snarkPath}/BatchTreeUpdate_0001.zkey ${dir}/witness.wtns ${dir}/proof.json ${dir}/public.json`,
+        `npx snarkjs groth16 prove ${snarkPath}/BatchTreeUpdate_0001.zkey ${dir}/witness.wtns ${dir}/proof.json ${dir}/public.json`,
       )
     } catch (e) {
       console.log(out, e)
