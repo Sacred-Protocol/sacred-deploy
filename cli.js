@@ -182,7 +182,7 @@ async function main() {
       if (depositBlock > 0 && withdrawalBlock > 0) {
         const { currency, amount, netId, deposit } = utils.baseUtils.parseNote(note)
         const rate = await miner.rates(utils.getSacredInstanceAddress(netId, currency, amount))
-        const apAmount = BigInt(withdrawalBlock - depositBlock).mul(rate)
+        const apAmount = BigInt(withdrawalBlock - depositBlock).mul(BigInt(rate.toString()))
         console.log("AP amount: ", apAmount.toString())
       }
     })
@@ -208,12 +208,12 @@ async function main() {
         const publicKey = getEncryptionPublicKey(program.privateKey || PRIVATE_KEY)
         const result = await controller.reward({ account: zeroAccount, note: _note, publicKey, fee: 0, relayer: program.relayer, accountCommitments: null, depositDataEvents: eventsDeposit.committedEvents, withdrawalDataEvents: eventsWithdraw.committedEvents })
         const account = result.account
-        const tx = await (await miner['reward(uint256[2],uint256[2][2],uint256[2],(uint256,uint256,address,uint256,uint256,bytes32,bytes32,uint256,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](result.proof, result.args, { gasLimit: 500000 })).wait();
+        const tx = await (await miner['reward(uint256[2],uint256[2][2],uint256[2],(uint256,uint256,address,uint256,uint256,bytes32,bytes32,uint256,bytes32,bytes32,(address,bytes),(bytes32,bytes32,bytes32,uint256,bytes32)))'](result.a, result.b, result.c, result.args, { gasLimit: 5000000 })).wait();
         const newAccountEvent = tx.events.find(item => item.event === 'NewAccount')
         const encryptedAccount = newAccountEvent.args.encryptedAccount
-        console.log("Claimed Ap Amount: ", account.apAmount.toString())
-        console.log("Estimated AaveInterest Amount: ", account.aaveInterestAmount.toString())
         console.log("Encrypted Account: ", encryptedAccount)
+        console.log("Claimed Ap Amount: ", account.getApAmount(currency).toString())
+        console.log("Estimated AaveInterest Amount: ", account.getAaveInterest(currency).toString())
       }
     })
   program
@@ -223,8 +223,8 @@ async function main() {
       await init(program.rpc || RPC_URL)
       const publicKey = getEncryptionPublicKey(program.privateKey || PRIVATE_KEY)
       const decryptedAccount = Account.decrypt(program.privateKey || PRIVATE_KEY, unpackEncryptedMessage(account))
-      const apAmount = decryptedAccount.apAmount
-      const aaveInterestAmount = decryptedAccount.aaveInterestAmount
+      const apAmount = decryptedAccount.getApAmount(currency)
+      const aaveInterestAmount = decryptedAccount.getAaveInterest(currency)
       const withdrawSnark = await controller.withdraw({ currency, account: decryptedAccount, apAmount, aaveInterestAmount, recipient, publicKey })
       const balanceBefore = await sacred.balanceOf(recipient)
       console.log("Balance Before RewardSwap:", balanceBefore)
