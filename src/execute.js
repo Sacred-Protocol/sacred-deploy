@@ -68,8 +68,9 @@ async function deployContracts() {
 
   console.log("Initialization Done.")
   const instances = [0.1, 1, 10, 100]
+  const nativeSymbol = (utils.getNetId() == 80001 || utils.getNetId() == 137) ? "matic" : "eth"
   for (let i = 0; i < instances.length; i++) {
-    let sacredInstance = new ethers.Contract(utils.getSacredInstanceAddress(utils.getNetId(), 'eth', instances[i]), ethSacredAbi.abi, wallet)
+    let sacredInstance = new ethers.Contract(utils.getSacredInstanceAddress(utils.getNetId(), nativeSymbol, instances[i]), ethSacredAbi.abi, wallet)
     const receipt = await (await sacredInstance.setAaveInterestsProxy(ensToAddr(config.aaveInterestsProxy.address))).wait()
     const _gasUsed = BigInt(receipt.cumulativeGasUsed) * BigInt(receipt.effectiveGasPrice);
     gasUsed = gasUsed + _gasUsed

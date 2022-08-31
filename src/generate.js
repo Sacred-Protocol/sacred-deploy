@@ -34,10 +34,11 @@ async function main() {
   const netId = utils.getNetId()
   console.log("owner address: ", wallet.address)
   initAddressTable()
-  setAddress('eth-01.sacredcash.eth', utils.getSacredInstanceAddress(netId, "eth", 0.1))
-  setAddress('eth-1.sacredcash.eth', utils.getSacredInstanceAddress(netId, "eth", 1))
-  setAddress('eth-10.sacredcash.eth', utils.getSacredInstanceAddress(netId, "eth", 10))
-  setAddress('eth-100.sacredcash.eth', utils.getSacredInstanceAddress(netId, "eth", 100))
+  const nativeSymbol = (netId == 80001 || netId == 137) ? "matic" : "eth"
+  setAddress('eth-01.sacredcash.eth', utils.getSacredInstanceAddress(netId, nativeSymbol, 0.1))
+  setAddress('eth-1.sacredcash.eth', utils.getSacredInstanceAddress(netId, nativeSymbol, 1))
+  setAddress('eth-10.sacredcash.eth', utils.getSacredInstanceAddress(netId, nativeSymbol, 10))
+  setAddress('eth-100.sacredcash.eth', utils.getSacredInstanceAddress(netId, nativeSymbol, 100))
 
   sacredTokenAddress = instancesInfo.sacredToken["" + netId]
   // Deploy Governance implementation

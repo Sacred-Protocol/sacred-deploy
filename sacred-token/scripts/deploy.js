@@ -8,6 +8,7 @@ const deployedInfo = require('../../config.json')
 
 const { RPC_URL } = process.env
 async function main() {
+  let verifyData = []
   await baseUtils.init(RPC_URL)
   const provider = await baseUtils.getProvider()
   const { chainId } = await provider.getNetwork()
@@ -15,12 +16,14 @@ async function main() {
   const SacredToken = await ethers.getContractFactory("SACRED")
   const sacredToken = await SacredToken.deploy(process.env.AIRDROP_RECEIVER, toWei(process.env.AMOUNT))
   await sacredToken.deployed()
+  verifyData.push({address: sacredToken.address, constructorArguments: [process.env.AIRDROP_RECEIVER, toWei(process.env.AMOUNT)]})
   const balance = await sacredToken.balanceOf(process.env.AIRDROP_RECEIVER)
   deployedInfo.sacredToken["" + chainId] = sacredToken.address
   console.log("SacredToken deployed to:", sacredToken.address)
   expect(balance).to.equal(toWei(process.env.AMOUNT));
   console.log("Deployed Amounts:", process.env.AMOUNT)
   await fs.writeFileSync('../config.json', JSON.stringify(deployedInfo, null, '  '))
+  await fs.writeFileSync('./verifyData.json', JSON.stringify(verifyData, null, '  '))
 }
 
 main()
