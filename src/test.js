@@ -153,7 +153,7 @@ describe('Testing SacredAnanomityMining', () => {
       provingKeys,
       utils
     })
-    rootUpdaterEvents.setProvider(utils.getProvider())
+    rootUpdaterEvents.setUtils(utils)
     await controller.init()
   })
 
@@ -191,23 +191,23 @@ describe('Testing SacredAnanomityMining', () => {
   })
 
   describe('#Deposit And Withdraw', () => {
-    // it('It should work for ETH', async () => {
-    //   const instance = utils.getSacredInstanceAddress(utils.getNetId(), "eth", 0.1)
-    //   for (let i = 0; i < 2; i++) {
-    //     const prevDeposits = await miner.activeDeposits(instance)
-    //     let result = await deposit("eth", 0.1, wallet)
-    //     noteString = result.noteString
-    //     depositBlockNum = result.blockNumber
-    //     const deposits = await miner.activeDeposits(instance)
-    //     expect(deposits).to.equal(prevDeposits.add(1))
-    //     //Withdraw
-    //     withdrawBlockNum = await withdraw(noteString, wallet)
-    //   }
-    // })
+    it('It should work for ETH', async () => {
+      const instance = utils.getSacredInstanceAddress(utils.getNetId(), "eth", 0.1)
+      for (let i = 0; i < 1; i++) {
+        const prevDeposits = await miner.activeDeposits(instance)
+        let result = await deposit("eth", 0.1, wallet)
+        noteString = result.noteString
+        depositBlockNum = result.blockNumber
+        const deposits = await miner.activeDeposits(instance)
+        expect(deposits).to.equal(prevDeposits.add(1))
+        //Withdraw
+        withdrawBlockNum = await withdraw(noteString, wallet)
+      }
+    })
 
     it('It should work for DAI', async () => {
       const instance = utils.getSacredInstanceAddress(utils.getNetId(), "dai", 200)
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < 1; i++) {
         const prevDeposits = await miner.activeDeposits(instance)
         let result = await deposit("dai", 200, wallet)
         noteString = result.noteString
@@ -229,7 +229,7 @@ describe('Testing SacredAnanomityMining', () => {
 
   describe('#reward', () => {
     it('should work', async () => {
-      //noteString = "sacred-eth-0.1-4-0x702dea4c5b3aaefb219b9d5d066bd6f37467391bec008ab03408c9d7b7560e1d69a9d59df9364c4b9485b3c0e58ea0a52f22bc22e947a1fc0f2c72adc343"
+      //noteString = "sacred-dai-200-5-0xdc4ec074f3b7f407eb953df0fd04d6241a5cad8b67afecf0f4b6f54343ab1a5ecd8ad41173189205d7089068c9a39fc69ceb765921317b6d199489c00cb0"
       const { currency, amount } = utils.baseUtils.parseNote(noteString);
       const currencyIndex = Account.getCurrencyIndex(currency)
       const zeroAccount = new Account()

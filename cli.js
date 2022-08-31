@@ -74,7 +74,7 @@ async function init(rpc) {
     utils
   })
 
-  rootUpdaterEvents.setProvider(utils.getProvider())
+  rootUpdaterEvents.setUtils(utils)
   await controller.init(rpc)
 }
 
