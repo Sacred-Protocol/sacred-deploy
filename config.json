@@ -41,10 +41,10 @@
     "80001": {
       "matic": {
         "instanceAddress": {
-          "1": "0x1731094433BE73250707bDF94FdB4B1bf0BDbAca",
-          "10": "0x28c62C78A015Ce6505dFD594D90A6a43dA3068Bd",
-          "100": "0x2588DaA1892A858C83E7a1Ba8b0f996Cc30877d1",
-          "0.1": "0x91CCB886d9E0A916c76eE17cD311A276d1a4C40f"
+          "1": "0x71C2dbB7d89C8E95Bd627B46A483cab80B82b9b1",
+          "10": "0xc1cB5adf7c5f5D177b8DF9897e167650D47410C0",
+          "100": "0x38b0f84d2896b817fAF7af3796FE932137660640",
+          "0.1": "0x509D42e37309DB687279488fb1902a01AfB00990"
         },
         "symbol": "MATIC",
         "decimals": 18,
@@ -55,6 +55,7 @@
   "sacredToken": {
     "1": "",
     "4": "0x55fa578E88a3d82dFF73BF535ce5D8727A0588E1",
-    "42": ""
+    "42": "",
+    "80001": "0x1BcA84F8e5d0963f76d437e5bF26F4546a50549a"
   }
 }
