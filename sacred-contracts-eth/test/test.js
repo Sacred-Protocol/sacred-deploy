@@ -10,7 +10,7 @@ const withdrawCircuit = require('../build/circuits/withdraw.json');
 const { ethers } = require("hardhat");
 const withdrawProvidingKey = fs.readFileSync('./build/circuits/withdraw_proving_key.bin').buffer
 
-const { RPC_URL, MERKLE_TREE_HEIGHT, LENDING_POOL_ADDRESS_PROVIDER, WETH_GATEWAY, WETH_TOKEN, OPERATOR_FEE } = process.env
+const { RPC_URL, MERKLE_TREE_HEIGHT, LENDING_POOL_ADDRESS_PROVIDER, WETH_GATEWAY, WETH_TOKEN, OPERATOR_FEE, HARDHAT_CHAINID } = process.env
 let owner;
 let deployedSacred;
 
@@ -78,7 +78,7 @@ describe('Test Sacred Contracts', () => {
       let ethbalance = Number(ethers.utils.formatEther(await owner.getBalance()));
       console.log('User ETH balance is ', ethbalance);
 
-      const currency = "eth"
+      const currency = (HARDHAT_CHAINID == 137 || HARDHAT_CHAINID == 80001) ? "matic" : "eth"
       const amount = 0.1
       await utils.setup({
         ethSacredAbi: ethSacredAbi.abi, 

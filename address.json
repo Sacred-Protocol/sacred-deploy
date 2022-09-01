@@ -1,0 +1,23 @@
+{
+  "governance.contract.sacredcash.eth": "0x81261aFD9736c91E322643dB1CBf2488C72a0C1A",
+  "governance-impl.contract.sacredcash.eth": "0x55456163549220e8f67eD09FD99417baA37ab87e",
+  "mining-v2.contract.sacredcash.eth": "0x4A844350e89B5417044573a6764Ae6D6b58d9c23",
+  "matic-01.sacredcash.eth": "0x509D42e37309DB687279488fb1902a01AfB00990",
+  "matic-1.sacredcash.eth": "0x71C2dbB7d89C8E95Bd627B46A483cab80B82b9b1",
+  "matic-10.sacredcash.eth": "0xc1cB5adf7c5f5D177b8DF9897e167650D47410C0",
+  "matic-100.sacredcash.eth": "0x38b0f84d2896b817fAF7af3796FE932137660640",
+  "reward-swap.contract.sacredcash.eth": "0x4F6Cf14ef42EBc71Fc1319bf0F14D8Dcb9E04fd8",
+  "sacred-trees.contract.sacredcash.eth": "0x2a87375A358B1d7e7Bc87dafDEC990B8fB4Dc00A",
+  "sacred-trees-impl.contract.sacredcash.eth": "0x65D6da6A0d92AB7e03D235dC68714217B8C10246",
+  "sacred-proxy.contract.sacredcash.eth": "0x4c709bf8F7fF98DA61dC89dCbA61768F90aA9607",
+  "sacred-echoer.contract.sacredcash.eth": "0x1A04684e74017189e465678e077E50e7C54F7De0",
+  "aave-interests-proxy.contract.sacredcash.eth": "0x213a3DE138B31941DE55a697C590400a95987829",
+  "reward-verifier.contract.sacredcash.eth": "0xb06Bd9938a88D751059e7bcD5c39C3dE308B95AE",
+  "tree-update-verifier.contract.sacredcash.eth": "0x7a21DbEc32f5050D1A341a73F55D82287a6bF7b9",
+  "withdraw-verifier.contract.sacredcash.eth": "0x2aD4bba7bFd21D4aBf8619b6BAD809F838D78f5B",
+  "poseidon1.contract.sacredcash.eth": "0x127239FD293fC338d6e086C7077ff9a6E36a517c",
+  "poseidon2.contract.sacredcash.eth": "",
+  "poseidon3.contract.sacredcash.eth": "",
+  "deployer.contract.sacredcash.eth": "",
+  "batchTreeUpdateVerifier.contract.sacredcash.eth": "0xcc10942e6456aAC19e8A6b99dC5d0fe33fD01aB5"
+}

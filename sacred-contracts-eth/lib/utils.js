@@ -60,7 +60,7 @@ async function setup({ ethSacredAbi, erc20SacredAbi, sacredProxyContract, withdr
         const key = currency + amount
         const address = addressInfo[amount]
         if (address) {
-          contracts[key] = new ethers.Contract(address, currency === "eth" ? ethSacredAbi : erc20SacredAbi, wallet)
+          contracts[key] = new ethers.Contract(address, (currency === "eth" || currency === "matic") ? ethSacredAbi : erc20SacredAbi, wallet)
         }
       })
     })
