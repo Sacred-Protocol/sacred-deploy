@@ -42,7 +42,7 @@ const provingKeys = {
   sacredEthWithdrawProvidingKey: fs.readFileSync('sacred-contracts-eth/build/circuits/withdraw_proving_key.bin').buffer
 }
 
-const { PRIVATE_KEY, RPC_URL, MINIMUM_INTERESTS } = process.env
+const { PRIVATE_KEY, RPC_URL, MINIMUM_INTERESTS, HARDHAT_CHAINID } = process.env
 
 async function updateRoot(sacredTrees, type) {
   const { committedEvents, pendingEvents } = await rootUpdaterEvents.getEvents(sacredTrees, type)
@@ -91,6 +91,7 @@ describe('Testing SacredAnanomityMining', () => {
 
   const privateKey = PRIVATE_KEY
   const publicKey = getEncryptionPublicKey(privateKey)
+  const nativeCurrency = (HARDHAT_CHAINID == 137 || HARDHAT_CHAINID == 80001) ? "matic" : "eth"
 
   before(async () => {
     await utils.init({ instancesInfo, erc20Contract: erc20Abi, RPC_URL })
@@ -154,7 +155,7 @@ describe('Testing SacredAnanomityMining', () => {
       expect(tokenFromContract).to.equal(sacred.address)
       const rewardSwapFromContract = await miner.rewardSwap()
       expect(rewardSwapFromContract).to.equal(rewardSwap.address)
-      const rateFromContract = await miner.rates(utils.getSacredInstanceAddress(utils.getNetId(), 'eth', 0.1))
+      const rateFromContract = await miner.rates(utils.getSacredInstanceAddress(utils.getNetId(), nativeCurrency, 0.1))
       expect(rateFromContract).to.equal(BigNumber.from(RATE))
     })
   })
@@ -165,7 +166,7 @@ describe('Testing SacredAnanomityMining', () => {
         let ethbalance = Number(ethers.utils.formatEther(await wallet.getBalance()));
         console.log('Before Deposit: User ETH balance is ', ethbalance);
         //Deposit
-        const result = await utils.deposit({ currency: 'eth', amount: 0.1 });
+        const result = await utils.deposit({ currency: nativeCurrency, amount: 0.1 });
         noteString = result.noteString;
         depositBlockNum = result.blockNumber;
         console.log('Deposit block number is ', depositBlockNum);
@@ -200,7 +201,7 @@ describe('Testing SacredAnanomityMining', () => {
       withdrawBlockNum = await getBlockNumbers(sacredTrees, action.WITHDRAWAL, noteString)
       console.log("depositBlockNumber:", depositBlockNum)
       console.log("withdrawBlockNumber:", withdrawBlockNum)
-      const note = Note.fromString(noteString, utils.getSacredInstanceAddress(utils.getNetId(), 'eth', 0.1), depositBlockNum, withdrawBlockNum)
+      const note = Note.fromString(noteString, utils.getSacredInstanceAddress(utils.getNetId(), nativeCurrency, 0.1), depositBlockNum, withdrawBlockNum)
       const shareTracks = await miner.shareTrack()
       const totalShares = await miner.totalShareSnapshots(toHex(note.rewardNullifier), 0)
       const interests = await miner.totalShareSnapshots(toHex(note.rewardNullifier), 1)
@@ -368,7 +369,7 @@ describe('Testing SacredAnanomityMining', () => {
 
     it('sacredTrees', async () => {
       //sacredTrees
-      const instanceAddr = utils.getSacredInstanceAddress(utils.getNetId(), 'eth', 0.1)
+      const instanceAddr = utils.getSacredInstanceAddress(utils.getNetId(), nativeCurrency, 0.1)
       await expect(
         sacredTrees.registerDeposit(instanceAddr, toHex(randomBN(31)))
       ).to.be.revertedWith('Not authorized');

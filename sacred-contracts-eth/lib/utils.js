@@ -191,7 +191,7 @@ async function deposit({ currency, amount }) {
     console.log("SacredInstance was not setup properly!")
   }
   const senderAccount = wallet.address
-  if (currency === 'eth') {
+  if (currency === 'eth' || currency === "matic") {
     const value = ethers.utils.parseEther(amount.toString())
     await printETHBalance({ address: sacredInstance.address, name: 'Sacred' })
     await printETHBalance({ address: senderAccount, name: 'Sender account' })
@@ -244,7 +244,7 @@ async function deposit({ currency, amount }) {
  * @param recipient Recipient address
  */
 async function withdraw({ deposit, currency, amount, recipient, relayerURL, refund = '0' }) {
-  if (currency === 'eth' && refund !== '0') {
+  if ((currency === 'eth' || currency === 'matic') && refund !== '0') {
     throw new Error('The ETH purchase is supposted to be 0 for ETH withdrawals')
   }
   refund = toWei(refund)
