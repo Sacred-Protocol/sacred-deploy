@@ -70,6 +70,7 @@ async function main() {
         const sacred = await(await ETHSacred
           .deploy(verifier.address, weiAmount, MERKLE_TREE_HEIGHT, LENDING_POOL_ADDRESS_PROVIDER, WETH_GATEWAY, info.aToken, wallet.address, OPERATOR_FEE))
           .deployed();
+        verifyData.push({address: sacred.address, constructorArguments: [verifier.address, weiAmount, MERKLE_TREE_HEIGHT, LENDING_POOL_ADDRESS_PROVIDER, WETH_GATEWAY, info.aToken, wallet.address, OPERATOR_FEE]})
         info.instanceAddress[amount] = sacred.address
         console.log("ETHSacred instance deployed:", currency, amount, sacred.address)
       }
@@ -83,6 +84,7 @@ async function main() {
         const sacred = await(await ERC20Sacred
           .deploy(verifier.address, weiAmount, MERKLE_TREE_HEIGHT, LENDING_POOL_ADDRESS_PROVIDER, info.aToken, wallet.address, info.token, OPERATOR_FEE))
           .deployed();
+          verifyData.push({address: sacred.address, constructorArguments: [verifier.address, weiAmount, MERKLE_TREE_HEIGHT, LENDING_POOL_ADDRESS_PROVIDER, info.aToken, wallet.address, info.token, OPERATOR_FEE]})
         info.instanceAddress[amount] = sacred.address
         console.log("ERC20Sacred instance deployed:", currency, amount, sacred.address)
       }
