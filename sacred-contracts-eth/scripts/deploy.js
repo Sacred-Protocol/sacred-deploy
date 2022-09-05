@@ -8,6 +8,7 @@ const { PRIVATE_KEY, RPC_URL } = process.env
 
 async function main() {
 
+  let verifyData = []
   await baseUtils.init(RPC_URL)
   const provider = await baseUtils.getProvider()
   const { chainId } = await provider.getNetwork()
@@ -24,6 +25,7 @@ async function main() {
   const Verifier = await ethers.getContractFactory('Verifier');
   const verifier = await (await Verifier.deploy()).deployed();
   console.log('Verifier Contract Deployed: ', verifier.address)
+  verifyData.push({address: verifier.address, constructorArguments: []})
 
   //Deploy Hasher Contract
   const Hasher = await ethers.getContractFactory('Hasher');
@@ -88,6 +90,7 @@ async function main() {
   }
 
   await fs.writeFileSync('../config.json', JSON.stringify(config, null, '  '))
+  await fs.writeFileSync('./verifyData.json', JSON.stringify(verifyData, null, '  '))
   console.log("Deployed Contract's addresses are saved into config.json!")
 }
 

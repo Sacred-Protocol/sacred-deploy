@@ -1,5 +1,6 @@
 /* global task, ethers */
 require('@nomiclabs/hardhat-waffle')
+require("@nomiclabs/hardhat-etherscan")
 require('dotenv').config({ path: '../.env' })
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -36,6 +37,9 @@ const config = {
   mocha: {
     timeout: 600000,
   },
+  etherscan: {
+    apiKey: {}
+  }
 }
 
 if (process.env.NETWORK) {
@@ -43,5 +47,10 @@ if (process.env.NETWORK) {
     url: process.env.RPC_URL,
     accounts: [process.env.PRIVATE_KEY],
   }
+  let netName = process.env.NETWORK
+  if(netName === "mumbai") {
+    netName = "polygonMumbai"
+  }
+  config.etherscan.apiKey[netName] = process.env.ETHERSCAN_API_KEY
 }
 module.exports = config
