@@ -99,8 +99,12 @@ contract ERC20Sacred is Sacred {
   }
 
   function collectAaveInterests() private {
-    uint256 interests = IERC20(aToken).balanceOf(address(this)) - collateralAmount;
-    if(interests > 0 && aaveInterestsProxy != address(0)) {
+    if(aaveInterestsProxy == address(0)) {
+      return;
+    }
+    uint256 aTokenBalance = IERC20(aToken).balanceOf(address(this));
+    if(aTokenBalance > collateralAmount) {
+      uint256 interests = aTokenBalance - collateralAmount;
       address lendingPool = AddressesProvider(lendingPoolAddressProvider).getPool();
       require(IERC20(aToken).approve(lendingPool, interests), "aToken approval failed");
       Pool(lendingPool).withdraw(token, interests, aaveInterestsProxy);
