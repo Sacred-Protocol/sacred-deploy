@@ -83,8 +83,12 @@ contract ETHSacred is Sacred {
   }
 
   function collectAaveInterests() private {
-    uint256 interests = AToken(wETHToken).balanceOf(address(this)) - collateralAmount;
-    if(interests > 0 && aaveInterestsProxy != address(0)) {
+    if(aaveInterestsProxy == address(0)) {
+      return;
+    }
+    uint256 aTokenBalance = AToken(wETHToken).balanceOf(address(this));
+    if(aTokenBalance > collateralAmount) {
+      uint256 interests = aTokenBalance - collateralAmount;
       address lendingPool = AddressesProvider(lendingPoolAddressProvider).getPool();
       require(AToken(wETHToken).approve(wETHGateway, interests), "aToken approval failed");
       WETHGateway(wETHGateway).withdrawETH(lendingPool, interests, aaveInterestsProxy);
